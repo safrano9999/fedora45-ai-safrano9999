@@ -49,9 +49,11 @@ of truth; layer setup defaults to the matching GHCR image with the `latest` tag.
 | Vditor | 3.11.2 | 4.0.0 |
 | BIP39 | 0.5.6 | 0.5.6 |
 
-The Brave plugin follows the pinned OpenClaw version. Other floating channels
-(including Node Current, Codex, Claude and uv) keep their previous selection strategy. The installed Codex plugin and its native
-dependencies are retained; current OpenClaw no longer bundles them in `dist`.
+The Brave and Codex plugins follow the pinned OpenClaw version. Node 26 comes
+from Fedora RPMs without a patch-version pin. npm is updated before installing
+Hermes so its installer keeps the system Node. Python development headers support
+source builds on Fedora's Python 3.15; Psycopg uses Fedora's libpq. Other floating
+channels (Codex CLI, Claude and uv) keep their previous selection strategy.
 
 ## Publishing and deployment
 
@@ -59,12 +61,14 @@ The planned n8n workflow for repeatable builds, regression tests and corrections
 across the entire Fedora45 image chain is described in
 [Fedora45 Build and Test Loop](upgrade-loop/README.md).
 
-Use scoped `fire.sh REPOSITORY...` publication and `fire-example-chain.sh`
+Use scoped `fire.sh REPOSITORY...` publication and `fire-example-chain.sh 45`
 for the single example chain. The build selector exposes the same six layers.
 GitHub Actions assigns the next `YYYY.M.N` version when `image_tag` is empty;
 an explicit `image_tag` must be an unused fixed version. Each build publishes
-that fixed tag and `latest`. `push_stable=true` additionally moves `stable` and
-is passed through a cascade; it defaults to false.
+that fixed tag; `push_latest=true` also moves `latest` and is the normal default.
+The upgrade loop uses `push_latest=false` until required tests pass.
+`push_stable=true` additionally moves `stable`; it defaults to false. Both
+publishing flags are passed through the cascade.
 
 The canonical image packages are private. Use the existing Smart1 workflow for
 pulls. Full remains optional; changes to deployed catalog entries, instance
