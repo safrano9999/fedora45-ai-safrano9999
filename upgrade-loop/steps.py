@@ -543,6 +543,9 @@ subprocess.run(['openclaw','message','send','--channel','telegram','--target',ta
 
 
 def main():
+    if sys.argv[1:] == ["--check"] or (sys.argv[1:] == ["--ssh"] and re.search(r"\bfedora45-loop --check\s*$", os.environ.get("SSH_ORIGINAL_COMMAND", ""))):
+        os.chdir(ROOT)
+        os.execl("/usr/bin/bash", "bash", "-o", "pipefail", "-c", "./check-versions.sh | sed -E 's/^(Hermes|OpenClaw): up to date — version: (.*)$/✅ \\1 version \\2 is actual/; s/^(Hermes|OpenClaw): New version available! actual ([^,]+), latest (.*)$/🟡 \\1 version \\2 is deprecated, new: \\3/' | tac")
     if sys.argv[1:] == ["--ssh"]:
         original = os.environ.get("SSH_ORIGINAL_COMMAND", "")
         match = re.search(r"\bfedora45-loop ([a-z-]+) ([A-Za-z0-9_-]{1,80})(?: ([A-Za-z0-9_=-]{1,65536}))?\s*$", original)

@@ -6,7 +6,9 @@ The Fedora45 migration upgrades Hermes to 0.21.2 and OpenClaw to 2026.9.4, inclu
 
 The manual Fedora45 bootstrap records its [pre-migration baseline](evidence/fedora45-2026.9.1-baseline.json). Repeatable container probes cover [agent model replies](probes/runtime-models.py) and the installed [per-agent MCP projection](probes/runtime-mcp-projection.mjs); model probes use dedicated sessions without channel delivery.
 
-The four workflows now contain deterministic host adapters and explicit decision conditions. They remain manual and inactive; **no workflow test run is performed during installation**. The first end-to-end validation takes place with the next real upstream upgrade.
+The four workflows contain deterministic host adapters and explicit decision conditions. The main workflow also accepts authenticated POST requests at `/webhook/fedora45-update-loop`: an empty body starts the existing run; the literal body `--check` returns only two version-status lines as `text/plain` and ends. Only this check branch is exercised during installation; the complete upgrade workflow is validated with the next real upstream upgrade.
+
+Optional `N8N_URL` and `N8N_BEARER` enable the check in existing Safrano9999 fullrun schedules. Both must be non-empty. The image calls `curl --data-raw '--check'`, prints the response and delivers those two lines through the configured main Telegram account. Current versions use `✅`; available updates use `🟡`. The normal workflow, its gates and tagging semantics remain unchanged.
 
 **Live sequence:** build fixed candidates → Smart1 pull → recreate the existing instance with its original volumes → wait until that container start is five minutes old → run the required checks → promote the exact image to `verified` and `latest` → set the Quadlet to `latest` and daemon-reload, without another restart. A failed live check restores `stable` with the same volumes.
 

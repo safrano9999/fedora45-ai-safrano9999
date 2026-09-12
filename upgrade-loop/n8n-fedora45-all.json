@@ -1288,7 +1288,7 @@
   {
     "id": "fedora45LoopDraft",
     "name": "Fedora45 Image Update Loop",
-    "active": false,
+    "active": true,
     "nodes": [
       {
         "id": "f23bf02a-59bc-598b-8482-22e5a1cccec7",
@@ -3627,6 +3627,146 @@
           "options": {}
         },
         "notes": ""
+      },
+      {
+        "id": "a8be05e9-68e8-4a69-804a-870e0150a5aa",
+        "name": "Webhook - existing run or --check",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          -660,
+          450
+        ],
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "fedora45-update-loop",
+          "authentication": "headerAuth",
+          "responseMode": "responseNode",
+          "options": {
+            "rawBody": true
+          }
+        },
+        "webhookId": "851b669a-1ae5-4167-bac0-59e3d2e6555a",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "fedora45WebhookBearer",
+            "name": "Fedora45 webhook bearer"
+          }
+        }
+      },
+      {
+        "id": "b29fb3cc-18af-43ce-8311-770b1fb822c0",
+        "name": "Read optional --check",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -440,
+          450
+        ],
+        "parameters": {
+          "jsCode": "const raw = (await this.helpers.getBinaryDataBuffer(0, 'data')).toString('utf8').trim();\nif (raw !== '' && raw !== '--check') throw new Error('Expected an empty body or --check');\nreturn [{json: {check: raw === '--check'}}];"
+        }
+      },
+      {
+        "id": "b8ba37bc-07c1-4fd9-a4d5-23d04fd23261",
+        "name": "--check?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          -220,
+          450
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "be3fa050-ff84-4ded-8ad2-67d3b488a6b8",
+                "leftValue": "={{ $json.check }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "331ff571-32bd-4f27-8613-9e929394b373",
+        "name": "Run --check - stdout only",
+        "type": "n8n-nodes-base.ssh",
+        "typeVersion": 1,
+        "position": [
+          0,
+          650
+        ],
+        "parameters": {
+          "authentication": "privateKey",
+          "resource": "command",
+          "operation": "execute",
+          "cwd": "/var/tmp",
+          "command": "/var/home/core/.local/bin/fedora45-loop --check"
+        },
+        "disabled": false,
+        "notes": "Read-only version check. Plain stdout only; no Run object, tags, build, repair, PDF or Telegram from n8n.",
+        "credentials": {
+          "sshPrivateKey": {
+            "id": "fedora45HostRunner",
+            "name": "Fedora45 host runner"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "retryOnFail": false
+      },
+      {
+        "id": "3212c762-046c-4db2-9b9a-a16dbad87d24",
+        "name": "Return two stdout lines",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          220,
+          650
+        ],
+        "parameters": {
+          "respondWith": "text",
+          "responseBody": "={{ $json.stdout ?? \"\" }}",
+          "options": {
+            "responseCode": "={{ $json.code === 0 ? 200 : 502 }}",
+            "responseHeaders": {
+              "entries": [
+                {
+                  "name": "Content-Type",
+                  "value": "text/plain; charset=utf-8"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": "efe8ecf8-1114-4cbd-b7e7-83c4c28bf58d",
+        "name": "Accept existing full run",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          0,
+          350
+        ],
+        "parameters": {
+          "respondWith": "noData",
+          "options": {
+            "responseCode": 202
+          }
+        }
       }
     ],
     "connections": {
@@ -4692,6 +4832,68 @@
           [
             {
               "node": "Abort - record failure",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook - existing run or --check": {
+        "main": [
+          [
+            {
+              "node": "Read optional --check",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read optional --check": {
+        "main": [
+          [
+            {
+              "node": "--check?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "--check?": {
+        "main": [
+          [
+            {
+              "node": "Run --check - stdout only",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Accept existing full run",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Run --check - stdout only": {
+        "main": [
+          [
+            {
+              "node": "Return two stdout lines",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Accept existing full run": {
+        "main": [
+          [
+            {
+              "node": "Run check-versions.sh",
               "type": "main",
               "index": 0
             }

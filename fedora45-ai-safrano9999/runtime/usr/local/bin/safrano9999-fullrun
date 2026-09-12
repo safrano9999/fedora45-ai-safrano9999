@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if (( $# == 0 )); then
+  set -- /usr/local/bin/openclaw-ephemeral.py dispatch --repos "${OPENCLAW_CRONTAB_REPOS:-WELCOME,NEXTCLOUD,DAILYNEWS,ZEROINBOX,SPANKER,KACHELMANN}"
+fi
+status=0
+"$@" || status=$?
+if output=$(/usr/local/bin/fedora45-update-check); then
+  if [[ -n $output ]]; then
+    printf '%s\n' "$output"
+    openclaw message send --channel telegram --target "$OPENCLAW_TELEGRAM_CHAT_ID" --message "$output" >/dev/null
+  fi
+else
+  status=1
+fi
+exit "$status"
