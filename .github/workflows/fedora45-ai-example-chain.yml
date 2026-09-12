@@ -1,5 +1,5 @@
 # Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
-name: fedora44-ai example chain
+name: fedora45-ai example chain
 
 on:
   workflow_dispatch:

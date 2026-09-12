@@ -1,0 +1,859 @@
+{
+  "id": "fedora45Repair",
+  "name": "Fedora45 Shared Artifact Repair",
+  "nodes": [
+    {
+      "id": "d23d4997-1bb9-560c-b582-eaaf2445325a",
+      "name": "Repair attempts remaining?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "disabled": true,
+      "notes": "Layout placeholder. Future deterministic counter and configured turn limit. Stop and report when exhausted."
+    },
+    {
+      "id": "cc3c2405-15cf-50fc-869f-e75a83107dd9",
+      "name": "Verify captured response and live data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nconst out=$input.all().map(i=> {const j=structuredClone(i.json); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Verify captured response and live data\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+      },
+      "disabled": true,
+      "notes": "Layout placeholder. Run candidate script against captured input and fresh input using deterministic validation. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+    },
+    {
+      "id": "2b9905d4-27e6-5bbe-8e4b-338e2cddbe88",
+      "name": "Verify historical fixtures",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nconst out=$input.all().map(i=> {const j=structuredClone(i.json); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Verify historical fixtures\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+      },
+      "disabled": true,
+      "notes": "Layout placeholder. Existing supported formats must continue to work. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+    },
+    {
+      "id": "a0aac9de-6e90-5bae-8cd3-d504ab80fb54",
+      "name": "Repair verification passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1020,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "disabled": true,
+      "notes": "Layout placeholder. On failure return to the repair budget gate; a passing result proceeds to review."
+    },
+    {
+      "id": "357ad5a6-1133-53b8-96b3-97e8f1688db8",
+      "name": "Review script correction",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nconst out=$input.all().map(i=> {const j=structuredClone(i.json); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Review script correction\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+      },
+      "disabled": true,
+      "notes": "Layout placeholder. Review or PR stage before adopting the candidate. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+    },
+    {
+      "id": "553dcb73-0bc2-51a6-a058-ec11f624916d",
+      "name": "Correction approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        240
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "disabled": true,
+      "notes": "Layout placeholder. Rejected corrections return to the bounded repair loop."
+    },
+    {
+      "id": "9d59428b-f0af-505a-aadd-be6f68eb6785",
+      "name": "Commit and adopt repaired script",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nconst out=$input.all().map(i=> {const j=structuredClone(i.json); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Commit and adopt repaired script\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+      },
+      "disabled": true,
+      "notes": "Layout placeholder. Adopt the verified correction, then rerun the version check. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+    },
+    {
+      "id": "025310e5-7851-51bd-95ab-ee1af814d7ce",
+      "name": "Ephemeral repair attempts remaining?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        680,
+        240
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "disabled": true,
+      "notes": "Layout placeholder. Deterministic per-generator attempt counters and configured turn limits. Stop and report when any required correction exhausts its budget; never weaken the acceptance tests."
+    },
+    {
+      "id": "39246da5-ce47-52f1-a7b9-fd54b5896e6f",
+      "name": "Retest ephemeral generators",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nconst out=$input.all().map(i=> {const j=structuredClone(i.json); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Retest ephemeral generators\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+      },
+      "disabled": true,
+      "notes": "Layout placeholder. Deterministically retest changed generator commits against their exact target and frozen current upstream versions, with fixture regressions and runtime configuration checks. Refresh the complete component result set and record every attempt. Do not replace mandatory checks with an LLM judgment. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+    },
+    {
+      "id": "ae8fc95c-4ccb-5156-82a0-9b5dc11e7e77",
+      "name": "Receive artifact and run",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        240
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "disabled": true
+    },
+    {
+      "id": "23966eef-5fdd-5edb-9846-9fe8b9e3c807",
+      "name": "Select artifact policy",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        0,
+        480
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "28369590-8cce-4fae-b12d-31a1b0549364",
+                    "leftValue": "={{ $json.repairRequest.type }}",
+                    "rightValue": "version-script",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "version-script"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "284b445a-93e0-4683-9fa2-3a29b9783fa4",
+                    "leftValue": "={{ $json.repairRequest.type }}",
+                    "rightValue": "ephemeral",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ephemeral"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "id": "98be42cc-203a-5b41-b3da-1829308a7a89",
+      "name": "Select deterministic verifier",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        340,
+        480
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "348acaf1-0fb4-4f98-9983-3f67e515cafc",
+                    "leftValue": "={{ $json.repairRequest.type }}",
+                    "rightValue": "version-script",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "version-script"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "8f9a7b00-9ec9-4435-87b7-934eeec0159b",
+                    "leftValue": "={{ $json.repairRequest.type }}",
+                    "rightValue": "ephemeral",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ephemeral"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "id": "5d3e1627-5639-48a3-bfef-4ec97e92a85e",
+      "name": "Propose artifact correction",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        680,
+        480
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=Prepare a minimal fix for the artifact below. Return the fix proposal only; never claim verification or approval. Preserve acceptance criteria, current-version behavior and SOT approval requirements. Input: {{ JSON.stringify($json.repairRequest) }}"
+      },
+      "disabled": true,
+      "notes": "Disabled skeleton. Uses Astra through the local LiteLLM service. Prompt and input mapping are intentionally pending. Prepare a version-parser correction only on validation failure; deterministic tests and review still decide adoption."
+    },
+    {
+      "id": "c34ebdbb-f7b8-4507-9f18-b76c058e5f2f",
+      "name": "Astra - LiteLLM (shared repair)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1020,
+        480
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "astra",
+          "mode": "id"
+        },
+        "responsesApiEnabled": true,
+        "options": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "fedora45LiteLLM",
+          "name": "LiteLLM - Astra (core network)"
+        }
+      },
+      "disabled": true,
+      "notes": "Configured model: astra → chatgpt/gpt-6-astra. Direct internal endpoint http://litellm-database:4000/v1 on Podman network core. The credential is stored only in local n8n; its LiteLLM key is limited to astra. No proxy or external URL is involved."
+    },
+    {
+      "id": "8f3ef464-2430-5d6f-9750-09ee8807dabc",
+      "name": "Count attempt and retain input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        480
+      ],
+      "parameters": {
+        "jsCode": "const previous=$prevNode; if ([\"Repair attempts remaining?\", \"Repair verification passed?\", \"Correction approved?\", \"Ephemeral repair attempts remaining?\", \"All integrations covered and passed?\", \"Result clean?\", \"Update available?\", \"Preflight passed?\", \"Build successful?\", \"All checklist items passed?\", \"New container healthy?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Own patches compatible?\", \"Own patch regressions passed?\", \"Ephemeral prechecks completed?\", \"Ephemeral generators compatible?\", \"Ephemeral publication verified?\"].includes(previous.name)) for (const item of $input.all()) { item.json.run ??= {id:String($execution.id),events:[],summaries:[]}; item.json.run.events.push({kind:\"decision\",step:previous.name,branch:previous.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); }\nreturn $input.all().map(i => { const j=structuredClone(i.json); j.run ??= {id:String($execution.id),events:[],summaries:[]}; j.run.repairAttempts ??= {}; const key=j.repairRequest.artifact; j.repairRequest.attempt=(j.run.repairAttempts[key] ?? 0)+1; j.run.repairAttempts[key]=j.repairRequest.attempt; return {...i,json:j}; });",
+        "mode": "runOnceForAllItems"
+      },
+      "disabled": true
+    },
+    {
+      "id": "719c8048-1488-51ec-8669-be46385e0451",
+      "name": "Restore context and fix proposal",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        720
+      ],
+      "parameters": {
+        "jsCode": "const input=$(\"Count attempt and retain input\").item.json; return $input.all().map(i => ({...i,json:{...structuredClone(input),repairResult:{proposal:i.json.text ?? i.json.output ?? null,verification:\"NOT_TESTED\",attempt:input.repairRequest.attempt}}}));",
+        "mode": "runOnceForAllItems"
+      },
+      "disabled": true
+    },
+    {
+      "id": "0f707a7a-6d31-5069-a1e3-af7471c8ed6e",
+      "name": "Return repaired script",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        720
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({...i,json:{...i.json,repairRoute:\"version-check\",repairResult:{...i.json.repairResult,verification:i.json.repairResult?.verification ?? \"PASS\",attempt:i.json.repairRequest?.attempt ?? 0}}}));",
+        "mode": "runOnceForAllItems"
+      },
+      "disabled": true
+    },
+    {
+      "id": "815ac37b-a924-5b4e-8053-acfe01020e90",
+      "name": "Return ephemeral retest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        720
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({...i,json:{...i.json,repairRoute:\"ephemeral-check\",repairResult:{...i.json.repairResult,verification:i.json.repairResult?.verification ?? \"NOT_TESTED\",attempt:i.json.repairRequest?.attempt ?? 0}}}));",
+        "mode": "runOnceForAllItems"
+      },
+      "disabled": true
+    },
+    {
+      "id": "c0b358c9-1c29-561a-990c-111711967b6a",
+      "name": "Return repair exhausted",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        720
+      ],
+      "parameters": {
+        "jsCode": "const previous=$prevNode; if ([\"Repair attempts remaining?\", \"Repair verification passed?\", \"Correction approved?\", \"Ephemeral repair attempts remaining?\", \"All integrations covered and passed?\", \"Result clean?\", \"Update available?\", \"Preflight passed?\", \"Build successful?\", \"All checklist items passed?\", \"New container healthy?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Own patches compatible?\", \"Own patch regressions passed?\", \"Ephemeral prechecks completed?\", \"Ephemeral generators compatible?\", \"Ephemeral publication verified?\"].includes(previous.name)) for (const item of $input.all()) { item.json.run ??= {id:String($execution.id),events:[],summaries:[]}; item.json.run.events.push({kind:\"decision\",step:previous.name,branch:previous.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); }\nreturn $input.all().map(i => ({...i,json:{...i.json,repairRoute:\"abort\",repairResult:{...i.json.repairResult,verification:i.json.repairResult?.verification ?? \"FAIL\",attempt:i.json.repairRequest?.attempt ?? 0}}}));",
+        "mode": "runOnceForAllItems"
+      },
+      "disabled": true
+    },
+    {
+      "id": "de361900-7bf8-58f0-98ed-38720f65c319",
+      "name": "Checkpoint - Repair attempts remaining?",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1360,
+        720
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "fedora45StepReport",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "checkpoint": "{\"kind\": \"decision\", \"step\": \"Repair attempts remaining?\"}",
+            "reportMode": "checkpoint",
+            "previousDecision": "={{ {name:$prevNode.name,output:$prevNode.outputIndex} }}"
+          },
+          "schema": []
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "disabled": true
+    },
+    {
+      "id": "fa532b23-9a82-57ec-9db4-8b8b2c4d54c2",
+      "name": "Checkpoint - Repair verification passed?",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        960
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "fedora45StepReport",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "checkpoint": "{\"kind\": \"decision\", \"step\": \"Repair verification passed?\"}",
+            "reportMode": "checkpoint",
+            "previousDecision": "={{ {name:$prevNode.name,output:$prevNode.outputIndex} }}"
+          },
+          "schema": []
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "disabled": true
+    },
+    {
+      "id": "5179a433-42dd-5860-9558-fdb8bcc72871",
+      "name": "Checkpoint - Correction approved?",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        340,
+        960
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "fedora45StepReport",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "checkpoint": "{\"kind\": \"decision\", \"step\": \"Correction approved?\"}",
+            "reportMode": "checkpoint",
+            "previousDecision": "={{ {name:$prevNode.name,output:$prevNode.outputIndex} }}"
+          },
+          "schema": []
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "disabled": true
+    },
+    {
+      "id": "b6298aad-c8d0-58c6-bfa0-f61ecbf3ed9e",
+      "name": "Checkpoint - Ephemeral repair attempts remaining?",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        680,
+        960
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "fedora45StepReport",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "checkpoint": "{\"kind\": \"decision\", \"step\": \"Ephemeral repair attempts remaining?\"}",
+            "reportMode": "checkpoint",
+            "previousDecision": "={{ {name:$prevNode.name,output:$prevNode.outputIndex} }}"
+          },
+          "schema": []
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "disabled": true
+    }
+  ],
+  "connections": {
+    "Receive artifact and run": {
+      "main": [
+        [
+          {
+            "node": "Select artifact policy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select artifact policy": {
+      "main": [
+        [
+          {
+            "node": "Checkpoint - Repair attempts remaining?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Checkpoint - Ephemeral repair attempts remaining?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return repair exhausted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repair attempts remaining?": {
+      "main": [
+        [
+          {
+            "node": "Count attempt and retain input",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return repair exhausted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ephemeral repair attempts remaining?": {
+      "main": [
+        [
+          {
+            "node": "Count attempt and retain input",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return repair exhausted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count attempt and retain input": {
+      "main": [
+        [
+          {
+            "node": "Propose artifact correction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Astra - LiteLLM (shared repair)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Propose artifact correction",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Propose artifact correction": {
+      "main": [
+        [
+          {
+            "node": "Restore context and fix proposal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore context and fix proposal": {
+      "main": [
+        [
+          {
+            "node": "Select deterministic verifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select deterministic verifier": {
+      "main": [
+        [
+          {
+            "node": "Verify captured response and live data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Retest ephemeral generators",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return repair exhausted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify captured response and live data": {
+      "main": [
+        [
+          {
+            "node": "Verify historical fixtures",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify historical fixtures": {
+      "main": [
+        [
+          {
+            "node": "Checkpoint - Repair verification passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repair verification passed?": {
+      "main": [
+        [
+          {
+            "node": "Review script correction",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Checkpoint - Repair attempts remaining?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review script correction": {
+      "main": [
+        [
+          {
+            "node": "Checkpoint - Correction approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Correction approved?": {
+      "main": [
+        [
+          {
+            "node": "Commit and adopt repaired script",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Checkpoint - Repair attempts remaining?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Commit and adopt repaired script": {
+      "main": [
+        [
+          {
+            "node": "Return repaired script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retest ephemeral generators": {
+      "main": [
+        [
+          {
+            "node": "Return ephemeral retest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checkpoint - Repair attempts remaining?": {
+      "main": [
+        [
+          {
+            "node": "Repair attempts remaining?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checkpoint - Repair verification passed?": {
+      "main": [
+        [
+          {
+            "node": "Repair verification passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checkpoint - Correction approved?": {
+      "main": [
+        [
+          {
+            "node": "Correction approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checkpoint - Ephemeral repair attempts remaining?": {
+      "main": [
+        [
+          {
+            "node": "Ephemeral repair attempts remaining?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "pinData": {}
+}

@@ -1,0 +1,12 @@
+{
+  "main_before": 158,
+  "main_after": 78,
+  "report_calls_before": 81,
+  "report_calls_after": 23,
+  "report_call_reduction_percent": 71.6,
+  "repair_nodes": 23,
+  "integration_nodes": 12,
+  "reporter_nodes": 8,
+  "existing_if_conditions_unchanged": true,
+  "application_adapters": "Existing skeleton; not implemented by structural refactoring"
+}

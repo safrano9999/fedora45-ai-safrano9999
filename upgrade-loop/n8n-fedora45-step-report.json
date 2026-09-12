@@ -1,131 +1,118 @@
 {
   "id": "fedora45StepReport",
-  "name": "Fedora45 Step Report",
-  "active": false,
+  "name": "Fedora45 Checkpoint Summary and Final PDF",
   "nodes": [
     {
-      "id": "bcdfa176-19ee-59a0-9cff-8d7622456e9a",
-      "name": "Reporter design",
-      "type": "n8n-nodes-base.stickyNote",
+      "id": "4cec869f-5f1d-53a5-87fe-aa07b57010ef",
+      "name": "Receive checkpoint or final run",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1,
       "position": [
-        -80,
-        -200
-      ],
-      "parameters": {
-        "content": "## Shared per-step PDF reporter\n**Skeleton only.** Called once after each executed business step or selected decision branch.\nPersist facts → LLM summary (1–2 sentences) → deterministic fallback if needed → append to the run PDF → preserve and return the original result.\nThe reporter does not log itself recursively. The main workflow sends the final PDF through OpenClaw → Telegram.\n**Selected model:** Astra via local LiteLLM. Prompt and data mapping are still pending.",
-        "width": 2060,
-        "height": 260,
-        "color": 6
-      }
-    },
-    {
-      "id": "a98eb7cd-6a82-5bb2-9b79-dea3aae529f9",
-      "name": "Receive completed step",
-      "type": "n8n-nodes-base.executeWorkflowTrigger",
-      "typeVersion": 1.2,
-      "position": [
         0,
-        120
+        0
       ],
       "parameters": {
         "inputSource": "passthrough"
       },
-      "disabled": true,
-      "notes": "Layout placeholder. Receive run ID, step, sequence/attempt, branch, deterministic result, duration, artifacts, and original pipeline data. Also accept failure/timeout results."
+      "disabled": true
     },
     {
-      "id": "89c6b612-1fdb-50e4-bdb9-4bd1383fec33",
-      "name": "Persist result and redact secrets",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "id": "39b9f9d0-2d1b-5c6e-83a8-e3a5e4fb4b64",
+      "name": "Prepare checkpoint and preserve payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        280,
-        120
+        340,
+        0
       ],
-      "parameters": {},
-      "disabled": true,
-      "notes": "Layout placeholder. Persist the machine-readable step record first; sanitize any content before passing it to the LLM or PDF."
+      "parameters": {
+        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nreturn $input.all().map(i=>{const j=structuredClone(i.json); const mode=j.reportMode; const checkpoint=typeof j.checkpoint===\"string\"?JSON.parse(j.checkpoint):j.checkpoint; const prev=j.previousDecision; delete j.reportMode;delete j.checkpoint;delete j.previousDecision;j.run ??= {id:String($execution.id),events:[],summaries:[]}; if (prev && [\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.output===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); return {...i,json:{payload:j,reportMode:mode,checkpoint,summaryInput:safe(j.run.events)}};});",
+        "mode": "runOnceForAllItems"
+      },
+      "disabled": true
     },
     {
-      "id": "8dd93bdf-2fd7-54d0-8e27-2d3a61028145",
-      "name": "LLM - summarize in 1–2 sentences",
+      "id": "a2fde521-aec4-58ca-a7da-ee42cf4b40b0",
+      "name": "Checkpoint or final render",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        680,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "929dfb67-b452-47e4-bd4e-9e7083fcea06",
+                    "leftValue": "={{ $json.reportMode }}",
+                    "rightValue": "checkpoint",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "checkpoint"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "71343d6f-72dd-49ae-97a1-e21c352b5e79",
+                    "leftValue": "={{ $json.reportMode }}",
+                    "rightValue": "final",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "final"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "id": "2ce9206d-4cb4-4552-a26c-d73e7551cb04",
+      "name": "Summarize checkpoint",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.9,
       "position": [
-        560,
-        120
+        1020,
+        0
       ],
       "parameters": {
         "promptType": "define",
-        "text": ""
+        "text": "=Summarize this checkpoint in 1–2 English sentences, using only recorded facts. Preserve failures and NOT_TESTED; do not make decisions or infer success. Checkpoint: {{ JSON.stringify($json.checkpoint) }} Records: {{ JSON.stringify($json.summaryInput) }}"
       },
       "disabled": true,
-      "notes": "Disabled skeleton. Uses Astra through the local LiteLLM service. Prompt and input mapping are intentionally pending. Write 1–2 concise English sentences from the sanitized deterministic step result. Preserve pass/fail status; use the existing fallback path on failure."
-    },
-    {
-      "id": "55be2053-8fe2-5d01-85e1-3b023b638cad",
-      "name": "Summary available and usable?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        840,
-        120
-      ],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          },
-          "conditions": [],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "disabled": true,
-      "notes": "Layout placeholder. Accept a concise summary only if available and consistent with the recorded outcome. Model failure, timeout, or invalid output uses the fallback."
-    },
-    {
-      "id": "327bf8c9-e772-59cd-b0b8-56805a273e9e",
-      "name": "Use deterministic fallback summary",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        1120,
-        340
-      ],
-      "parameters": {},
-      "disabled": true,
-      "notes": "Layout placeholder. Use step name, status, and concise recorded error/result when the LLM cannot provide a valid summary."
-    },
-    {
-      "id": "123f6e3e-1cee-51cc-a64f-798032dc4eec",
-      "name": "Append step and save run PDF",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        1400,
-        120
-      ],
-      "parameters": {},
-      "disabled": true,
-      "notes": "Layout placeholder. Append this step section in execution order to one report per run and update its PDF immediately. Preserve deterministic status and include repeated attempts. Use an atomic save; retain the structured record if rendering fails for final regeneration."
-    },
-    {
-      "id": "a5cd5609-0ae3-540f-89d5-5930e8792f10",
-      "name": "Return original step result",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        1680,
-        120
-      ],
-      "parameters": {},
-      "disabled": true,
-      "notes": "Layout placeholder. Return the original pipeline data and branch result unchanged, with the report reference. Reporting must not alter decision outcomes."
+      "notes": "Disabled skeleton. Uses Astra through the local LiteLLM service. Prompt and input mapping are intentionally pending. Write 1–2 concise English sentences from the sanitized deterministic step result. Preserve pass/fail status; use the existing fallback path on failure.",
+      "onError": "continueRegularOutput"
     },
     {
       "id": "991775fd-fcb6-5818-8b57-3d25fe113c25",
@@ -133,8 +120,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        560,
-        670
+        1360,
+        0
       ],
       "parameters": {
         "model": {
@@ -153,76 +140,117 @@
       },
       "disabled": true,
       "notes": "Configured model: astra → chatgpt/gpt-6-astra. Direct internal endpoint http://litellm-database:4000/v1 on Podman network core. The credential is stored only in local n8n; its LiteLLM key is limited to astra. No proxy or external URL is involved."
+    },
+    {
+      "id": "4f4172f8-24d1-5a7b-b8e1-93c45bb5660c",
+      "name": "Return original payload with summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        240
+      ],
+      "parameters": {
+        "jsCode": "const input=$(\"Prepare checkpoint and preserve payload\").item.json; return $input.all().map(i=>{const j=structuredClone(input.payload); const text=typeof i.json.text===\"string\" && i.json.text.trim()?i.json.text.trim():\"Checkpoint recorded. See deterministic step results.\";j.run.summaries.push({checkpoint:input.checkpoint,timestamp:new Date().toISOString(),text});return {...i,json:j};});",
+        "mode": "runOnceForAllItems"
+      },
+      "disabled": true
+    },
+    {
+      "id": "b0af59a3-b685-5cc4-8539-d343ecb91d39",
+      "name": "Render complete run PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        240
+      ],
+      "parameters": {
+        "jsCode": "throw new Error(\"NOT_IMPLEMENTED: connect the existing final PDF renderer to the complete payload.run; do not render incrementally or report success without a PDF.\");",
+        "mode": "runOnceForAllItems"
+      },
+      "disabled": true
+    },
+    {
+      "id": "2c5dfd57-50e1-5056-884f-ec2b318d5ea3",
+      "name": "Return final report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        240
+      ],
+      "parameters": {
+        "jsCode": "return $input.all();",
+        "mode": "runOnceForAllItems"
+      },
+      "disabled": true
     }
   ],
   "connections": {
-    "Receive completed step": {
+    "Receive checkpoint or final run": {
       "main": [
         [
           {
-            "node": "Persist result and redact secrets",
+            "node": "Prepare checkpoint and preserve payload",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Persist result and redact secrets": {
+    "Prepare checkpoint and preserve payload": {
       "main": [
         [
           {
-            "node": "LLM - summarize in 1–2 sentences",
+            "node": "Checkpoint or final render",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "LLM - summarize in 1–2 sentences": {
+    "Checkpoint or final render": {
       "main": [
         [
           {
-            "node": "Summary available and usable?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Summary available and usable?": {
-      "main": [
-        [
-          {
-            "node": "Append step and save run PDF",
+            "node": "Summarize checkpoint",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Use deterministic fallback summary",
+            "node": "Render complete run PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Render complete run PDF",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Use deterministic fallback summary": {
+    "Summarize checkpoint": {
       "main": [
         [
           {
-            "node": "Append step and save run PDF",
+            "node": "Return original payload with summary",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Append step and save run PDF": {
+    "Render complete run PDF": {
       "main": [
         [
           {
-            "node": "Return original step result",
+            "node": "Return final report",
             "type": "main",
             "index": 0
           }
@@ -233,7 +261,7 @@
       "ai_languageModel": [
         [
           {
-            "node": "LLM - summarize in 1–2 sentences",
+            "node": "Summarize checkpoint",
             "type": "ai_languageModel",
             "index": 0
           }
@@ -241,9 +269,11 @@
       ]
     }
   },
+  "active": false,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
   },
-  "pinData": {},
-  "tags": []
+  "pinData": {}
 }

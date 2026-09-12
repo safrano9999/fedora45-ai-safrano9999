@@ -2,8 +2,9 @@
 
 The initial Fedora45 migration retains the Fedora44 application pins (Hermes 0.21.0, OpenClaw 2026.9.3). Only the Fedora base, image namespace and DNF-managed Node 26 change. Subsequent application-upgrade goals below remain separate. Node patch versions are selected by Fedora repositories and recorded from the built image.
 
-[n8n workflow skeleton](n8n-fedora45-workflow.json) — connected placeholders only; implementation is pending.
-[Shared step-report skeleton](n8n-fedora45-step-report.json) — concise LLM summaries and incremental PDF updates.
+[Import all four n8n workflows](n8n-fedora45-all.json) · [Main loop](n8n-fedora45-workflow.json) · [Shared repair](n8n-fedora45-repair.json) · [Integration tests](n8n-fedora45-integration.json) · [Checkpoint reporting](n8n-fedora45-step-report.json).
+
+The main canvas contains 78 nodes instead of 158. Reporting calls drop from 81 to 23 (71.6%): structured results travel in the execution-local `run.events` array; Astra summarizes only decision checkpoints and outcomes. The final PDF is rendered once from the complete run. Application adapters and existing empty decision placeholders remain disabled and unimplemented; this refactoring does not make the deployment loop executable.
 
 The repair and reporting LLM nodes use **Astra** through local LiteLLM: `astra` → `chatgpt/gpt-6-astra`, at `http://litellm-database:4000/v1` on Podman network `core`. LiteLLM stores the model persistently; n8n stores its credential locally. Both workflows remain inactive, with prompts and execution logic still pending.
 
@@ -243,7 +244,7 @@ At the end of the loop (success, no update, rollback, or abort), the complete PD
 
 ## Overall flow (simplified)
 
-Orchestrated end-to-end as an **n8n workflow**; steps marked `[mcp-safrano9999]` are executed via that MCP server. After every business step or selected branch: **LLM summary → append to the run PDF → continue**.
+Orchestrated end-to-end as an **n8n workflow**; steps marked `[mcp-safrano9999]` are executed via that MCP server. After every business step or selected branch: **LLM summary → collect in the run for the final PDF → continue**.
 
 ```
 check-versions.sh ──► Result clean? ──no──► Self-healing loop (AI + verification)

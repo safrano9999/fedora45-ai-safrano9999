@@ -1,0 +1,344 @@
+{
+  "id": "fedora45Integration",
+  "name": "Fedora45 Full Integration Tests",
+  "nodes": [
+    {
+      "id": "72bb0ff2-ce8e-5cef-a7cd-e38e410cbec2",
+      "name": "Inventory all agents MCP models and links",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nconst out=$input.all().map(i=> {const j=structuredClone(i.json); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Inventory all agents MCP models and links\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+      },
+      "disabled": true,
+      "notes": "Disabled skeleton. Read the intended configuration and enumerate every OpenClaw agent, Hermes agent/profile, MCP server and assignment, resolved primary/fallback model, Citadel link, and Tailscale link. Store expected counts and item identities. No fixed sample or silent omission; verify intentionally disabled entries as expected disabled. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+    },
+    {
+      "id": "69deeb1a-a250-5bd6-ac54-2ef57ef5d120",
+      "name": "Test OpenClaw MCP for every agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nconst out=$input.all().map(i=> {const j=structuredClone(i.json); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Test OpenClaw MCP for every agent\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+      },
+      "disabled": true,
+      "notes": "Disabled skeleton. For each OpenClaw agent, verify the exact expected MCP server/tool visibility, absence of unassigned servers, authentication, and a non-destructive tool call on every assigned enabled server. Compare against configured MCP_ALLOW. Record every agent-server result; listing alone is insufficient. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+    },
+    {
+      "id": "7d0b4c1e-454b-5c85-a354-ee3e2f1c0dfd",
+      "name": "Test Hermes MCP for every agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nconst out=$input.all().map(i=> {const j=structuredClone(i.json); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Test Hermes MCP for every agent\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+      },
+      "disabled": true,
+      "notes": "Disabled skeleton. For every configured Hermes agent/profile, test authentication and a non-destructive tool call on every enabled MCP server. Hermes ignores the OpenClaw per-agent MCP selection field and keeps global MCP access. Record every agent-server result. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+    },
+    {
+      "id": "80637789-3604-5b85-a3ff-68c11cf4306e",
+      "name": "Test all OpenClaw agent models",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nconst out=$input.all().map(i=> {const j=structuredClone(i.json); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Test all OpenClaw agent models\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+      },
+      "disabled": true,
+      "notes": "Disabled skeleton. Resolve each agent’s inherited default or explicit primary model and configured fallbacks. Send a small real request through the candidate OpenClaw runtime for every agent-model combination. Verify credentials, usable response, and tool-calling compatibility; a models-list response alone is insufficient. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+    },
+    {
+      "id": "50e16ee6-310f-50a3-a3f8-f26411301963",
+      "name": "Test all Hermes agent models",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nconst out=$input.all().map(i=> {const j=structuredClone(i.json); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Test all Hermes agent models\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+      },
+      "disabled": true,
+      "notes": "Disabled skeleton. For each configured Hermes agent/profile, resolve default/explicit primary models and fallbacks, then send a small real request through the candidate Hermes runtime for each agent-model combination. Verify credentials, usable response, and tool-calling compatibility. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+    },
+    {
+      "id": "618620ac-5876-50d9-829d-97b2c92244f1",
+      "name": "Test Citadel and every configured link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nconst out=$input.all().map(i=> {const j=structuredClone(i.json); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Test Citadel and every configured link\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+      },
+      "disabled": true,
+      "notes": "Disabled skeleton. Start and render candidate Citadel. Match all rendered entries to the expected inventory, open every link, follow expected redirects/authentication, and verify the intended target page/service functions. For container-backed targets, prove the candidate image serves the response rather than the existing production instance. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+    },
+    {
+      "id": "2f1f35f8-ec93-553c-9da4-19e9e2747101",
+      "name": "Test every Tailscale link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        240
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nconst out=$input.all().map(i=> {const j=structuredClone(i.json); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Test every Tailscale link\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+      },
+      "disabled": true,
+      "notes": "Disabled skeleton. Probe every configured Tailscale URL/address from the intended tailnet client context, including links shown in Citadel. Verify DNS, routing, TLS where applicable, expected authentication, and the actual target response. Record the result for each link; do not silently skip inaccessible destinations. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+    },
+    {
+      "id": "2a38e93f-18e7-5f13-949c-00f2f6349c3e",
+      "name": "All integrations covered and passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        680,
+        240
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "disabled": true,
+      "notes": "Disabled skeleton. Require a recorded result for every expected agent-server assignment, model, Citadel link, and Tailscale link. Fail on missing coverage, FAIL, or NOT_TESTED. Preserve deterministic assignment checks and live-probe outcomes separately; all required checks must pass before promotion."
+    },
+    {
+      "id": "63517bcc-fecf-5b65-a5c2-42cee9038591",
+      "name": "Receive candidate and run",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        240
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "disabled": true
+    },
+    {
+      "id": "b935d6a4-85f0-571c-8963-760b8221c3ff",
+      "name": "Return coverage pass",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        240
+      ],
+      "parameters": {
+        "jsCode": "const previous=$prevNode; if ([\"Repair attempts remaining?\", \"Repair verification passed?\", \"Correction approved?\", \"Ephemeral repair attempts remaining?\", \"All integrations covered and passed?\", \"Result clean?\", \"Update available?\", \"Preflight passed?\", \"Build successful?\", \"All checklist items passed?\", \"New container healthy?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Own patches compatible?\", \"Own patch regressions passed?\", \"Ephemeral prechecks completed?\", \"Ephemeral generators compatible?\", \"Ephemeral publication verified?\"].includes(previous.name)) for (const item of $input.all()) { item.json.run ??= {id:String($execution.id),events:[],summaries:[]}; item.json.run.events.push({kind:\"decision\",step:previous.name,branch:previous.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); }\nreturn $input.all().map(i => ({...i, json:{...i.json, integration:{...i.json.integration, passed:true, status:\"PASS\", reportExecution:$execution.id}}}));",
+        "mode": "runOnceForAllItems"
+      },
+      "disabled": true
+    },
+    {
+      "id": "7e280ac4-1195-5967-b9f9-bff154ef6c8d",
+      "name": "Return coverage failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        480
+      ],
+      "parameters": {
+        "jsCode": "const previous=$prevNode; if ([\"Repair attempts remaining?\", \"Repair verification passed?\", \"Correction approved?\", \"Ephemeral repair attempts remaining?\", \"All integrations covered and passed?\", \"Result clean?\", \"Update available?\", \"Preflight passed?\", \"Build successful?\", \"All checklist items passed?\", \"New container healthy?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Own patches compatible?\", \"Own patch regressions passed?\", \"Ephemeral prechecks completed?\", \"Ephemeral generators compatible?\", \"Ephemeral publication verified?\"].includes(previous.name)) for (const item of $input.all()) { item.json.run ??= {id:String($execution.id),events:[],summaries:[]}; item.json.run.events.push({kind:\"decision\",step:previous.name,branch:previous.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); }\nreturn $input.all().map(i => ({...i, json:{...i.json, integration:{...i.json.integration, passed:false, status:\"FAIL\", reportExecution:$execution.id}}}));",
+        "mode": "runOnceForAllItems"
+      },
+      "disabled": true
+    },
+    {
+      "id": "9b36dd0a-6a78-5df9-a7ab-819cdf19ca83",
+      "name": "Checkpoint - All integrations covered and passed?",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        340,
+        480
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "fedora45StepReport",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "checkpoint": "{\"kind\": \"decision\", \"step\": \"All integrations covered and passed?\"}",
+            "reportMode": "checkpoint",
+            "previousDecision": "={{ {name:$prevNode.name,output:$prevNode.outputIndex} }}"
+          },
+          "schema": []
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "disabled": true
+    }
+  ],
+  "connections": {
+    "Receive candidate and run": {
+      "main": [
+        [
+          {
+            "node": "Inventory all agents MCP models and links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inventory all agents MCP models and links": {
+      "main": [
+        [
+          {
+            "node": "Test OpenClaw MCP for every agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test OpenClaw MCP for every agent": {
+      "main": [
+        [
+          {
+            "node": "Test Hermes MCP for every agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Hermes MCP for every agent": {
+      "main": [
+        [
+          {
+            "node": "Test all OpenClaw agent models",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test all OpenClaw agent models": {
+      "main": [
+        [
+          {
+            "node": "Test all Hermes agent models",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test all Hermes agent models": {
+      "main": [
+        [
+          {
+            "node": "Test Citadel and every configured link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Citadel and every configured link": {
+      "main": [
+        [
+          {
+            "node": "Test every Tailscale link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test every Tailscale link": {
+      "main": [
+        [
+          {
+            "node": "Checkpoint - All integrations covered and passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "All integrations covered and passed?": {
+      "main": [
+        [
+          {
+            "node": "Return coverage pass",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return coverage failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checkpoint - All integrations covered and passed?": {
+      "main": [
+        [
+          {
+            "node": "All integrations covered and passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "pinData": {}
+}
