@@ -63,6 +63,7 @@ RUN set -euo pipefail; \
       /tmp/note-latest.zip; \
     rm -f /tmp/note-latest.zip; \
     test -f /root/.openclaw/extensions/note/openclaw.plugin.json; \
+    sed -i 's/psycopg\[binary\]/psycopg/g' /root/.openclaw/extensions/note/requirements.txt; \
     note_python="$(/root/.openclaw/extensions/note/scripts/setup-python.sh)"; \
     "$note_python" -c 'import dotenv, sqlalchemy, psycopg, pymysql'; \
     rm -rf /root/.openclaw/extensions/note/.uv; \
