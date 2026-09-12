@@ -18,7 +18,7 @@ sys.dont_write_bytecode = True
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-HELPER = ROOT / "image/runtime/usr/local/libexec/fedora44-wait-ready"
+HELPER = ROOT / "image/runtime/usr/local/libexec/fedora45-wait-ready"
 
 
 class QuietHandler(http.server.BaseHTTPRequestHandler):

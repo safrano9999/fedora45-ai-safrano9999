@@ -20,22 +20,22 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 ENV ZEROINBOX_DIR=/opt/safrano9999/ZEROINBOX
 
 COPY .safrano9999-source-tags.tsv /README/safrano9999-source-tags.tsv
-COPY .fedora44-ai-repositories.list /usr/local/share/fedora44-ai/safrano9999-repositories.list
-COPY .fedora44-image-runtime/manifest.tsv /usr/local/share/fedora44-ai/safrano9999-runtime-files.tsv
-COPY .fedora44-image-runtime/systemd-enable.list /usr/local/share/fedora44-ai/safrano9999-systemd-enable.list
-COPY .fedora44-image-runtime/rootfs/ /
+COPY .fedora45-ai-repositories.list /usr/local/share/fedora45-ai/safrano9999-repositories.list
+COPY .fedora45-image-runtime/manifest.tsv /usr/local/share/fedora45-ai/safrano9999-runtime-files.tsv
+COPY .fedora45-image-runtime/systemd-enable.list /usr/local/share/fedora45-ai/safrano9999-systemd-enable.list
+COPY .fedora45-image-runtime/rootfs/ /
 
 COPY safrano9999/ /opt/safrano9999/
 RUN sed -i 's/psycopg\[binary\]/psycopg/g' /opt/safrano9999/*/requirements.txt
 
-COPY .fedora44-image-buildtime/ /tmp/fedora44-image-buildtime/
-COPY build/run-container-buildtime.sh /tmp/fedora44-image-buildtime/run-container-buildtime
+COPY .fedora45-image-buildtime/ /tmp/fedora45-image-buildtime/
+COPY build/run-container-buildtime.sh /tmp/fedora45-image-buildtime/run-container-buildtime
 RUN --network=none \
-    /tmp/fedora44-image-buildtime/run-container-buildtime \
-      /tmp/fedora44-image-buildtime \
+    /tmp/fedora45-image-buildtime/run-container-buildtime \
+      /tmp/fedora45-image-buildtime \
       fedora45-ai-safrano9999 \
       /opt/safrano9999 \
- && rm -rf /tmp/fedora44-image-buildtime \
+ && rm -rf /tmp/fedora45-image-buildtime \
  && rm -rf /opt/safrano9999/*/image/runtime
 
 RUN /usr/local/bin/openclaw-ephemeral.py configure \
@@ -44,7 +44,7 @@ RUN /usr/local/bin/openclaw-ephemeral.py configure \
 RUN while IFS= read -r unit || [ -n "$unit" ]; do \
       [ -n "$unit" ] || continue; \
       systemctl enable "$unit"; \
-    done < /usr/local/share/fedora44-ai/safrano9999-systemd-enable.list
+    done < /usr/local/share/fedora45-ai/safrano9999-systemd-enable.list
 
 USER root
 WORKDIR /root

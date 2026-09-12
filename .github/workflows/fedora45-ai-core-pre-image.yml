@@ -202,8 +202,8 @@ jobs:
               nmap lnd lncli geth solana electrum persistainer; do
               command -v "$command" >/dev/null
             done
-            test -x /usr/local/libexec/fedora44-wait-ready
-            /usr/local/libexec/fedora44-wait-ready --help >/dev/null
+            test -x /usr/local/libexec/fedora45-wait-ready
+            /usr/local/libexec/fedora45-wait-ready --help >/dev/null
             env -i PATH=/usr/local/bin:/usr/bin:/bin persistainer
             for unit in persistainer.service tailscaled.service \
               tailscale-up.service cloudflared.service cockpit.service \
@@ -256,6 +256,14 @@ jobs:
             sleep 3
           done
           [ "$verified" = true ]
+
+      - name: Verify Fedora45 image names and documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm -i --network none --read-only --entrypoint python3 \
+            "${{ steps.tags.outputs.image }}:${{ steps.tags.outputs.version }}" \
+            - < .github/scripts/check-fedora45-image.py
 
       - name: Trigger Core cascade
         if: inputs.cascade

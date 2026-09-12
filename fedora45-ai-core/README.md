@@ -55,7 +55,7 @@ network-online
 ├── direct stateless listeners
 └── persistainer.service
     ├── tailscaled.service -> tailscale-up.service
-    ├── fedora44-ai-init-hooks.service
+    ├── fedora45-ai-init-hooks.service
     ├── persistent application listeners
     ├── openclaw-config.service -> optional VikAI bootstrap -> openclaw.service
     └── hermes-ephemeral.service -> hermes.service -> hermes-dashboard.service
@@ -72,7 +72,7 @@ parallel final jobs
 Final jobs use optional `After=` edges for application units: missing units are
 ignored, disabled units are not started by those edges, and condition-skipped
 units are already complete. Listener units expose readiness through the common
-bounded `fedora44-wait-ready` helper, so the final jobs need no fixed sleep.
+bounded `fedora45-wait-ready` helper, so the final jobs need no fixed sleep.
 
 Prepare or build locally with:
 

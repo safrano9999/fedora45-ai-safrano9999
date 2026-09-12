@@ -9,22 +9,22 @@ NO_CACHE=false
 OUTPUT_KEY="$(printf '%s' "$LAYER" | tr '[:lower:]-' '[:upper:]_')_IMAGE"
 
 case "$LAYER" in
-    fedora44-ai-base|fedora45-ai-base)
+    fedora[0-9]*-ai-base)
         PARENT_KEY=AI_CORE_IMAGE
         PARENT_LABEL=Core
         BUILD_TARGET=ai-base
         ;;
-    fedora44-ai-safrano9999|fedora45-ai-safrano9999)
+    fedora[0-9]*-ai-safrano9999)
         PARENT_KEY=AI_KACHELMANN_IMAGE
         PARENT_LABEL=KACHELMANN
         BUILD_TARGET=ai-safrano9999
         ;;
-    fedora44-ai-safrano9999-full|fedora45-ai-safrano9999-full)
+    fedora[0-9]*-ai-safrano9999-full)
         PARENT_KEY=AI_SAFRANO9999_IMAGE
         PARENT_LABEL=Safrano
         BUILD_TARGET=ai-safrano9999-full
         ;;
-    fedora44-ai-kachelmann|fedora45-ai-kachelmann)
+    fedora[0-9]*-ai-kachelmann)
         PARENT_KEY=AI_BASE_IMAGE
         PARENT_LABEL=Base
         BUILD_TARGET=ai-kachelmann

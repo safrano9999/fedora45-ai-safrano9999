@@ -24,9 +24,9 @@ TS_HOSTNAME=${CONTAINER_NAME}
 #default-preset: --ssh
 TS_EXTRA_ARGS=--ssh
 
-#mount-bind: FEDORA44_AI_INIT_HOOKS_PATH:/usr/local/share/fedora44-ai/init.d
-#default-preset: %config-conf/fedora44-ai-init.d
-FEDORA44_AI_INIT_HOOKS_PATH=%config-conf/fedora44-ai-init.d
+#mount-bind: FEDORA45_AI_INIT_HOOKS_PATH:/usr/local/share/fedora45-ai/init.d
+#default-preset: %config-conf/fedora45-ai-init.d
+FEDORA45_AI_INIT_HOOKS_PATH=%config-conf/fedora45-ai-init.d
 
 #mount-bind-ro-shared: CA_CERTIFICATES_PATH:/usr/local/share/ca-certificates-extra
 CA_CERTIFICATES_PATH=

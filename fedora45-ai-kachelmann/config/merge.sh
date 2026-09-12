@@ -14,7 +14,7 @@ show_help() {
 Usage: merge.sh OUTPUT_BASE
 
 Offline fallback for a cumulative Fedora example triple. OUTPUT_BASE names all
-three outputs, for example fedora44-ai-base. All matching example files found
+three outputs, for example fedora45-ai-base. All matching example files found
 directly in ./ are merged, including an already existing output triple.
 
 No repository list is read and no network request is made.

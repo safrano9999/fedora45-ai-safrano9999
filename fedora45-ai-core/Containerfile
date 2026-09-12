@@ -99,11 +99,11 @@ COPY image/runtime/ /
 COPY build/vendor/hermes-ephemeral/image/runtime/ /
 
 RUN chmod 0755 \
-      /usr/local/bin/fedora44-ai-init-hooks \
+      /usr/local/bin/fedora45-ai-init-hooks \
       /usr/local/bin/hermes-ephemeral \
-      /usr/lib/systemd/system-generators/fedora44-runtime-environment-generator \
+      /usr/lib/systemd/system-generators/fedora45-runtime-environment-generator \
  && systemctl enable \
-      fedora44-ai-init-hooks.service \
+      fedora45-ai-init-hooks.service \
       vditor-notes.service \
       openclaw-config.service \
       openclaw.service \

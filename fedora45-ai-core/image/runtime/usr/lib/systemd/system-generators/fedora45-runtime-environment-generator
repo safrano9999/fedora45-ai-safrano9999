@@ -2,7 +2,7 @@
 set -euo pipefail
 
 output_dir="${1:?missing normal generator output directory}"
-dropin="$output_dir/service.d/90-fedora44-runtime-environment.conf"
+dropin="$output_dir/service.d/90-fedora45-runtime-environment.conf"
 
 mkdir -p "$(dirname "$dropin")"
 mapfile -t names < <(compgen -e | LC_ALL=C sort -u)

@@ -18,3 +18,6 @@ shared-scripts
 /CONTAINER/
 /.resolved-build.env
 /container_backup.env
+
+# Historical source snapshots are not runtime documentation.
+/safrano9999/safrano9999-paper/safrano9999-env/

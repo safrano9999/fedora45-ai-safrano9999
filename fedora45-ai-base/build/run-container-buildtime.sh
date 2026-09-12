@@ -13,6 +13,8 @@ fi
 }
 STAGE_DIR="$(cd -- "$1" && pwd -P)"
 LAYER="$2"
+[[ "$LAYER" =~ ^fedora([0-9]+)-ai- ]] || { echo "Invalid Fedora layer: $LAYER" >&2; exit 2; }
+FEDORA_VERSION="${BASH_REMATCH[1]}"
 [ -d "$3" ] && [ ! -L "$3" ] || {
     echo "Missing or unsafe installed repository root: $3" >&2
     exit 1
@@ -151,12 +153,16 @@ while IFS= read -r -d '' repository_dir; do
     printf '  [%s] running image/buildtime/container/run\n' "$repository"
     (
         cd -- "$repository_dir"
-        export FEDORA44_BUILDTIME_PHASE=container
-        export FEDORA44_BUILDTIME_LAYER="$LAYER"
-        export FEDORA44_BUILDTIME_REPOSITORY="$repository"
-        export FEDORA44_BUILDTIME_REPOSITORY_DIR="$repository_dir"
-        export FEDORA44_BUILDTIME_EXAMPLES_DIR="$EXAMPLES_DIR"
-        export FEDORA44_BUILDTIME_ARTIFACTS_DIR="$artifacts_dir"
+        export FEDORA_BUILDTIME_PHASE=container
+        export FEDORA_BUILDTIME_LAYER="$LAYER"
+        export FEDORA_BUILDTIME_REPOSITORY="$repository"
+        export FEDORA_BUILDTIME_REPOSITORY_DIR="$repository_dir"
+        export FEDORA_BUILDTIME_EXAMPLES_DIR="$EXAMPLES_DIR"
+        export FEDORA_BUILDTIME_ARTIFACTS_DIR="$artifacts_dir"
+        for field in PHASE LAYER REPOSITORY REPOSITORY_DIR EXAMPLES_DIR ARTIFACTS_DIR; do
+            variable="FEDORA_BUILDTIME_$field"
+            export "FEDORA${FEDORA_VERSION}_BUILDTIME_$field=${!variable}"
+        done
         "$run"
     )
 done < <(

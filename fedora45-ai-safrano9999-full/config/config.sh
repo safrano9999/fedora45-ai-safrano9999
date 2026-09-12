@@ -14,7 +14,7 @@ directory_has_config_examples() {
        [ -f "$directory/container.example" ]; then
         return 0
     fi
-    for env_example in "$directory"/fedora44-ai-*.env_example; do
+    for env_example in "$directory"/fedora[0-9]*-ai-*.env_example; do
         [ -f "$env_example" ] || continue
         [[ "$env_example" == *-additional.env_example ]] && continue
         stem="${env_example%.env_example}"
@@ -52,7 +52,7 @@ select_config_examples() {
     local env_example stem
     local -a fedora_stems=()
 
-    for env_example in "$directory"/fedora44-ai-*.env_example; do
+    for env_example in "$directory"/fedora[0-9]*-ai-*.env_example; do
         [ -f "$env_example" ] || continue
         [[ "$env_example" == *-additional.env_example ]] && continue
         stem="${env_example%.env_example}"

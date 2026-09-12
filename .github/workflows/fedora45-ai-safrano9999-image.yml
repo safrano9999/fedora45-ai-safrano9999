@@ -185,7 +185,7 @@ jobs:
             apk="/opt/safrano9999/KACHELMANN/${apks[0]}"
             python3 -c "import sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); n=set(z.namelist()); assert {\"AndroidManifest.xml\",\"classes.dex\"} <= n; assert z.testzip() is None" "$apk"
             systemctl is-enabled \
-              persistainer.service fedora44-ai-init-hooks.service \
+              persistainer.service fedora45-ai-init-hooks.service \
               tailscaled.service tailscale-up.service cloudflared.service \
               cockpit.service vditor-notes.service openclaw-config.service \
               openclaw.service openclaw-ephemeral-schedule.service \
@@ -199,7 +199,7 @@ jobs:
             test ! -e /opt/safrano9999/VikAI
             test ! -e /usr/local/bin/vikai-bootstrap-openclaw-agents
             test ! -e /etc/systemd/system/vikai-bootstrap-openclaw-agents.service
-            test ! -e /etc/systemd/system/fedora44-ai.service
+            test ! -e /etc/systemd/system/fedora45-ai.service
           '
           test "$(
             docker image inspect \
@@ -210,6 +210,14 @@ jobs:
           test "$(docker image inspect --format '{{json .Config.Cmd}}' "$image")" \
             = '["/sbin/init"]'
           docker buildx imagetools inspect "$image" >/dev/null
+
+      - name: Verify Fedora45 image names and documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm -i --network none --read-only --entrypoint python3 \
+            "${{ steps.refs.outputs.image }}:${{ steps.refs.outputs.version }}" \
+            - < .github/scripts/check-fedora45-image.py
 
       - name: Trigger safrano9999-full layer
         if: inputs.cascade

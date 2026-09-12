@@ -5,7 +5,7 @@ export LC_ALL=C
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 IMAGE_NAME="${ROOT##*/}"
 LAYER="$IMAGE_NAME"
-[[ "$LAYER" =~ ^fedora(44|45)-ai-[a-z0-9][a-z0-9-]*$ ]] || {
+[[ "$LAYER" =~ ^fedora[0-9]+-ai-[a-z0-9][a-z0-9-]*$ ]] || {
     echo "Invalid Fedora layer directory: $LAYER" >&2
     exit 2
 }

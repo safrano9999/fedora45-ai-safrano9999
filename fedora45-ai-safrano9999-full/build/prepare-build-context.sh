@@ -4,13 +4,14 @@ export LC_ALL=C
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 LAYER="${ROOT##*/}"
-LAYER="${LAYER%-latest}"
+[[ "$LAYER" =~ ^fedora([0-9]+)-ai- ]] || { echo "Invalid Fedora layer: $LAYER" >&2; exit 2; }
+FEDORA_VERSION="${BASH_REMATCH[1]}"
 BUILD_CONFIG="$ROOT/build.conf"
 SOURCE_DIR="$ROOT/safrano9999"
-IMAGE_RUNTIME_STAGE="$ROOT/.fedora44-image-runtime"
-BUILDTIME_STAGE="$ROOT/.fedora44-image-buildtime"
-RUNTIME_STAGE="$ROOT/.fedora44-runtime"
-REPOSITORY_LIST="$ROOT/.fedora44-ai-repositories.list"
+IMAGE_RUNTIME_STAGE="$ROOT/.fedora${FEDORA_VERSION}-image-runtime"
+BUILDTIME_STAGE="$ROOT/.fedora${FEDORA_VERSION}-image-buildtime"
+RUNTIME_STAGE="$ROOT/.fedora${FEDORA_VERSION}-runtime"
+REPOSITORY_LIST="$ROOT/.fedora${FEDORA_VERSION}-ai-repositories.list"
 OFFLINE=false
 NO_CACHE=false
 IMAGE_RUNTIME_TEMPORARY=""
@@ -25,25 +26,25 @@ cleanup() {
 trap cleanup EXIT
 
 case "$LAYER" in
-    fedora45-ai-base)
-        SOURCE_MANIFEST="$ROOT/.fedora44-ai-base-source-tags.tsv"
+    fedora${FEDORA_VERSION}-ai-base)
+        SOURCE_MANIFEST="$ROOT/.fedora${FEDORA_VERSION}-ai-base-source-tags.tsv"
         REQUIREMENTS="$ROOT/requirements.base.txt"
-        SOURCE_KEY_NAME=FEDORA44_AI_BASE_SOURCE_KEY
+        SOURCE_KEY_NAME="FEDORA${FEDORA_VERSION}_AI_BASE_SOURCE_KEY"
         READY_NAME=Base
         ;;
-    fedora45-ai-safrano9999)
+    fedora${FEDORA_VERSION}-ai-safrano9999)
         SOURCE_MANIFEST="$ROOT/.safrano9999-source-tags.tsv"
         REQUIREMENTS="$ROOT/requirements.safrano9999.txt"
         SOURCE_KEY_NAME=SAFRANO9999_SOURCE_KEY
         READY_NAME=Safrano
         ;;
-    fedora45-ai-safrano9999-full)
+    fedora${FEDORA_VERSION}-ai-safrano9999-full)
         SOURCE_MANIFEST="$ROOT/.safrano9999-full-source-tags.tsv"
         REQUIREMENTS="$ROOT/requirements.safrano9999-full.txt"
         SOURCE_KEY_NAME=SAFRANO9999_FULL_SOURCE_KEY
         READY_NAME="Safrano Full"
         ;;
-    fedora45-ai-kachelmann)
+    fedora${FEDORA_VERSION}-ai-kachelmann)
         SOURCE_MANIFEST="$ROOT/.kachelmann-source-tags.tsv"
         REQUIREMENTS="$ROOT/requirements.kachelmann.txt"
         SOURCE_KEY_NAME=KACHELMANN_SOURCE_KEY
@@ -180,7 +181,7 @@ done
 
 write_repository_list() {
     local temporary specification
-    temporary="$(mktemp "$ROOT/.fedora44-ai-repositories.list.XXXXXX")"
+    temporary="$(mktemp "$ROOT/.fedora${FEDORA_VERSION}-ai-repositories.list.XXXXXX")"
     for specification in "${repositories[@]}"; do
         repository_name "$specification"
     done > "$temporary"
@@ -450,7 +451,7 @@ stage_buildtime() {
     local suffix source target repository hook artifact_directory
     local source_commit source_state
 
-    BUILDTIME_TEMPORARY="$(mktemp -d "$ROOT/.fedora44-image-buildtime.XXXXXX")"
+    BUILDTIME_TEMPORARY="$(mktemp -d "$ROOT/.fedora${FEDORA_VERSION}-image-buildtime.XXXXXX")"
     mkdir -p -- \
         "$BUILDTIME_TEMPORARY/examples" \
         "$BUILDTIME_TEMPORARY/artifacts"
@@ -600,12 +601,16 @@ PY
         source_commit="$(git -C "$SOURCE_DIR/$repository" rev-parse HEAD)"
         (
             cd -- "$SOURCE_DIR/$repository"
-            export FEDORA44_BUILDTIME_PHASE=host
-            export FEDORA44_BUILDTIME_LAYER="$LAYER"
-            export FEDORA44_BUILDTIME_REPOSITORY="$repository"
-            export FEDORA44_BUILDTIME_REPOSITORY_DIR="$SOURCE_DIR/$repository"
-            export FEDORA44_BUILDTIME_EXAMPLES_DIR="$BUILDTIME_TEMPORARY/examples"
-            export FEDORA44_BUILDTIME_ARTIFACTS_DIR="$artifact_directory"
+            export FEDORA_BUILDTIME_PHASE=host
+            export FEDORA_BUILDTIME_LAYER="$LAYER"
+            export FEDORA_BUILDTIME_REPOSITORY="$repository"
+            export FEDORA_BUILDTIME_REPOSITORY_DIR="$SOURCE_DIR/$repository"
+            export FEDORA_BUILDTIME_EXAMPLES_DIR="$BUILDTIME_TEMPORARY/examples"
+            export FEDORA_BUILDTIME_ARTIFACTS_DIR="$artifact_directory"
+            for field in PHASE LAYER REPOSITORY REPOSITORY_DIR EXAMPLES_DIR ARTIFACTS_DIR; do
+                variable="FEDORA_BUILDTIME_$field"
+                export "FEDORA${FEDORA_VERSION}_BUILDTIME_$field=${!variable}"
+            done
             "$hook"
         )
         [ "$(git -C "$SOURCE_DIR/$repository" rev-parse HEAD)" = "$source_commit" ] || {
@@ -751,7 +756,7 @@ PY
 }
 
 stage_image_runtime() {
-    IMAGE_RUNTIME_TEMPORARY="$(mktemp -d "$ROOT/.fedora44-image-runtime.XXXXXX")"
+    IMAGE_RUNTIME_TEMPORARY="$(mktemp -d "$ROOT/.fedora${FEDORA_VERSION}-image-runtime.XXXXXX")"
     mkdir -p -- "$IMAGE_RUNTIME_TEMPORARY/rootfs"
 
     python3 - "$SOURCE_DIR" "$IMAGE_RUNTIME_TEMPORARY/rootfs" \
@@ -979,7 +984,7 @@ stage_runtime_assets() {
     local metadata metadata_error state asset_id checksum_id archive checksum
     local expected actual api_path
 
-    RUNTIME_TEMPORARY="$(mktemp -d "$ROOT/.fedora44-runtime.XXXXXX")"
+    RUNTIME_TEMPORARY="$(mktemp -d "$ROOT/.fedora${FEDORA_VERSION}-runtime.XXXXXX")"
     printf 'repository\tasset\tsha256\tstatus\n' > "$RUNTIME_TEMPORARY/manifest.tsv"
 
     if [ -z "${selected_repositories[$repository]+x}" ]; then

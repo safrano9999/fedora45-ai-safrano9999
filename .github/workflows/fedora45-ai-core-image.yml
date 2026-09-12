@@ -230,15 +230,15 @@ jobs:
             test -x /usr/local/bin/openclaw-ephemeral-yolo
             test -x /usr/local/bin/hermes-ephemeral
             test -x /usr/local/bin/persistainer
-            test -x /usr/local/bin/fedora44-ai-init-hooks
-            test -x /usr/local/libexec/fedora44-wait-ready
+            test -x /usr/local/bin/fedora45-ai-init-hooks
+            test -x /usr/local/libexec/fedora45-wait-ready
             test -f /root/.openclaw/extensions/note/openclaw.plugin.json
             note_python="$("/root/.openclaw/extensions/note/scripts/setup-python.sh")"
             test -x "$note_python"
             "$note_python" -c "import dotenv, sqlalchemy, psycopg, pymysql"
             PYTHONPATH=/usr/local/lib/openclaw-ephemeral:/usr/local/lib/hermes-ephemeral \
               python3 -c "import yaml; import openclaw_ephemeral; import hermes_ephemeral"
-            for unit in persistainer.service fedora44-ai-init-hooks.service \
+            for unit in persistainer.service fedora45-ai-init-hooks.service \
               tailscaled.service \
               tailscale-up.service cockpit.service bip39.service vditor-notes.service \
               openclaw-config.service openclaw.service \
@@ -250,12 +250,12 @@ jobs:
               systemctl is-enabled "$unit"
             done
             test "$(systemctl is-enabled cockpit.socket)" = masked
-            for legacy in /usr/local/bin/fedora44-ai-init \
+            for legacy in /usr/local/bin/fedora45-ai-init \
               /usr/local/bin/hermes-ephemeral.py \
               /usr/local/bin/named_volume_links.sh \
               /usr/local/bin/named_volume_links_openclaw.sh \
               /usr/local/bin/named_volume_links_hermes.sh \
-              /etc/systemd/system/fedora44-ai.service; do
+              /etc/systemd/system/fedora45-ai.service; do
               test ! -e "$legacy"
             done
             test ! -e /opt/safrano9999
@@ -330,6 +330,14 @@ jobs:
             sleep 3
           done
           [ "$verified" = true ]
+
+      - name: Verify Fedora45 image names and documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm -i --network none --read-only --entrypoint python3 \
+            "${{ steps.refs.outputs.image }}:${{ steps.refs.outputs.version }}" \
+            - < .github/scripts/check-fedora45-image.py
 
       - name: Trigger Base cascade
         if: inputs.cascade

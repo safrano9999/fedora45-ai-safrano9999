@@ -165,7 +165,7 @@ jobs:
             test -d /opt/safrano9999/ZEROINBOX
             test -x /usr/local/bin/vikai-bootstrap-openclaw-agents
             systemctl is-enabled vikai-bootstrap-openclaw-agents.service openclaw.service
-            test ! -e /etc/systemd/system/fedora44-ai.service
+            test ! -e /etc/systemd/system/fedora45-ai.service
           '
           docker run --rm -i --network none --entrypoint python3 "$image" \
             < .github/scripts/smoke-vikai-agents.py
@@ -178,3 +178,11 @@ jobs:
           test "$(docker image inspect --format '{{json .Config.Cmd}}' "$image")" \
             = '["/sbin/init"]'
           docker buildx imagetools inspect "$image" >/dev/null
+      - name: Verify Fedora45 image names and documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm -i --network none --read-only --entrypoint python3 \
+            "${{ steps.refs.outputs.image }}:${{ steps.refs.outputs.version }}" \
+            - < .github/scripts/check-fedora45-image.py
+

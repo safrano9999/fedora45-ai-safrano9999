@@ -1,4 +1,4 @@
-fedora44-ai/services/__pycache__/
+fedora45-ai/services/__pycache__/
 .env
 *.env
 *_config.conf
@@ -7,12 +7,12 @@ fedora44-ai/services/__pycache__/
 .tag
 /openclaw-deterministic-patch/
 /.resolved-build.env
-/.fedora44-ai-repositories.list
-/.fedora44-runtime/
-/.fedora44-image-runtime/
-/.fedora44-image-buildtime/
+/.fedora45-ai-repositories.list
+/.fedora45-runtime/
+/.fedora45-image-runtime/
+/.fedora45-image-buildtime/
 /.safrano9999-source-tags.tsv
-/.fedora44-ai-base-source-tags.tsv
+/.fedora45-ai-base-source-tags.tsv
 env.example
 requirements.txt
 requirements.base.txt

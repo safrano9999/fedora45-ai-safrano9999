@@ -8,7 +8,7 @@ Type=simple
 WorkingDirectory=/usr/local/share/bip39
 ExecCondition=/bin/bash -lc '[ -n "$${BIP39_PORT:-}" ]'
 ExecStart=/bin/bash -lc 'exec python3 -m http.server "${BIP39_PORT}" --bind 0.0.0.0'
-ExecStartPost=/bin/bash -lc 'exec /usr/local/libexec/fedora44-wait-ready --timeout 60 tcp 127.0.0.1 "$${BIP39_PORT}"'
+ExecStartPost=/bin/bash -lc 'exec /usr/local/libexec/fedora45-wait-ready --timeout 60 tcp 127.0.0.1 "$${BIP39_PORT}"'
 Restart=on-failure
 RestartSec=5
 

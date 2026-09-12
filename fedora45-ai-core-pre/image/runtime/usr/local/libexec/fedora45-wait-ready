@@ -14,7 +14,7 @@ import urllib.request
 
 
 def parser() -> argparse.ArgumentParser:
-    result = argparse.ArgumentParser(prog="fedora44-wait-ready")
+    result = argparse.ArgumentParser(prog="fedora45-wait-ready")
     result.add_argument("--timeout", type=float, default=120.0)
     subparsers = result.add_subparsers(dest="mode", required=True)
 
@@ -72,7 +72,7 @@ def http_ready(url: str, expected_status: int | None, timeout: float) -> bool:
     request = urllib.request.Request(
         url,
         method="GET",
-        headers={"User-Agent": "fedora44-wait-ready/1"},
+        headers={"User-Agent": "fedora45-wait-ready/1"},
     )
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     try:
@@ -90,7 +90,7 @@ def main() -> int:
     try:
         validate(arguments)
     except ValueError as error:
-        print(f"fedora44-wait-ready: {error}", file=sys.stderr)
+        print(f"fedora45-wait-ready: {error}", file=sys.stderr)
         return 2
 
     deadline = time.monotonic() + arguments.timeout
@@ -109,11 +109,11 @@ def main() -> int:
             ready = unix_ready(arguments.path, attempt_timeout)
 
         if ready:
-            print(f"fedora44-wait-ready: ready: {label}")
+            print(f"fedora45-wait-ready: ready: {label}")
             return 0
         if remaining <= 0:
             print(
-                f"fedora44-wait-ready: timed out after {arguments.timeout:g}s: {label}",
+                f"fedora45-wait-ready: timed out after {arguments.timeout:g}s: {label}",
                 file=sys.stderr,
             )
             return 1
