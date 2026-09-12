@@ -1,0 +1,12 @@
+{
+  "firefly-mcp": ["list_account", {"limit": 1}],
+  "paperless-mcp": ["paperless_storage_paths_list", {"pageSize": 1}],
+  "nextcloud-mcp": ["nc_webdav_list_directory", {}],
+  "kachelmann-mcp-safrano9999-ucore": ["kachelmann_list_tables", {"roots_only": true}],
+  "mailfathom": ["list_accounts", {}],
+  "thunderbird-mcp": ["listAccounts", {}],
+  "vikunja-mcp": ["vikunja_teams", {"subcommand": "list", "perPage": 1}],
+  "hibiscus-mcp": ["get_balance", {}],
+  "mtg-commander": ["get_banned_list", {}],
+  "mtg-archidekt": ["list_personal_decks", {}]
+}

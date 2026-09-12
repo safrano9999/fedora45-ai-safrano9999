@@ -13,7 +13,8 @@ USER root
 
 COPY requirements.kachelmann.txt /requirements.kachelmann.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r /requirements.kachelmann.txt \
+    sed -i 's/psycopg\[binary\]/psycopg/g' /requirements.kachelmann.txt \
+ && pip install -r /requirements.kachelmann.txt \
  && pip check
 
 ENV KACHELMANN_DIR=/opt/safrano9999/KACHELMANN \
@@ -26,6 +27,7 @@ COPY .fedora44-image-runtime/systemd-enable.list /usr/local/share/fedora44-ai/ka
 COPY .fedora44-image-runtime/rootfs/ /
 
 COPY safrano9999/ /opt/safrano9999/
+RUN sed -i 's/psycopg\[binary\]/psycopg/g' /opt/safrano9999/KACHELMANN/requirements.txt
 
 RUN uv pip install \
       --python /usr/local/lib/hermes-agent/venv/bin/python \

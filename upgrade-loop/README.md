@@ -211,7 +211,7 @@ A small mini-loop after the restart:
 
 ## 7. Reporting — PDF summary via OpenClaw → Telegram
 
-After every executed business step and selected decision branch, the shared reporting sub-workflow adds an entry to the run's **PDF report**. An LLM writes 1–2 concise English sentences from the recorded result; the PDF is updated and saved after each entry.
+Every business step and selected branch appends its structured result to the execution-local `run.events` array. The shared reporting workflow summarizes only decision gates and terminal outcomes. The final PDF is rendered once from the complete run, including every step and repair attempt.
 
 At the end of the loop (success, no update, rollback, or abort), the complete PDF is delivered to Telegram via **OpenClaw**. Repeated repair attempts remain separate entries in the same report.
 
@@ -228,12 +228,14 @@ At the end of the loop (success, no update, rollback, or abort), the complete PD
 
 ### Flow
 
-1. After each business step or selected decision branch, persist its structured result, run/step ID, attempt, status, duration, and artifacts. Redact sensitive data before summarization.
-2. Ask an LLM for a 1–2 sentence summary. If it fails, times out, or provides an unusable summary, use the deterministic step result as a fallback.
-3. Append the entry to the run's report and update the PDF locally. Return the original pipeline data unchanged; reporting never changes pass/fail decisions.
-4. At the terminal outcome, finalize the accumulated PDF, including overall status. Retained structured results allow regeneration if an intermediate PDF update failed.
+1. Each business step appends its status, timestamp, run/step ID, attempt, duration, and relevant artifacts to `run.events`.
+2. Only at decision gates and terminal outcomes, call the shared reporter for a 1–2 sentence LLM summary. Use the deterministic result as a fallback if summarization fails.
+3. Append summaries to the same run. Preserve the pipeline data and original pass/fail decisions; no PDF is rendered at intermediate checkpoints.
+4. At the terminal outcome, collect all results and render the complete run into one final PDF. Keep structured results so the report can be regenerated.
 5. **OpenClaw** handles delivery: the file is sent to the configured Telegram channel/chat (bot token + authorized chat, as set up in OpenClaw).
 6. Optional: a short status text message (traffic-light summary) before the PDF, so you can tell at a glance whether everything went fine without opening the PDF.
+
+Redaction is maintained in [report-redaction.js](report-redaction.js). Run `python3 generate-workflows.py` after an edit to refresh the portable workflow exports.
 
 ### Important for the integration
 
@@ -246,7 +248,7 @@ At the end of the loop (success, no update, rollback, or abort), the complete PD
 
 ## Overall flow (simplified)
 
-Orchestrated end-to-end as an **n8n workflow**; steps marked `[mcp-safrano9999]` are executed via that MCP server. After every business step or selected branch: **LLM summary → collect in the run for the final PDF → continue**.
+Orchestrated end-to-end as an **n8n workflow**; steps marked `[mcp-safrano9999]` are executed via that MCP server. Every business step records structured results; **decision gates and outcomes summarize**, and the **terminal reporting call renders the final PDF once**.
 
 ```
 check-versions.sh ──► Result clean? ──no──► Self-healing loop (AI + verification)
@@ -342,11 +344,11 @@ check-versions.sh ──► Result clean? ──no──► Self-healing loop (A
 | Determinism by default | `check-versions.sh`, dry run, compatibility check, test-container checklist |
 | Atomicity | Version pins are never adopted partially |
 | Unique image identity | Every candidate remains identifiable by its fixed version and digest |
-| AI for repair and summaries | Bounded parser/generator corrections, deterministically verified; concise per-step PDF entries |
+| AI for repair and summaries | Bounded parser/generator corrections, deterministically verified; checkpoint summaries over complete structured step results |
 | No blind trust in AI output | The adapted script is re-verified against fixtures + live data |
 | Turn limits everywhere | Prevents endless retry loops in build, test, and script repair |
 | Rollback capability | On both test failure and failed post-deploy health check |
-| Traceability | Each executed step updates the run PDF; the complete report is sent via OpenClaw to Telegram, including failures |
+| Traceability | Each executed step appends structured results; one final PDF is sent via OpenClaw to Telegram, including failures |
 | Guaranteed rollback target | After read-only generator prechecks, freeze current images and full repositories as `stable` before generator corrections, pin changes, or builds |
 | Clear tag semantics | Generator Git `latest` = tested source published before image builds; image `latest` = candidate accepted by all mandatory image tests; `stable` = frozen baseline |
 | Earliest generator checks | OpenClaw → `openclaw-ephemeral`; Hermes → `hermes-ephemeral`. Check first, repair if needed, retest, publish Git `latest`, then build from the exact tested commits |
