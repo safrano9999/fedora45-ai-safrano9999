@@ -1,0 +1,212 @@
+{
+  "version": "2026.9.3",
+  "completed_at": "2026-09-12T10:53:14.090232+00:00",
+  "status": "PASS",
+  "scope": "Fedora45 image chain: project-owned runtime names, units, examples, build paths and documentation",
+  "images": [
+    {
+      "image": "ghcr.io/safrano9999/fedora45-ai-core-pre",
+      "digest": "sha256:9a90e8eac68efd24e524378192bb6df60e0efce4cb9d578ecefe3208e3a89ae2",
+      "tags": [
+        "2026.9.3",
+        "latest"
+      ],
+      "build": {
+        "conclusion": "success",
+        "createdAt": "2026-09-12T09:31:23Z",
+        "databaseId": 34686075208,
+        "headSha": "dd807d51a662051c4f751739551dc9e0b7d84740",
+        "status": "completed",
+        "url": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/34686075208",
+        "workflowName": "fedora45-ai-core-pre image"
+      },
+      "name_audit": {
+        "status": "PASS",
+        "files_checked": 4291,
+        "pdfs_checked": 0,
+        "stale_names": [],
+        "distribution_trust_keys": [
+          {
+            "path": "/etc/keys/ima/fedora-44-ima.der",
+            "owner": "fedora-gpg-keys 45"
+          }
+        ]
+      }
+    },
+    {
+      "image": "ghcr.io/safrano9999/fedora45-ai-core",
+      "digest": "sha256:f5e52a803a9131f61ff9326433f2ffa747235fd490014eeb9af19e28b4583509",
+      "tags": [
+        "2026.9.3",
+        "latest"
+      ],
+      "build": {
+        "conclusion": "success",
+        "createdAt": "2026-09-12T09:49:09Z",
+        "databaseId": 34686830375,
+        "headSha": "dd807d51a662051c4f751739551dc9e0b7d84740",
+        "status": "completed",
+        "url": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/34686830375",
+        "workflowName": "fedora45-ai-core image"
+      },
+      "name_audit": {
+        "status": "PASS",
+        "files_checked": 4305,
+        "pdfs_checked": 0,
+        "stale_names": [],
+        "distribution_trust_keys": [
+          {
+            "path": "/etc/keys/ima/fedora-44-ima.der",
+            "owner": "fedora-gpg-keys 45"
+          }
+        ]
+      }
+    },
+    {
+      "image": "ghcr.io/safrano9999/fedora45-ai-base",
+      "digest": "sha256:6b0ea036f8baee036f2fe3575a3fa3edc80163bbcced0b451620e648a90a01a9",
+      "tags": [
+        "2026.9.3",
+        "latest"
+      ],
+      "build": {
+        "conclusion": "success",
+        "createdAt": "2026-09-12T09:55:52Z",
+        "databaseId": 34687112236,
+        "headSha": "dd807d51a662051c4f751739551dc9e0b7d84740",
+        "status": "completed",
+        "url": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/34687112236",
+        "workflowName": "fedora45-ai-base image"
+      },
+      "name_audit": {
+        "status": "PASS",
+        "files_checked": 4595,
+        "pdfs_checked": 1,
+        "stale_names": [],
+        "distribution_trust_keys": [
+          {
+            "path": "/etc/keys/ima/fedora-44-ima.der",
+            "owner": "fedora-gpg-keys 45"
+          }
+        ]
+      }
+    },
+    {
+      "image": "ghcr.io/safrano9999/fedora45-ai-kachelmann",
+      "digest": "sha256:b69f7100efb5d736420009d787c91120dcb78aa7fb3643d5278d2ea91d486ddb",
+      "tags": [
+        "2026.9.3",
+        "latest"
+      ],
+      "build": {
+        "conclusion": "success",
+        "createdAt": "2026-09-12T10:03:43Z",
+        "databaseId": 34687451724,
+        "headSha": "dd807d51a662051c4f751739551dc9e0b7d84740",
+        "status": "completed",
+        "url": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/34687451724",
+        "workflowName": "fedora45-ai-kachelmann image"
+      },
+      "name_audit": {
+        "status": "PASS",
+        "files_checked": 5167,
+        "pdfs_checked": 1,
+        "stale_names": [],
+        "distribution_trust_keys": [
+          {
+            "path": "/etc/keys/ima/fedora-44-ima.der",
+            "owner": "fedora-gpg-keys 45"
+          }
+        ]
+      }
+    },
+    {
+      "image": "ghcr.io/safrano9999/fedora45-ai-safrano9999",
+      "digest": "sha256:857814adb94305d51a2845f475143b9179381d921a3407e448b75031e51c7572",
+      "tags": [
+        "2026.9.3",
+        "latest"
+      ],
+      "build": {
+        "conclusion": "success",
+        "createdAt": "2026-09-12T10:10:28Z",
+        "databaseId": 34687746289,
+        "headSha": "dd807d51a662051c4f751739551dc9e0b7d84740",
+        "status": "completed",
+        "url": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/34687746289",
+        "workflowName": "fedora45-ai-safrano9999 image"
+      },
+      "name_audit": {
+        "status": "PASS",
+        "files_checked": 5505,
+        "pdfs_checked": 1,
+        "stale_names": [],
+        "distribution_trust_keys": [
+          {
+            "path": "/etc/keys/ima/fedora-44-ima.der",
+            "owner": "fedora-gpg-keys 45"
+          }
+        ]
+      }
+    },
+    {
+      "image": "ghcr.io/safrano9999/fedora45-ai-safrano9999-full",
+      "digest": "sha256:5fe2d391c22309892ecf6e39550f55c890d0c0d5991bdb4a9fc50ba81b1c710e",
+      "tags": [
+        "2026.9.3",
+        "latest"
+      ],
+      "build": {
+        "conclusion": "success",
+        "createdAt": "2026-09-12T10:41:26Z",
+        "databaseId": 34689108004,
+        "headSha": "dd807d51a662051c4f751739551dc9e0b7d84740",
+        "status": "completed",
+        "url": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/34689108004",
+        "workflowName": "fedora45-ai-safrano9999-full image"
+      },
+      "name_audit": {
+        "status": "PASS",
+        "files_checked": 5620,
+        "pdfs_checked": 1,
+        "stale_names": [],
+        "distribution_trust_keys": [
+          {
+            "path": "/etc/keys/ima/fedora-44-ima.der",
+            "owner": "fedora-gpg-keys 45"
+          }
+        ]
+      }
+    }
+  ],
+  "ephemeral_sources": {
+    "openclaw-ephemeral": {
+      "files_checked": 26,
+      "stale_names": []
+    },
+    "hermes-ephemeral": {
+      "files_checked": 15,
+      "stale_names": []
+    }
+  },
+  "nextcloud_runtime": {
+    "client_version": "33.0.7",
+    "release": "https://github.com/safrano9999/NEXTCLOUD/releases/tag/2026.9.3",
+    "fedora_version": "45",
+    "openssl_engine_compatibility": "Fedora openssl3-devel-engine; the main image uses OpenSSL 4.0.2",
+    "archive_audit": {
+      "sha256_verified": true,
+      "files_checked": 125,
+      "stale_names": []
+    },
+    "upstream_issue": "https://github.com/nextcloud/desktop/issues/10813"
+  },
+  "shared_config_hardlink_preserved": true,
+  "stable_pointers_unchanged": true,
+  "deployment_performed": false,
+  "notes": [
+    "The Fedora45 distribution-owned historical IMA trust key retains its correct Fedora44 identity and is reported separately by each scan.",
+    "Historical paper source snapshots remain in their source repository and are excluded from the image build context.",
+    "This report records GitHub Actions image checks and naming audits, not new live integration tests."
+  ]
+}
