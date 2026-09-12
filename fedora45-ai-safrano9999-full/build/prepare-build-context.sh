@@ -756,7 +756,7 @@ stage_image_runtime() {
 
     python3 - "$SOURCE_DIR" "$IMAGE_RUNTIME_TEMPORARY/rootfs" \
         "$IMAGE_RUNTIME_TEMPORARY/manifest.tsv" \
-        "$ROOT/build/patches/VikAI-openclaw-2026.9.3.patch" "${repositories[@]}" <<'PY'
+        "$ROOT/build/patches/VikAI-openclaw-2026.9.4.patch" "${repositories[@]}" <<'PY'
 from __future__ import annotations
 
 import hashlib

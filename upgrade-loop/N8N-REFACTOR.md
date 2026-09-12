@@ -12,3 +12,5 @@
 Import `n8n-fedora45-all.json` to install the main, repair, integration and reporting workflows together. The existing LiteLLM credential is referenced, never exported with a key.
 
 Runtime validation: the local n8n task runner executes the reporter and receives a real Astra summary through LiteLLM Chat Completions. An intentional FAIL remains FAIL. JSON payload cloning and the existing local credential reference are compatible with the installed n8n runtime.
+
+Redaction is maintained once in `report-redaction.js`. Run `python3 generate-workflows.py` after editing it, then `python3 generate-workflows.py --check` before publishing/importing. The generator refreshes 46 embedded helpers and the four-workflow bundle. Copies remain in the portable JSON export; no runtime library, extra node or per-step subworkflow call is needed.

@@ -40,8 +40,8 @@ of truth; layer setup defaults to the matching GHCR image with the `latest` tag.
 
 | Fixed component | Previous | New stable pin |
 |---|---|---|
-| OpenClaw | 2026.7.1 | 2026.9.3 |
-| Hermes | 0.20.0 | 0.21.0 / v2026.8.31 |
+| OpenClaw | 2026.9.3 | 2026.9.4 |
+| Hermes | 0.21.0 | 0.21.2 |
 | Electrum | 4.7.2 | 4.8.1 |
 | LND / lncli | v0.20.1-beta | v0.21.3-beta |
 | Geth | 1.17.2 | 1.17.5 |
