@@ -1,0 +1,32 @@
+[
+  {
+    "name": "documented release formats",
+    "hermes": {
+      "name": "Hermes Agent v0.21.0 stable",
+      "tag_name": "v2026.8.31"
+    },
+    "openclaw": {
+      "tag_name": "v2026.9.3"
+    },
+    "expected": {
+      "hermes": "0.21.0",
+      "openclaw": "2026.9.3"
+    },
+    "kind": "synthetic fixture for a known release format"
+  },
+  {
+    "name": "Fedora45 bootstrap versions",
+    "hermes": {
+      "name": "Hermes Agent v0.21.2 stable",
+      "tag_name": "v2026.9.9"
+    },
+    "openclaw": {
+      "tag_name": "v2026.9.4"
+    },
+    "expected": {
+      "hermes": "0.21.2",
+      "openclaw": "2026.9.4"
+    },
+    "kind": "synthetic fixture for a known release format"
+  }
+]

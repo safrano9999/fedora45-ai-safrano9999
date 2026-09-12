@@ -1,0 +1,16 @@
+{
+  "deployment": "existing instance with its original volumes",
+  "test_image": "exact candidate digest after build and Smart1 pull",
+  "boot_wait_seconds": 300,
+  "integration_wait": "wait only until this container start is at least 300 seconds old",
+  "test_budget_seconds": 600,
+  "model_probe_workers": 2,
+  "automatic_test_retries": 0,
+  "llm_test_evaluation": false,
+  "llm_summary": "once at the end, from structured results",
+  "promotion": "verified and latest only after all required live checks pass",
+  "after_promotion": "set Quadlet to latest and daemon-reload, without another restart",
+  "rollback": "restore stable, recreate the same instance, wait 300 seconds, check recovery",
+  "source_changes": "prior explicit user Go for the exact diff",
+  "workflow_validation": "next actual upstream upgrade; no test run during installation"
+}

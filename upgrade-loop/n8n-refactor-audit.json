@@ -1,10 +1,10 @@
 {
   "main_before": 158,
-  "main_after": 83,
+  "main_after": 87,
   "report_calls_before": 81,
   "report_calls_after": 23,
   "report_call_reduction_percent": 71.6,
-  "repair_nodes": 23,
+  "repair_nodes": 16,
   "integration_nodes": 14,
   "reporter_nodes": 8,
   "existing_if_conditions_unchanged": true,
@@ -23,5 +23,13 @@
     "rollback",
     "standalone integration"
   ],
-  "source_and_sot_changes_require_prior_user_go": true
+  "source_and_sot_changes_require_prior_user_go": true,
+  "report_nodes": 7,
+  "reporting_call_nodes_after": 1,
+  "live_volume_deployment": true,
+  "duplicate_integration_wait": false,
+  "automatic_test_retries": 0,
+  "llm_test_grading": false,
+  "final_summary_calls": 1,
+  "runtime_validation": "Deferred to the next actual upstream upgrade; no installation test run"
 }

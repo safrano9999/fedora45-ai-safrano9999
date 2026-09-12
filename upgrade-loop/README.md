@@ -6,11 +6,17 @@ The Fedora45 migration upgrades Hermes to 0.21.2 and OpenClaw to 2026.9.4, inclu
 
 The manual Fedora45 bootstrap records its [pre-migration baseline](evidence/fedora45-2026.9.1-baseline.json). Repeatable container probes cover [agent model replies](probes/runtime-models.py) and the installed [per-agent MCP projection](probes/runtime-mcp-projection.mjs); model probes use dedicated sessions without channel delivery.
 
-The main canvas contains 83 nodes instead of 158. Reporting calls drop from 81 to 23 (71.6%): structured results travel in the execution-local `run.events` array; Astra summarizes only decision checkpoints and outcomes. The final PDF is rendered once from the complete run. Application adapters and existing empty decision placeholders remain disabled and unimplemented; this refactoring does not make the deployment loop executable.
+The four workflows now contain deterministic host adapters and explicit decision conditions. They remain manual and inactive; **no workflow test run is performed during installation**. The first end-to-end validation takes place with the next real upstream upgrade.
 
-The repair and reporting LLM nodes use **Astra** through local LiteLLM: `astra` → `chatgpt/gpt-6-astra`, at `http://litellm-database:4000/v1` on Podman network `core`. LiteLLM stores the model persistently; n8n stores its credential locally. All four workflows remain inactive. Checkpoint and repair prompts are defined; deterministic business adapters and the final PDF renderer remain pending.
+**Live sequence:** build fixed candidates → Smart1 pull → recreate the existing instance with its original volumes → wait until that container start is five minutes old → run the required checks → promote the exact image to `verified` and `latest` → set the Quadlet to `latest` and daemon-reload, without another restart. A failed live check restores `stable` with the same volumes.
 
-The requirements below are binding acceptance rules. The first executable run targets **Hermes 0.21.2 and OpenClaw 2026.9.4**. Propose changes to `openclaw-ephemeral`, Hermes adaptations or OpenClaw patches only when compatibility evidence requires them; applying any source change needs prior user discussion and explicit Go. Bounded LLM-assisted corrections must pass the same tests; they may not remove checks, weaken acceptance criteria, or silently omit a patch.
+The [live policy](live-flow-policy.json) caps the test phase at 600 seconds. Checks use fixed scripts, bounded HTTP concurrency and small real model probes; no LLM grades test results and no automatic test retry runs. The integration sub-workflow reuses the same boot timestamp, results and deadline. Every result remains in the final PDF; unfinished checks are `NOT_TESTED`.
+
+Astra runs through local LiteLLM (`http://litellm-database:4000/v1`, model `astra`) once for the final summary and when a repair proposal is needed. Business and checkpoint nodes make no LLM calls. [steps.py](steps.py) records execution-local state; [live-checks.py](live-checks.py) calls the existing probes; [render-report.py](render-report.py) renders the complete PDF once. Redaction remains centralized in [report-redaction.js](report-redaction.js).
+
+The local n8n SSH credential invokes the host runner; the owner, instance, Quadlet and registry auth-file paths are stored in `~/.config/fedora45-upgrade-loop.json`. Credentials are not included in the workflow exports. Run receipts and PDFs are stored under `~/.local/state/fedora45-upgrade-loop/<run-id>/`. Source repairs require an explicit `GO` record bound to the proposed patch SHA-256 and source commit; the workflow never creates that approval itself. Ordinary declared version, commit and checksum pin updates are the upgrade operation already described here.
+
+The requirements below are binding acceptance rules. Hermes **0.21.2** and OpenClaw **2026.9.4** are the installed baseline; the next run selects newer releases only when the version check finds them. Propose changes to `openclaw-ephemeral`, Hermes adaptations or OpenClaw patches only when compatibility evidence requires them; applying any source change needs prior user discussion and explicit Go. Bounded LLM-assisted corrections must pass the same tests; they may not remove checks, weaken acceptance criteria, or silently omit a patch.
 
 **SOT and source-code changes require prior approval — ALWAYS:** All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch. Prepare the exact diff and reason, discuss it with the user, and wait for Go before changing SOT or source code. Silence, test failures or a successful verification are not approval; a changed proposal requires a new Go. This also applies to automatic repairs and self-optimization.
 
@@ -33,7 +39,7 @@ The system consists of three nested loops:
 2. **Build/test loop** — validates a new image before it gets deployed
 3. **Self-healing script loop** — repairs the version-check script when 3rd-party formats change
 
-**Core principle:** Decisions and verification are deterministic wherever possible. AI repairs failed version parsers or incompatible generators and writes concise step summaries. Repairs are re-verified deterministically; summaries never determine whether a check passes.
+**Core principle:** Decisions and verification are deterministic wherever possible. AI proposes repairs for failed version parsers or incompatible generators and writes one final summary. Repairs are re-verified deterministically; summaries never determine whether a check passes.
 
 ## Orchestration & tooling
 
@@ -91,7 +97,7 @@ After version validation and the initial generator checks, run these steps in or
    - Include the full `openclaw-ephemeral` and `hermes-ephemeral` repository baselines before adopting generator corrections. Cascade order matters: base images are re-tagged first, then dependent images.
 
 2. **Prepare stable Quadlets without restarting**
-   Pull the frozen `stable` images locally through Smart1 via `mcp-safrano9999`. Generate Quadlets from existing configuration with `Image=...:stable`, using the planned Quadlet-only setup command. Run `systemctl --user daemon-reload` as the owning user, without restarting containers. Verify the stable image references and unchanged container IDs, start times, and service PIDs before continuing.
+   Pull the frozen `stable` images locally through Smart1 via `mcp-safrano9999`. Change only the image references in the existing Quadlet and Compose files to `:stable`; preserve all instance settings and volume mappings. Run `systemctl --user daemon-reload` as the owning user, without restarting containers. Verify the stable image references and unchanged container IDs, start times, and service PIDs before continuing.
 
 3. **Prepare the affected ephemeral generators**
    - Use the first checks' recorded results. For each incompatible generator, Astra prepares a correction in an isolated checkout; deterministic tests run again against both the target version and the frozen current version. Repeat only within the configured per-generator attempt limit. Every SOT or source-code change requires prior discussion and explicit Telegram main-agent Go before application.
@@ -100,8 +106,7 @@ After version validation and the initial generator checks, run these steps in or
    - These are the standalone generator repositories' Git `latest` tags. Fedora image `latest` tags remain gated by the complete image tests in Step 4. Every check, correction attempt, and publication result is included in the PDF.
 
 4. **Dry run**
-   New versions are resolved on a trial basis (e.g. `apt-get install --dry-run`, `pip install --dry-run`/`--report`, an isolated build stage) — without producing the final image layer.
-   Goal: catch dependency conflicts before actually building.
+   `prepare-runtime.py` resolves the target runtimes for the generator checks without building the final image. Validate the declared pin changes, published patch inputs and Hermes patch applicability before committing. Image package installation is checked by the existing build Actions.
 
 5. **Compatibility check**
    - Changelog/semver comparison (breaking change on a major bump?)
@@ -133,7 +138,7 @@ Multiple GHCR tags cannot move in one atomic transaction. Promote only after the
 
 ## 4. Check — test-container checklist
 
-Start the container, **wait a full five minutes for ALL services**, then begin the checklist. No readiness, port, CLI, model, MCP, Citadel, Tailscale or other runtime test runs during this boot interval. Apply the same order after deployment, rollback and every restart during testing. The independently callable integration workflow always waits five minutes on entry, including calls from the main loop.
+Pull the exact candidate and recreate the actual instance with its existing volumes, **wait a full five minutes for ALL services**, then begin the checklist. No readiness, port, CLI, model, MCP, Citadel, Tailscale or other runtime test runs during this boot interval. Apply the same order after deployment, rollback and every restart during testing. The independently callable integration workflow requires a run ID with a recorded baseline and waits only for the remainder of that same five-minute boot interval. It does not add another five minutes after the main loop has already waited.
 
 OpenClaw builds its model catalog initially. Record first and repeated calls separately; initial slowness alone is normal and does not justify a source patch. Preserve actual failures and `NOT_TESTED`. Record container-start, wait-completion and test timestamps in the run report.
 
@@ -165,7 +170,7 @@ Mandatory integration coverage for the new container:
 
 MCP or model listings alone do not count as successful integration tests. Intentionally disabled entries require an explicit expected-disabled check. Unexpected omissions and untested entries fail the coverage gate.
 
-Keep deterministic configuration/assignment tests and live model, MCP, and network probes distinguishable in the report. All required checks must pass. For container-backed services, confirm the response comes from the candidate under test; a response from the previous production instance does not validate the candidate.
+Keep deterministic configuration/assignment tests and live model, MCP, and network probes distinguishable in the report. All required checks must pass. Confirm the container ID, start timestamp and image ID match the newly deployed candidate throughout the checks.
 
 The PDF includes per-agent MCP assignments, tool-call results, resolved model results, and every Citadel/Tailscale link with its outcome. Grouped test nodes must include every inventory item's result in their report entry.
 
@@ -173,7 +178,7 @@ Use isolated, repeatable fixtures and the recorded patch references for these te
 
 **Only if every point passes** → mark the exact image "verified" (e.g. an additional `verified` tag), then advance `latest` through `mcp-safrano9999` to that same image digest. No rebuild occurs between verification and promotion.
 
-**Failure case:** No retry with the same versions — abort, report/notification, old image stays active.
+**Failure case:** No automatic retry with the same versions. Restore the frozen stable image, wait for its boot interval, check recovery and report every recorded result.
 
 ---
 
@@ -199,24 +204,19 @@ Triggered only when the result validation from Step 1 fails (e.g. a 3rd party ch
 
 ## 6. Local deployment
 
-- Pull the newly promoted `latest` locally through Smart1 via **`mcp-safrano9999`** and verify that its digest matches the tested candidate.
-- Generate the Quadlets from existing configuration with `Image=...:latest`.
-- Run `systemctl --user daemon-reload` as the owning user.
-- Recreate the containers from the verified `latest` image. A plain `podman restart` does not replace a container's image.
-- Wait a full five minutes for all services before any post-deploy test, including readiness checks.
-- Optional: blue-green deployment — the new container comes up in parallel, and only after another health check does the old one get shut down (minimizes downtime & rollback risk)
-
-### Post-check
-
-A small mini-loop after the restart:
-- Is the new container stable?
-- If not → restore `:stable` in the Quadlets, run `daemon-reload`, recreate the containers from the frozen stable images, wait a full five minutes for all services, then verify recovery.
+- After the successful build, pull the immutable candidate through Smart1 via `mcp-safrano9999`.
+- Set the existing Quadlet to the candidate digest, daemon-reload and recreate the actual instance with its original volumes.
+- Wait until that start is five minutes old, then run the required live checks and health check.
+- Only after every required check passes, promote the exact tested digests to `verified` and `latest`. Update the local `latest` aliases to those same images, set the Quadlet to `latest` and daemon-reload. **No second restart.**
+- On any live failure, restore `:stable`, daemon-reload, recreate the same instance, wait five minutes and check recovery. If the live instance was never replaced, restore the stable Quadlet without an unnecessary restart.
+- Keep all persistent volumes. Image rollback does not revert application data or migrations already written to them.
+- Remove temporary candidate digest entries from Smart1 after success or successful recovery; retain `latest` and `stable`. Keep candidate references when recovery fails.
 
 ---
 
 ## 7. Reporting — PDF summary via OpenClaw → Telegram
 
-Every business step and selected branch appends its structured result to the execution-local `run.events` array. The shared reporting workflow summarizes only decision gates and terminal outcomes. The final PDF is rendered once from the complete run, including every step and repair attempt.
+Every business step and selected branch appends its structured result to the execution-local `run.events` array. Decision gates evaluate structured results directly; the shared reporting workflow makes one final LLM summary call. The final PDF is rendered once from the complete run, including every step and repair attempt.
 
 At the end of the loop (success, no update, rollback, or abort), the complete PDF is delivered to Telegram via **OpenClaw**. Repeated repair attempts remain separate entries in the same report.
 
@@ -234,8 +234,8 @@ At the end of the loop (success, no update, rollback, or abort), the complete PD
 ### Flow
 
 1. Each business step appends its status, timestamp, run/step ID, attempt, duration, and relevant artifacts to `run.events`.
-2. Only at decision gates and terminal outcomes, call the shared reporter for a 1–2 sentence LLM summary. Use the deterministic result as a fallback if summarization fails.
-3. Append summaries to the same run. Preserve the pipeline data and original pass/fail decisions; no PDF is rendered at intermediate checkpoints.
+2. After the run ends, call Astra once for a short final summary. Keep the deterministic report when summarization fails.
+3. Combine that summary with the complete recorded run. Preserve all original pass/fail decisions; no PDF is rendered at intermediate checkpoints.
 4. At the terminal outcome, collect all results and render the complete run into one final PDF. Keep structured results so the report can be regenerated.
 5. **OpenClaw** handles delivery: the file is sent to the configured Telegram channel/chat (bot token + authorized chat, as set up in OpenClaw).
 6. Optional: a short status text message (traffic-light summary) before the PDF, so you can tell at a glance whether everything went fine without opening the PDF.
@@ -251,100 +251,28 @@ Redaction is maintained in [report-redaction.js](report-redaction.js). Run `pyth
 
 ---
 
-## Overall flow (simplified)
+## Overall flow
 
-Orchestrated end-to-end as an **n8n workflow**; steps marked `[mcp-safrano9999]` are executed via that MCP server. Every business step records structured results; **decision gates and outcomes summarize**, and the **terminal reporting call renders the final PDF once**.
-
-```
-check-versions.sh ──► Result clean? ──no──► Self-healing loop (AI + verification)
-        │ yes                                          │
-        ▼                                (after fix, back into the loop)
-   Update available? ──no──► Report + end
-        │ yes
-        ▼
-   Check openclaw-ephemeral FIRST if OpenClaw changes
-        │
-        ▼
-   Check hermes-ephemeral FIRST if Hermes changes
-        │ conclusive results (unchanged component = not applicable)
-        ▼
-   Tag current versions as "stable" (cascaded, GHCR + GitHub) [mcp-safrano9999]
-        │
-        ▼
-   Pull stable locally [mcp-safrano9999]
-        │
-        ▼
-   Quadlets → stable ──► daemon-reload (no restart) ──► verify unchanged baseline
-        │ ok
-        ▼
-   All affected ephemeral generators compatible? ──no──► Astra correction + deterministic retest
-        │ yes                                                   │ bounded retry
-        ◄────────────────────────────────────────────────────────┘
-        ▼
-   Publish tested generator commits: main + Git latest ──► verify every recorded commit
-        │
-        ▼
-   Dry run + compatibility check ──fail──► Abort + report
-        │ ok
-        ▼
-   Own OpenClaw/Hermes patches compatible? ──no──► Abort + report
-        │ yes
-        ▼
-   Atomic commit
-        │
-        ▼
-   GH Action build ──► Image with unique tag
-        │
-        ▼
-   Start candidate → WAIT 5 MINUTES for all services
-        │
-        ▼
-   Test-container checklist ──fail──► Abort, "stable" tag stays the rollback target
-        │ ok
-        ▼
-   Own OpenClaw/Hermes patch regressions ──fail / not tested──► Abort + report
-        │ ok
-        ▼
-   Inventory all agents, MCP servers, models, Citadel links, and Tailscale links
-        │
-        ▼
-   Test OpenClaw MCP assignments ──► test Hermes global MCP access
-        │
-        ▼
-   Test all OpenClaw agent models ──► test all Hermes agent models
-        │
-        ▼
-   Test Citadel and every link ──► test every Tailscale link
-        │
-        ▼
-   Complete inventory covered and all integrations passed? ──no──► Abort + report
-        │ all points pass
-        ▼
-   Image marked "verified"
-        │
-        ▼
-   Tag verified image as "latest" [mcp-safrano9999]
-        │
-        ▼
-   Local: pull latest [mcp-safrano9999] ──► verify tested digest
-        │
-        ▼
-   Quadlets → latest ──► daemon-reload ──► recreate containers
-        │
-        ▼
-   WAIT 5 MINUTES for all services
-        │
-        ▼
-   Health check ──fail──► Quadlets → stable → daemon-reload → recreate → WAIT 5 MINUTES → verify recovery
-        │ ok
-        ▼
-   Finalize accumulated PDF (all steps) ──► OpenClaw ──► Telegram
-        │
-        ▼
-   Done
+```text
+Version check → no update: final report
+      ↓ update
+Read-only generator checks → freeze stable images and source repositories
+      ↓
+Prepare compatible generators and patch inputs → commit declared pins
+      ↓
+Build fixed candidates (push_latest=false) → Smart1 pull
+      ↓
+Recreate the real instance with original volumes → wait for 5-minute boot age
+      ↓
+Deterministic live checks + integration coverage + health
+      ├─ fail → restore stable → restart if needed → wait → recovery check → report
+      ↓ pass
+verified + latest → local latest aliases → Quadlet latest → daemon-reload
+      ↓
+One Astra summary → one complete PDF → OpenClaw → Telegram
 ```
 
-> Note: The reporting step **always** runs — even on abort/rollback in earlier steps, a PDF with the corresponding failure state is generated and sent.
+Repair failures use one shared proposal/approval/verification workflow. No source or SOT edit occurs without the user's explicit Go. No test run is started during workflow installation.
 
 ---
 
@@ -355,7 +283,7 @@ check-versions.sh ──► Result clean? ──no──► Self-healing loop (A
 | Determinism by default | `check-versions.sh`, dry run, compatibility check, test-container checklist |
 | Atomicity | Version pins are never adopted partially |
 | Unique image identity | Every candidate remains identifiable by its fixed version and digest |
-| AI for repair and summaries | Bounded parser/generator corrections, deterministically verified; checkpoint summaries over complete structured step results |
+| AI for repair and summaries | Bounded repair proposals with explicit approval and deterministic verification; one final summary |
 | No blind trust in AI output | The adapted script is re-verified against fixtures + live data |
 | Turn limits everywhere | Prevents endless retry loops in build, test, and script repair |
 | Rollback capability | On both test failure and failed post-deploy health check |

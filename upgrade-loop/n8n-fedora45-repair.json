@@ -15,49 +15,81 @@
         "conditions": {
           "options": {
             "caseSensitive": true,
-            "leftValue": "",
             "typeValidation": "strict",
             "version": 3
           },
-          "conditions": [],
+          "conditions": [
+            {
+              "id": "9a8ad1d1-77bc-47bf-8776-f2357c4c9787",
+              "leftValue": "={{ $json.repair.attempt <= 2 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
           "combinator": "and"
         },
         "options": {}
       },
-      "disabled": true,
-      "notes": "Layout placeholder. Future deterministic counter and configured turn limit. Stop and report when exhausted."
+      "disabled": false,
+      "notes": "At most two proposals per artifact and run; no source edit without explicit user Go."
     },
     {
       "id": "cc3c2405-15cf-50fc-869f-e75a83107dd9",
       "name": "Verify captured response and live data",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
       "position": [
         340,
         0
       ],
       "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "// BEGIN GENERATED: report-redaction.js\n// Shared source for the generated n8n reporting helpers.\nfunction safe(value, key = \"\") {\n  if (/token|password|secret|authorization|api.?key/i.test(key)) return \"[REDACTED]\";\n  if (Array.isArray(value)) return value.map((item) => safe(item));\n  if (value && typeof value === \"object\") {\n    return Object.fromEntries(\n      Object.entries(value)\n        .filter(([field]) => field !== \"run\")\n        .map(([field, item]) => [field, safe(item, field)]),\n    );\n  }\n  return value;\n}\n// END GENERATED: report-redaction.js\nconst out=$input.all().map(i=> {const j=JSON.parse(JSON.stringify(i.json)); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Verify captured response and live data\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+        "authentication": "privateKey",
+        "resource": "command",
+        "operation": "execute",
+        "cwd": "/var/tmp",
+        "command": "=/var/home/core/.local/bin/fedora45-loop repair-verify-live {{ (($json.stdout ? JSON.parse($json.stdout) : $json).run?.id ?? String($execution.id)) }}"
       },
-      "disabled": true,
-      "notes": "Layout placeholder. Run candidate script against captured input and fresh input using deterministic validation. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+      "disabled": false,
+      "notes": "Execute deterministic host adapter: repair-verify-live. Store structured results in the run receipt. No LLM grading or automatic retry.",
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "fedora45HostRunner",
+          "name": "Fedora45 host runner"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
     },
     {
       "id": "2b9905d4-27e6-5bbe-8e4b-338e2cddbe88",
       "name": "Verify historical fixtures",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
       "position": [
         680,
         0
       ],
       "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "// BEGIN GENERATED: report-redaction.js\n// Shared source for the generated n8n reporting helpers.\nfunction safe(value, key = \"\") {\n  if (/token|password|secret|authorization|api.?key/i.test(key)) return \"[REDACTED]\";\n  if (Array.isArray(value)) return value.map((item) => safe(item));\n  if (value && typeof value === \"object\") {\n    return Object.fromEntries(\n      Object.entries(value)\n        .filter(([field]) => field !== \"run\")\n        .map(([field, item]) => [field, safe(item, field)]),\n    );\n  }\n  return value;\n}\n// END GENERATED: report-redaction.js\nconst out=$input.all().map(i=> {const j=JSON.parse(JSON.stringify(i.json)); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Verify historical fixtures\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+        "authentication": "privateKey",
+        "resource": "command",
+        "operation": "execute",
+        "cwd": "/var/tmp",
+        "command": "=/var/home/core/.local/bin/fedora45-loop repair-verify-fixtures {{ (($json.stdout ? JSON.parse($json.stdout) : $json).run?.id ?? String($execution.id)) }}"
       },
-      "disabled": true,
-      "notes": "Layout placeholder. Existing supported formats must continue to work. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+      "disabled": false,
+      "notes": "Execute deterministic host adapter: repair-verify-fixtures. Store structured results in the run receipt. No LLM grading or automatic retry.",
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "fedora45HostRunner",
+          "name": "Fedora45 host runner"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
     },
     {
       "id": "a0aac9de-6e90-5bae-8cd3-d504ab80fb54",
@@ -72,33 +104,54 @@
         "conditions": {
           "options": {
             "caseSensitive": true,
-            "leftValue": "",
             "typeValidation": "strict",
             "version": 3
           },
-          "conditions": [],
+          "conditions": [
+            {
+              "id": "efba30f8-13a6-4726-b92d-49d6411f87d2",
+              "leftValue": "={{ [\"repair-verify-live\",\"repair-verify-fixtures\"].every(k=>($json.stdout ? JSON.parse($json.stdout) : $json).results?.[k]?.status===\"PASS\") }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
           "combinator": "and"
         },
         "options": {}
       },
-      "disabled": true,
-      "notes": "Layout placeholder. On failure return to the repair budget gate; a passing result proceeds to review."
+      "disabled": false,
+      "notes": "The approved diff must pass live and fixture verification before adoption. Revert that diff and stop if verification fails."
     },
     {
       "id": "357ad5a6-1133-53b8-96b3-97e8f1688db8",
       "name": "Review script correction",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
       "position": [
         1360,
         0
       ],
       "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "// BEGIN GENERATED: report-redaction.js\n// Shared source for the generated n8n reporting helpers.\nfunction safe(value, key = \"\") {\n  if (/token|password|secret|authorization|api.?key/i.test(key)) return \"[REDACTED]\";\n  if (Array.isArray(value)) return value.map((item) => safe(item));\n  if (value && typeof value === \"object\") {\n    return Object.fromEntries(\n      Object.entries(value)\n        .filter(([field]) => field !== \"run\")\n        .map(([field, item]) => [field, safe(item, field)]),\n    );\n  }\n  return value;\n}\n// END GENERATED: report-redaction.js\nconst out=$input.all().map(i=> {const j=JSON.parse(JSON.stringify(i.json)); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Review script correction\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+        "authentication": "privateKey",
+        "resource": "command",
+        "operation": "execute",
+        "cwd": "/var/tmp",
+        "command": "=/var/home/core/.local/bin/fedora45-loop repair-proposal {{ (($json.stdout ? JSON.parse($json.stdout) : $json).run?.id ?? String($execution.id)) }} {{ $json.repairPayloadEncoded }}"
       },
-      "disabled": true,
-      "notes": "Layout placeholder. Review or PR stage before adopting the candidate. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED. All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch."
+      "disabled": false,
+      "notes": "Execute deterministic host adapter: repair-proposal. Store structured results in the run receipt. No LLM grading or automatic retry.",
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "fedora45HostRunner",
+          "name": "Fedora45 host runner"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
     },
     {
       "id": "553dcb73-0bc2-51a6-a058-ec11f624916d",
@@ -113,74 +166,54 @@
         "conditions": {
           "options": {
             "caseSensitive": true,
-            "leftValue": "",
             "typeValidation": "strict",
             "version": 3
           },
-          "conditions": [],
+          "conditions": [
+            {
+              "id": "081b87ba-963b-415c-9497-6c584ea91358",
+              "leftValue": "={{ ($json.stdout ? JSON.parse($json.stdout) : $json).gates?.repair_approved === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
           "combinator": "and"
         },
         "options": {}
       },
-      "disabled": true,
-      "notes": "Layout placeholder. Rejected corrections return to the bounded repair loop. All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch."
+      "disabled": false,
+      "notes": "Require a local approval record for this exact diff SHA-256 and source commit, after explicit user Go. Missing approval stops the automatic flow and is reported."
     },
     {
       "id": "9d59428b-f0af-505a-aadd-be6f68eb6785",
       "name": "Commit and adopt repaired script",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
       "position": [
         340,
         240
       ],
       "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "// BEGIN GENERATED: report-redaction.js\n// Shared source for the generated n8n reporting helpers.\nfunction safe(value, key = \"\") {\n  if (/token|password|secret|authorization|api.?key/i.test(key)) return \"[REDACTED]\";\n  if (Array.isArray(value)) return value.map((item) => safe(item));\n  if (value && typeof value === \"object\") {\n    return Object.fromEntries(\n      Object.entries(value)\n        .filter(([field]) => field !== \"run\")\n        .map(([field, item]) => [field, safe(item, field)]),\n    );\n  }\n  return value;\n}\n// END GENERATED: report-redaction.js\nconst out=$input.all().map(i=> {const j=JSON.parse(JSON.stringify(i.json)); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Commit and adopt repaired script\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
+        "authentication": "privateKey",
+        "resource": "command",
+        "operation": "execute",
+        "cwd": "/var/tmp",
+        "command": "=/var/home/core/.local/bin/fedora45-loop repair-commit {{ (($json.stdout ? JSON.parse($json.stdout) : $json).run?.id ?? String($execution.id)) }}"
       },
-      "disabled": true,
-      "notes": "Layout placeholder. Adopt the verified correction, then rerun the version check. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED. All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch."
-    },
-    {
-      "id": "025310e5-7851-51bd-95ab-ee1af814d7ce",
-      "name": "Ephemeral repair attempts remaining?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        680,
-        240
-      ],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          },
-          "conditions": [],
-          "combinator": "and"
-        },
-        "options": {}
+      "disabled": false,
+      "notes": "Execute deterministic host adapter: repair-commit. Store structured results in the run receipt. No LLM grading or automatic retry.",
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "fedora45HostRunner",
+          "name": "Fedora45 host runner"
+        }
       },
-      "disabled": true,
-      "notes": "Layout placeholder. Deterministic per-generator attempt counters and configured turn limits. Stop and report when any required correction exhausts its budget; never weaken the acceptance tests."
-    },
-    {
-      "id": "39246da5-ce47-52f1-a7b9-fd54b5896e6f",
-      "name": "Retest ephemeral generators",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1020,
-        240
-      ],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "// BEGIN GENERATED: report-redaction.js\n// Shared source for the generated n8n reporting helpers.\nfunction safe(value, key = \"\") {\n  if (/token|password|secret|authorization|api.?key/i.test(key)) return \"[REDACTED]\";\n  if (Array.isArray(value)) return value.map((item) => safe(item));\n  if (value && typeof value === \"object\") {\n    return Object.fromEntries(\n      Object.entries(value)\n        .filter(([field]) => field !== \"run\")\n        .map(([field, item]) => [field, safe(item, field)]),\n    );\n  }\n  return value;\n}\n// END GENERATED: report-redaction.js\nconst out=$input.all().map(i=> {const j=JSON.parse(JSON.stringify(i.json)); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Retest ephemeral generators\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
-      },
-      "disabled": true,
-      "notes": "Layout placeholder. Deterministically retest changed generator commits against their exact target and frozen current upstream versions, with fixture regressions and runtime configuration checks. Refresh the complete component result set and record every attempt. Do not replace mandatory checks with an LLM judgment. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED. All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch."
+      "onError": "continueRegularOutput",
+      "retryOnFail": false
     },
     {
       "id": "ae8fc95c-4ccb-5156-82a0-9b5dc11e7e77",
@@ -194,139 +227,8 @@
       "parameters": {
         "inputSource": "passthrough"
       },
-      "disabled": true
-    },
-    {
-      "id": "23966eef-5fdd-5edb-9846-9fe8b9e3c807",
-      "name": "Select artifact policy",
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.2,
-      "position": [
-        0,
-        480
-      ],
-      "parameters": {
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "typeValidation": "strict",
-                  "version": 2
-                },
-                "conditions": [
-                  {
-                    "id": "28369590-8cce-4fae-b12d-31a1b0549364",
-                    "leftValue": "={{ $json.repairRequest.type }}",
-                    "rightValue": "version-script",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "version-script"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "typeValidation": "strict",
-                  "version": 2
-                },
-                "conditions": [
-                  {
-                    "id": "284b445a-93e0-4683-9fa2-3a29b9783fa4",
-                    "leftValue": "={{ $json.repairRequest.type }}",
-                    "rightValue": "ephemeral",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "ephemeral"
-            }
-          ]
-        },
-        "options": {
-          "fallbackOutput": "extra"
-        }
-      },
-      "disabled": true
-    },
-    {
-      "id": "98be42cc-203a-5b41-b3da-1829308a7a89",
-      "name": "Select deterministic verifier",
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.2,
-      "position": [
-        340,
-        480
-      ],
-      "parameters": {
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "typeValidation": "strict",
-                  "version": 2
-                },
-                "conditions": [
-                  {
-                    "id": "348acaf1-0fb4-4f98-9983-3f67e515cafc",
-                    "leftValue": "={{ $json.repairRequest.type }}",
-                    "rightValue": "version-script",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "version-script"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "typeValidation": "strict",
-                  "version": 2
-                },
-                "conditions": [
-                  {
-                    "id": "8f9a7b00-9ec9-4435-87b7-934eeec0159b",
-                    "leftValue": "={{ $json.repairRequest.type }}",
-                    "rightValue": "ephemeral",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "ephemeral"
-            }
-          ]
-        },
-        "options": {
-          "fallbackOutput": "extra"
-        }
-      },
-      "disabled": true
+      "disabled": false,
+      "notes": ""
     },
     {
       "id": "5d3e1627-5639-48a3-bfef-4ec97e92a85e",
@@ -341,8 +243,9 @@
         "promptType": "define",
         "text": "=Prepare a minimal proposed diff for the artifact below. Return a proposal only; never apply it or claim verification/approval. All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch. Preserve acceptance criteria and current-version behavior. Input: {{ JSON.stringify($json.repairRequest) }}"
       },
-      "disabled": true,
-      "notes": "Disabled proposal-only scaffold. All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch."
+      "disabled": false,
+      "notes": "All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch.",
+      "onError": "continueRegularOutput"
     },
     {
       "id": "c34ebdbb-f7b8-4507-9f18-b76c058e5f2f",
@@ -360,7 +263,11 @@
           "mode": "id"
         },
         "responsesApiEnabled": false,
-        "options": {}
+        "options": {
+          "maxTokens": 1800,
+          "timeout": 90000,
+          "maxRetries": 0
+        }
       },
       "credentials": {
         "openAiApi": {
@@ -368,7 +275,7 @@
           "name": "LiteLLM - Astra (core network)"
         }
       },
-      "disabled": true,
+      "disabled": false,
       "notes": "Configured model: astra → chatgpt/gpt-6-astra. Direct internal endpoint http://litellm-database:4000/v1 on Podman network core. The credential is stored only in local n8n; its LiteLLM key is limited to astra. No proxy or external URL is involved."
     },
     {
@@ -381,10 +288,11 @@
         480
       ],
       "parameters": {
-        "jsCode": "const previous=$prevNode; if ([\"Repair attempts remaining?\", \"Repair verification passed?\", \"Correction approved?\", \"Ephemeral repair attempts remaining?\", \"All integrations covered and passed?\", \"Result clean?\", \"Update available?\", \"Preflight passed?\", \"Build successful?\", \"All checklist items passed?\", \"New container healthy?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Own patches compatible?\", \"Own patch regressions passed?\", \"Ephemeral prechecks completed?\", \"Ephemeral generators compatible?\", \"Ephemeral publication verified?\"].includes(previous.name)) for (const item of $input.all()) { item.json.run ??= {id:String($execution.id),events:[],summaries:[]}; item.json.run.events.push({kind:\"decision\",step:previous.name,branch:previous.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); }\nreturn $input.all().map(i => { const j=JSON.parse(JSON.stringify(i.json)); j.run ??= {id:String($execution.id),events:[],summaries:[]}; j.run.repairAttempts ??= {}; const key=j.repairRequest.artifact; j.repairRequest.attempt=(j.run.repairAttempts[key] ?? 0)+1; j.run.repairAttempts[key]=j.repairRequest.attempt; return {...i,json:j}; });",
-        "mode": "runOnceForAllItems"
+        "mode": "runOnceForAllItems",
+        "jsCode": "// BEGIN GENERATED: report-redaction.js\n// Shared source for the generated n8n reporting helpers.\nfunction safe(value, key = \"\") {\n  if (/token|password|secret|authorization|api.?key/i.test(key)) return \"[REDACTED]\";\n  if (Array.isArray(value)) return value.map((item) => safe(item));\n  if (value && typeof value === \"object\") {\n    return Object.fromEntries(\n      Object.entries(value)\n        .filter(([field]) => field !== \"run\")\n        .map(([field, item]) => [field, safe(item, field)]),\n    );\n  }\n  return value;\n}\n// END GENERATED: report-redaction.js\nconst j=$input.first().json; const key=j.repairRequest?.repository ?? (j.repairRequest?.type===\"version-script\"?\"fedora45-ai-safrano9999\":j.repairRequest?.artifact) ?? \"unknown\";\nj.run ??= {id:String($execution.id),events:[]}; j.run.repairAttempts ??= {}; const attempt=(j.run.repairAttempts[key]??0)+1;\nj.run.repairAttempts[key]=attempt; j.repair={attempt,status:\"PROPOSAL\"}; j.repairRequest=safe(j.repairRequest); return [{json:j}];"
       },
-      "disabled": true
+      "disabled": false,
+      "notes": ""
     },
     {
       "id": "719c8048-1488-51ec-8669-be46385e0451",
@@ -396,10 +304,11 @@
         720
       ],
       "parameters": {
-        "jsCode": "const input=$(\"Count attempt and retain input\").item.json; return $input.all().map(i => ({...i,json:{...JSON.parse(JSON.stringify(input)),repairResult:{proposal:i.json.text ?? i.json.output ?? null,verification:\"NOT_TESTED\",attempt:input.repairRequest.attempt}}}));",
-        "mode": "runOnceForAllItems"
+        "mode": "runOnceForAllItems",
+        "jsCode": "const j=JSON.parse(JSON.stringify($(\"Count attempt and retain input\").first().json));\nj.repair.fixProposal=$json.text ?? $json.output ?? \"No valid proposal received\";\nj.repair.verification=\"NOT_RUN\"; j.repairPayloadEncoded=Buffer.from(JSON.stringify({repairRequest:j.repairRequest,repair:j.repair})).toString(\"base64url\"); return [{json:j}];"
       },
-      "disabled": true
+      "disabled": false,
+      "notes": ""
     },
     {
       "id": "0f707a7a-6d31-5069-a1e3-af7471c8ed6e",
@@ -411,25 +320,11 @@
         720
       ],
       "parameters": {
-        "jsCode": "return $input.all().map(i => ({...i,json:{...i.json,repairRoute:\"version-check\",repairResult:{...i.json.repairResult,verification:i.json.repairResult?.verification ?? \"PASS\",attempt:i.json.repairRequest?.attempt ?? 0}}}));",
-        "mode": "runOnceForAllItems"
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:$json.stdout ? JSON.parse($json.stdout) : $json}];"
       },
-      "disabled": true
-    },
-    {
-      "id": "815ac37b-a924-5b4e-8053-acfe01020e90",
-      "name": "Return ephemeral retest",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        680,
-        720
-      ],
-      "parameters": {
-        "jsCode": "return $input.all().map(i => ({...i,json:{...i.json,repairRoute:\"ephemeral-check\",repairResult:{...i.json.repairResult,verification:i.json.repairResult?.verification ?? \"NOT_TESTED\",attempt:i.json.repairRequest?.attempt ?? 0}}}));",
-        "mode": "runOnceForAllItems"
-      },
-      "disabled": true
+      "disabled": false,
+      "notes": ""
     },
     {
       "id": "c0b358c9-1c29-561a-990c-111711967b6a",
@@ -441,134 +336,65 @@
         720
       ],
       "parameters": {
-        "jsCode": "const previous=$prevNode; if ([\"Repair attempts remaining?\", \"Repair verification passed?\", \"Correction approved?\", \"Ephemeral repair attempts remaining?\", \"All integrations covered and passed?\", \"Result clean?\", \"Update available?\", \"Preflight passed?\", \"Build successful?\", \"All checklist items passed?\", \"New container healthy?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Own patches compatible?\", \"Own patch regressions passed?\", \"Ephemeral prechecks completed?\", \"Ephemeral generators compatible?\", \"Ephemeral publication verified?\"].includes(previous.name)) for (const item of $input.all()) { item.json.run ??= {id:String($execution.id),events:[],summaries:[]}; item.json.run.events.push({kind:\"decision\",step:previous.name,branch:previous.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); }\nreturn $input.all().map(i => ({...i,json:{...i.json,repairRoute:\"abort\",repairResult:{...i.json.repairResult,verification:i.json.repairResult?.verification ?? \"FAIL\",attempt:i.json.repairRequest?.attempt ?? 0}}}));",
-        "mode": "runOnceForAllItems"
+        "mode": "runOnceForAllItems",
+        "jsCode": "const j=$json.stdout ? JSON.parse($json.stdout) : $json; j.repair ??= {}; j.repair.status ??= \"EXHAUSTED\";\nj.repairRoute=\"abort\"; j.repairResult={status:j.repair.status,fixProposal:j.repair.fixProposal,verificationStatus:j.repair.verification??\"NOT_RUN\",attempt:j.repair.attempt}; return [{json:j}];"
       },
-      "disabled": true
+      "disabled": false,
+      "notes": ""
     },
     {
-      "id": "de361900-7bf8-58f0-98ed-38720f65c319",
-      "name": "Checkpoint - Repair attempts remaining?",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
+      "id": "45de0df6-348c-4668-926c-40a98917b2ad",
+      "name": "Apply explicitly approved diff",
       "position": [
-        1360,
-        720
+        1800,
+        300
       ],
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "disabled": false,
       "parameters": {
-        "source": "database",
-        "workflowId": {
-          "__rl": true,
-          "value": "fedora45StepReport",
-          "mode": "id"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "checkpoint": "{\"kind\": \"decision\", \"step\": \"Repair attempts remaining?\"}",
-            "reportMode": "checkpoint",
-            "previousDecision": "={{ {name:$prevNode.name,output:$prevNode.outputIndex} }}"
-          },
-          "schema": []
-        },
-        "options": {
-          "waitForSubWorkflow": true
+        "authentication": "privateKey",
+        "resource": "command",
+        "operation": "execute",
+        "cwd": "/var/tmp",
+        "command": "=/var/home/core/.local/bin/fedora45-loop repair-apply {{ (($json.stdout ? JSON.parse($json.stdout) : $json).run?.id ?? String($execution.id)) }}"
+      },
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "fedora45HostRunner",
+          "name": "Fedora45 host runner"
         }
       },
-      "disabled": true
+      "onError": "continueRegularOutput",
+      "retryOnFail": false,
+      "notes": "Execute deterministic host adapter: repair-apply. Store structured results in the run receipt. No LLM grading or automatic retry."
     },
     {
-      "id": "fa532b23-9a82-57ec-9db4-8b8b2c4d54c2",
-      "name": "Checkpoint - Repair verification passed?",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
+      "id": "e9aa03aa-6766-4d63-87a1-b269c9628a94",
+      "name": "Discard failed approved diff",
       "position": [
-        0,
-        960
+        2200,
+        600
       ],
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "disabled": false,
       "parameters": {
-        "source": "database",
-        "workflowId": {
-          "__rl": true,
-          "value": "fedora45StepReport",
-          "mode": "id"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "checkpoint": "{\"kind\": \"decision\", \"step\": \"Repair verification passed?\"}",
-            "reportMode": "checkpoint",
-            "previousDecision": "={{ {name:$prevNode.name,output:$prevNode.outputIndex} }}"
-          },
-          "schema": []
-        },
-        "options": {
-          "waitForSubWorkflow": true
+        "authentication": "privateKey",
+        "resource": "command",
+        "operation": "execute",
+        "cwd": "/var/tmp",
+        "command": "=/var/home/core/.local/bin/fedora45-loop repair-discard {{ (($json.stdout ? JSON.parse($json.stdout) : $json).run?.id ?? String($execution.id)) }}"
+      },
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "fedora45HostRunner",
+          "name": "Fedora45 host runner"
         }
       },
-      "disabled": true
-    },
-    {
-      "id": "5179a433-42dd-5860-9558-fdb8bcc72871",
-      "name": "Checkpoint - Correction approved?",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        340,
-        960
-      ],
-      "parameters": {
-        "source": "database",
-        "workflowId": {
-          "__rl": true,
-          "value": "fedora45StepReport",
-          "mode": "id"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "checkpoint": "{\"kind\": \"decision\", \"step\": \"Correction approved?\"}",
-            "reportMode": "checkpoint",
-            "previousDecision": "={{ {name:$prevNode.name,output:$prevNode.outputIndex} }}"
-          },
-          "schema": []
-        },
-        "options": {
-          "waitForSubWorkflow": true
-        }
-      },
-      "disabled": true
-    },
-    {
-      "id": "b6298aad-c8d0-58c6-bfa0-f61ecbf3ed9e",
-      "name": "Checkpoint - Ephemeral repair attempts remaining?",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.3,
-      "position": [
-        680,
-        960
-      ],
-      "parameters": {
-        "source": "database",
-        "workflowId": {
-          "__rl": true,
-          "value": "fedora45StepReport",
-          "mode": "id"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "checkpoint": "{\"kind\": \"decision\", \"step\": \"Ephemeral repair attempts remaining?\"}",
-            "reportMode": "checkpoint",
-            "previousDecision": "={{ {name:$prevNode.name,output:$prevNode.outputIndex} }}"
-          },
-          "schema": []
-        },
-        "options": {
-          "waitForSubWorkflow": true
-        }
-      },
-      "disabled": true
+      "onError": "continueRegularOutput",
+      "retryOnFail": false,
+      "notes": "Execute deterministic host adapter: repair-discard. Store structured results in the run receipt. No LLM grading or automatic retry."
     }
   ],
   "connections": {
@@ -576,68 +402,7 @@
       "main": [
         [
           {
-            "node": "Select artifact policy",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Select artifact policy": {
-      "main": [
-        [
-          {
-            "node": "Checkpoint - Repair attempts remaining?",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Checkpoint - Ephemeral repair attempts remaining?",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Return repair exhausted",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Repair attempts remaining?": {
-      "main": [
-        [
-          {
             "node": "Count attempt and retain input",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Return repair exhausted",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Ephemeral repair attempts remaining?": {
-      "main": [
-        [
-          {
-            "node": "Count attempt and retain input",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Return repair exhausted",
             "type": "main",
             "index": 0
           }
@@ -648,19 +413,26 @@
       "main": [
         [
           {
-            "node": "Propose artifact correction",
+            "node": "Repair attempts remaining?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Astra - LiteLLM (shared repair)": {
-      "ai_languageModel": [
+    "Repair attempts remaining?": {
+      "main": [
         [
           {
             "node": "Propose artifact correction",
-            "type": "ai_languageModel",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return repair exhausted",
+            "type": "main",
             "index": 0
           }
         ]
@@ -681,25 +453,29 @@
       "main": [
         [
           {
-            "node": "Select deterministic verifier",
+            "node": "Review script correction",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Select deterministic verifier": {
+    "Review script correction": {
       "main": [
         [
           {
-            "node": "Verify captured response and live data",
+            "node": "Correction approved?",
             "type": "main",
             "index": 0
           }
-        ],
+        ]
+      ]
+    },
+    "Correction approved?": {
+      "main": [
         [
           {
-            "node": "Retest ephemeral generators",
+            "node": "Apply explicitly approved diff",
             "type": "main",
             "index": 0
           }
@@ -707,6 +483,17 @@
         [
           {
             "node": "Return repair exhausted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply explicitly approved diff": {
+      "main": [
+        [
+          {
+            "node": "Verify captured response and live data",
             "type": "main",
             "index": 0
           }
@@ -728,7 +515,7 @@
       "main": [
         [
           {
-            "node": "Checkpoint - Repair verification passed?",
+            "node": "Repair verification passed?",
             "type": "main",
             "index": 0
           }
@@ -739,35 +526,6 @@
       "main": [
         [
           {
-            "node": "Review script correction",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Checkpoint - Repair attempts remaining?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Review script correction": {
-      "main": [
-        [
-          {
-            "node": "Checkpoint - Correction approved?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Correction approved?": {
-      "main": [
-        [
-          {
             "node": "Commit and adopt repaired script",
             "type": "main",
             "index": 0
@@ -775,7 +533,18 @@
         ],
         [
           {
-            "node": "Checkpoint - Repair attempts remaining?",
+            "node": "Discard failed approved diff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discard failed approved diff": {
+      "main": [
+        [
+          {
+            "node": "Return repair exhausted",
             "type": "main",
             "index": 0
           }
@@ -793,56 +562,12 @@
         ]
       ]
     },
-    "Retest ephemeral generators": {
-      "main": [
+    "Astra - LiteLLM (shared repair)": {
+      "ai_languageModel": [
         [
           {
-            "node": "Return ephemeral retest",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Checkpoint - Repair attempts remaining?": {
-      "main": [
-        [
-          {
-            "node": "Repair attempts remaining?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Checkpoint - Repair verification passed?": {
-      "main": [
-        [
-          {
-            "node": "Repair verification passed?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Checkpoint - Correction approved?": {
-      "main": [
-        [
-          {
-            "node": "Correction approved?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Checkpoint - Ephemeral repair attempts remaining?": {
-      "main": [
-        [
-          {
-            "node": "Ephemeral repair attempts remaining?",
-            "type": "main",
+            "node": "Propose artifact correction",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]
@@ -853,7 +578,8 @@
   "settings": {
     "executionOrder": "v1",
     "saveDataErrorExecution": "all",
-    "saveDataSuccessExecution": "all"
+    "saveDataSuccessExecution": "all",
+    "executionTimeout": 18000
   },
   "pinData": {}
 }
