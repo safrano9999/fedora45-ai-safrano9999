@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ -r /run/safrano9999-webhooks.env ]]; then
+  set -a; source /run/safrano9999-webhooks.env; set +a
+fi
+while IFS= read -r url_name; do
+  [[ $url_name =~ ^WEBHOOK_URL([0-9]{2,})?$ ]] || continue
+  [[ -n ${!url_name:-} ]] || continue
+  bearer_name="WEBHOOK_BEARER${url_name#WEBHOOK_URL}"
+  {
+    if [[ -n ${!bearer_name:-} ]]; then
+      printf 'header = "Authorization: Bearer %s"\n' "${!bearer_name}"
+    fi
+  } | curl --silent --show-error --fail-with-body --max-time 35 --config - \
+        --request POST "${!url_name}"
+  printf '\n'
+done < <(compgen -A variable WEBHOOK_URL | sort -V)

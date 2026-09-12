@@ -2377,7 +2377,7 @@
         450
       ],
       "parameters": {
-        "jsCode": "const raw = (await this.helpers.getBinaryDataBuffer(0, 'data')).toString('utf8').trim();\nif (raw !== '' && raw !== '--check') throw new Error('Expected an empty body or --check');\nreturn [{json: {check: raw === '--check'}}];"
+        "jsCode": "const queryCheck = Object.prototype.hasOwnProperty.call($json.query ?? {}, '--check');\nconst raw = (await this.helpers.getBinaryDataBuffer(0, 'data')).toString('utf8').trim();\nif (raw !== '' && raw !== '--check') throw new Error('Expected an empty body or --check');\nreturn [{json: {check: queryCheck || raw === '--check'}}];"
       }
     },
     {

@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-if [[ ${N8N_URL+x}${N8N_BEARER+x} != xx && -r /run/fedora45-n8n.env ]]; then
-  set -a; source /run/fedora45-n8n.env; set +a
-fi
-[[ -n ${N8N_URL:-} && -n ${N8N_BEARER:-} ]] || exit 0
-printf 'header = "Authorization: Bearer %s"\n' "$N8N_BEARER" |
-  curl --silent --show-error --fail-with-body --max-time 35 --config - \
-    --header 'Content-Type: text/plain' --data-raw '--check' "$N8N_URL"

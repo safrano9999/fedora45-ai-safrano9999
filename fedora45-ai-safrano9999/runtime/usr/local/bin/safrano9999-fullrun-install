@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Append the optional n8n check to existing repository routines."""
+"""Append optional webhook calls to existing repository routines."""
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 
-runtime = Path('/run/fedora45-n8n.env')
+runtime = Path('/run/safrano9999-webhooks.env')
 if runtime.exists():
     for line in runtime.read_text().splitlines():
         key, value = line.split('=', 1)
         os.environ.setdefault(key, value)
-if os.environ.get('N8N_URL') and os.environ.get('N8N_BEARER'):
+if any(value for key, value in os.environ.items() if re.fullmatch(r'WEBHOOK_URL(?:[0-9]{2,})?', key)):
     result = subprocess.run(['openclaw', 'cron', 'list', '--all', '--json'],
                             capture_output=True, text=True, check=True, timeout=90)
     decoder = json.JSONDecoder()
@@ -34,4 +35,4 @@ if os.environ.get('N8N_URL') and os.environ.get('N8N_BEARER'):
         subprocess.run(['openclaw', 'cron', 'edit', job['id'], '--command-argv',
                         json.dumps(['/usr/local/bin/safrano9999-fullrun', *argv])],
                        capture_output=True, check=True, timeout=90)
-        print('Optional n8n check attached:', job['name'])
+        print('Optional webhooks attached:', job['name'])
