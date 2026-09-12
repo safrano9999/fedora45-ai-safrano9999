@@ -9,7 +9,7 @@ fedora45-ai-core-pre → fedora45-ai-core → fedora45-ai-base
   → fedora45-ai-safrano9999-full (optional, adds VikAI)
 ```
 
-- Each published image receives a fixed `YY.MM.N` tag, for example `26.09.1`.
+- Each published image receives a fixed `YYYY.M.N` tag, for example `2026.9.1`.
 - `N` advances within the UTC month across the chain; existing version tags are never overwritten.
 - `latest` always points to the most recently published build.
 - `stable` moves only when explicitly selected, including the documented pre-update baseline step.
@@ -61,7 +61,7 @@ across the entire Fedora45 image chain is described in
 
 Use scoped `fire.sh REPOSITORY...` publication and `fire-example-chain.sh`
 for the single example chain. The build selector exposes the same six layers.
-GitHub Actions assigns the next `YY.MM.N` version when `image_tag` is empty;
+GitHub Actions assigns the next `YYYY.M.N` version when `image_tag` is empty;
 an explicit `image_tag` must be an unused fixed version. Each build publishes
 that fixed tag and `latest`. `push_stable=true` additionally moves `stable` and
 is passed through a cascade; it defaults to false.

@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Fixed YY.MM.N version. Empty selects the next monthly number."
+        description: "Fixed YYYY.M.N version. Empty selects the next monthly number."
         required: false
         default: ""
       safrano9999_tag:

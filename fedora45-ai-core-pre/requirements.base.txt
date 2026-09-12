@@ -9,5 +9,5 @@ icalendar
 requests
 recurring_ical_events
 SQLAlchemy>=2.0
-psycopg[binary]>=3.1
+psycopg>=3.1
 pymysql>=1.1

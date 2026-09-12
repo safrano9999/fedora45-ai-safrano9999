@@ -121,7 +121,7 @@ After Step 2 completes, build and publish the candidate:
 
 1. **Build the new version**
    - Dispatch the GitHub Action through `mcp-safrano9999` with `push_latest=false` and `push_stable=false`.
-   - Publish each candidate with the same fixed `YY.MM.N` tag for this run. The cascade passes this tag as the next layer's parent reference, together with both publishing flags; downstream builds use that candidate instead of `latest`.
+   - Publish each candidate with the same fixed `YYYY.M.N` tag for this run. The cascade passes this tag as the next layer's parent reference, together with both publishing flags; downstream builds use that candidate instead of `latest`.
    - Record every candidate digest for testing and deployment. Existing workflows default to `push_latest=true`; the upgrade loop must explicitly disable it.
 
 Keep `latest` unchanged during the build and tests. `stable` remains the frozen running baseline. Step 4 promotes the exact tested candidate after verification.
