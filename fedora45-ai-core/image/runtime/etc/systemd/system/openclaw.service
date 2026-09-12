@@ -1,0 +1,19 @@
+[Unit]
+Description=OpenClaw gateway
+Requires=persistainer.service openclaw-config.service
+After=persistainer.service fedora44-ai-init-hooks.service tailscale-up.service openclaw-config.service
+Wants=tailscale-up.service
+
+[Service]
+Type=simple
+TasksMax=infinity
+Environment=HOME=/root
+ExecCondition=/bin/bash -c '[ "$${OPENCLAW_START:-1}" = "1" ]'
+ExecStart=/bin/bash -lc 'args=(gateway run --bind lan --port "$${OPENCLAW_GATEWAY_PORT:-18789}"); if [ -n "$${OPENCLAW_GATEWAY_TOKEN:-}" ]; then args+=(--auth token); fi; exec /usr/local/bin/openclaw "$${args[@]}"'
+ExecStartPost=/bin/bash -lc 'exec /usr/local/libexec/fedora44-wait-ready --timeout 900 http "http://127.0.0.1:$${OPENCLAW_GATEWAY_PORT:-18789}/ready" 200'
+Restart=always
+RestartSec=5
+TimeoutStartSec=930
+
+[Install]
+WantedBy=multi-user.target

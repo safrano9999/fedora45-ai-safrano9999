@@ -1,0 +1,64 @@
+--- a/image/runtime/usr/local/bin/vikai-bootstrap-openclaw-agents
++++ b/image/runtime/usr/local/bin/vikai-bootstrap-openclaw-agents
+@@ -6,7 +6,6 @@
+ import json
+ import os
+ import shutil
+-from datetime import datetime, timezone
+ from pathlib import Path
+
+
+@@ -119,15 +118,9 @@
+ def ensure_agent_config(config: dict, agent: dict, model: str) -> Path:
+     agents = config.setdefault("agents", {})
+     agents.setdefault("defaults", {}).setdefault("workspace", str(STATE_DIR / "workspace"))
+-    agent_list = agents.setdefault("list", [])
++    agents["ownership"] = "explicit"
+     agent_id = agent["id"]
+-    entry = next(
+-        (item for item in agent_list if isinstance(item, dict) and item.get("id") == agent_id),
+-        None,
+-    )
+-    if entry is None:
+-        entry = {"id": agent_id, "name": agent_id}
+-        agent_list.append(entry)
++    entry = agents.setdefault("entries", {}).setdefault(agent_id, {"name": agent_id})
+
+     workspace = Path(entry.get("workspace") or STATE_DIR / f"workspace-{agent_id}")
+     agent_dir = Path(entry.get("agentDir") or STATE_DIR / "agents" / agent_id / "agent")
+@@ -160,7 +153,10 @@
+     template = TEMPLATE_DIR / agent["template"]
+     if not template.is_dir():
+         raise SystemExit(f"VikAI workspace template not found: {template}")
+-    shutil.copytree(template, workspace, dirs_exist_ok=True, symlinks=True)
++    shutil.copytree(
++        template, workspace, dirs_exist_ok=True, symlinks=True,
++        ignore=shutil.ignore_patterns("openclaw-workspace-state.json", "workspace-state.json"),
++    )
+
+
+ def write_workspace(agent: dict, token: str, workspace: Path, target: str) -> None:
+@@ -172,23 +168,6 @@
+
+     (workspace / ".vikai_role").write_text(agent["role"] + "\n", encoding="utf-8")
+     write_secret(workspace / ".vikunjaenv", token)
+-
+-    state_file = workspace / ".openclaw" / "workspace-state.json"
+-    state_file.parent.mkdir(parents=True, exist_ok=True)
+-    if not state_file.exists():
+-        now = datetime.now(timezone.utc).isoformat()
+-        state_file.write_text(
+-            json.dumps(
+-                {
+-                    "version": 1,
+-                    "bootstrapSeededAt": now,
+-                    "setupCompletedAt": now,
+-                },
+-                indent=2,
+-            )
+-            + "\n",
+-            encoding="utf-8",
+-        )
+
+     skill_dir = workspace / "SKILLS" / agent["skill_dir"]
+     skill_dir.mkdir(parents=True, exist_ok=True)

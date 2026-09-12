@@ -1,0 +1,7 @@
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Generated instances contain host paths, credentials and local runtime data.
+**/CONTAINER/
+.tag

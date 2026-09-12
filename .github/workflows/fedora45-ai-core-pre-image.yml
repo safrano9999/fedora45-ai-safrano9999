@@ -1,0 +1,279 @@
+# Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
+name: fedora45-ai-core-pre image
+run-name: ${{ inputs.monitor_id != '' && format('{0} [monitor:{1}:{2}]', github.workflow, inputs.monitor_id, inputs.monitor_final) || github.workflow }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Fixed YY.MM.N version. Empty selects the next monthly number."
+        required: false
+        default: ""
+      push_latest:
+        description: "Also advance latest; false builds a candidate for external verification"
+        required: false
+        type: boolean
+        default: true
+      push_stable:
+        description: "Explicitly also move :stable to this build"
+        required: false
+        type: boolean
+        default: false
+      cascade:
+        description: "Build Core after Core-pre succeeds"
+        required: true
+        type: boolean
+        default: false
+      monitor_id:
+        description: "Optional event-monitor correlation id"
+        required: false
+        default: ""
+        type: string
+      monitor_final:
+        description: "This run is the final monitored cascade stage"
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: fedora45-ai-core-pre-image
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      actions: write
+    env:
+      DOCKER_BUILD_RECORD_UPLOAD: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure private repository access
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          [ -n "$GH_TOKEN" ]
+          gh auth status
+          gh auth setup-git
+
+      - name: Free runner disk space
+        run: .github/scripts/free-runner-disk-space.sh
+
+      - name: Resolve image tags
+        id: tags
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_TAG: ${{ inputs.image_tag }}
+          PUSH_STABLE: ${{ inputs.push_stable }}
+          PUSH_LATEST: ${{ inputs.push_latest }}
+        run: |
+          set -euo pipefail
+          set -a
+          . fedora45-ai-core-pre/build.conf
+          set +a
+          [ -n "${FEDORA45_AI_CORE_PRE_IMAGE:-}" ] || {
+            echo "Missing FEDORA45_AI_CORE_PRE_IMAGE in build.conf" >&2
+            exit 1
+          }
+          image="${FEDORA45_AI_CORE_PRE_IMAGE%:*}"
+          version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG")"
+          {
+            echo "version=$version"
+            echo "image=$image"
+            echo "tags<<EOF"
+            echo "${image}:${version}"
+            [ "$PUSH_LATEST" != true ] || echo "${image}:latest"
+            [ "$PUSH_STABLE" != true ] || echo "${image}:stable"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Resolve immutable foundation inputs
+        id: build
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          cd fedora45-ai-core-pre
+          ./build/prepare-build-context.sh
+          test -f build/vendor/persistainer/image/runtime/etc/systemd/system/persistainer.service
+          test -x build/vendor/persistainer/image/runtime/usr/local/bin/persistainer
+          PYTHONDONTWRITEBYTECODE=1 \
+            python3 -m unittest discover -s tests -p 'test_*.py'
+          grep -Fqx 'Type=oneshot' \
+            build/vendor/persistainer/image/runtime/etc/systemd/system/persistainer.service
+          grep -Fqx 'Requires=persistainer.service' \
+            image/runtime/etc/systemd/system/tailscaled.service
+          grep -Fqx 'After=network.target persistainer.service' \
+            image/runtime/etc/systemd/system/tailscaled.service
+          grep -Fqx 'Requires=persistainer.service tailscaled.service' \
+            image/runtime/etc/systemd/system/tailscale-up.service
+          grep -Fqx 'After=persistainer.service tailscaled.service' \
+            image/runtime/etc/systemd/system/tailscale-up.service
+          for unit in bip39.service cockpit.service cloudflared.service; do
+            ! grep -Fq persistainer.service "image/runtime/etc/systemd/system/$unit"
+          done
+          set -a
+          . ./build.conf
+          . ./.resolved-build.env
+          set +a
+          for name in HERMES_VERSION \
+            ELECTRUM_VERSION LND_VERSION GETH_VERSION GETH_COMMIT \
+            WEBHOOK_VERSION VDITOR_VERSION OPENCLAW_VERSION \
+            FEDORA_REPOMD_KEY UV_VERSION UV_INSTALLER_SHA256 \
+            FUGU_COMMIT CLOUDFLARED_VERSION CLOUDFLARED_SHA256 \
+            CODEX_VERSION CLAUDE_CODE_VERSION OPENCLAW_BRAVE_PLUGIN_VERSION \
+            SOLANA_INSTALLER_MD5 \
+            ELECTRUM_KEYS_COMMIT; do
+            [ -n "${!name:-}" ] || {
+              echo "Missing required Core-pre input: $name" >&2
+              exit 1
+            }
+          done
+          {
+            echo "openclaw_version=$OPENCLAW_VERSION"
+            echo "build_args<<EOF"
+            echo "HERMES_VERSION=$HERMES_VERSION"
+            echo "ELECTRUM_VERSION=$ELECTRUM_VERSION"
+            echo "LND_VERSION=$LND_VERSION"
+            echo "GETH_VERSION=$GETH_VERSION"
+            echo "GETH_COMMIT=$GETH_COMMIT"
+            echo "WEBHOOK_VERSION=$WEBHOOK_VERSION"
+            echo "VDITOR_VERSION=$VDITOR_VERSION"
+            cat .resolved-build.env
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          cache-binary: false
+          keep-state: false
+          cleanup: true
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Core-pre
+        uses: docker/build-push-action@v6
+        with:
+          context: ./fedora45-ai-core-pre
+          file: ./fedora45-ai-core-pre/Containerfile
+          target: ai-core-pre
+          platforms: linux/amd64
+          pull: true
+          no-cache: true
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          build-args: ${{ steps.build.outputs.build_args }}
+
+      - name: Reclaim container build space
+        run: .github/scripts/prune-container-build-space.sh
+
+      - name: Test published Core-pre image
+        env:
+          IMAGE_TAG: ${{ steps.tags.outputs.version }}
+          EXPECTED_OPENCLAW_VERSION: ${{ steps.build.outputs.openclaw_version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="${{ steps.tags.outputs.image }}:${IMAGE_TAG}"
+          docker pull "$image"
+          docker run --rm \
+            -e EXPECTED_OPENCLAW_VERSION \
+            --entrypoint bash \
+            "$image" -lc '
+            set -euo pipefail
+            grep -q "Fedora release 45" /etc/fedora-release
+            for command in node npm python3 pip uv codex claude openclaw \
+              hermes webhook cloudflared git gh jq tailscale cockpit-bridge \
+              nmap lnd lncli geth solana electrum persistainer; do
+              command -v "$command" >/dev/null
+            done
+            test -x /usr/local/libexec/fedora44-wait-ready
+            /usr/local/libexec/fedora44-wait-ready --help >/dev/null
+            env -i PATH=/usr/local/bin:/usr/bin:/bin persistainer
+            for unit in persistainer.service tailscaled.service \
+              tailscale-up.service cloudflared.service cockpit.service \
+              bip39.service; do
+              test "$(systemctl is-enabled "$unit")" = enabled
+            done
+            systemd-analyze verify \
+              /etc/systemd/system/persistainer.service \
+              /etc/systemd/system/tailscaled.service \
+              /etc/systemd/system/tailscale-up.service
+            grep -Fqx "Requires=persistainer.service" \
+              /etc/systemd/system/tailscaled.service
+            grep -Fqx "Requires=persistainer.service tailscaled.service" \
+              /etc/systemd/system/tailscale-up.service
+            for unit in bip39.service cockpit.service cloudflared.service; do
+              ! grep -Fq persistainer.service "/etc/systemd/system/$unit"
+            done
+            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" \
+              = "$EXPECTED_OPENCLAW_VERSION"
+            test -f /usr/local/lib/vditor/dist/index.min.js
+            test ! -e /usr/local/bin/openclaw-ephemeral.py
+            test ! -e /usr/local/bin/hermes-ephemeral.py
+            test ! -e /root/.openclaw/extensions/note
+            test ! -e /opt/safrano9999
+          '
+          test "$(docker image inspect --format '{{.Config.User}}' "$image")" = root
+          test "$(docker image inspect --format '{{json .Config.Cmd}}' "$image")" \
+            = '["/sbin/init"]'
+          docker buildx imagetools inspect "$image" >/dev/null
+
+      - name: Verify private GHCR package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_url="https://api.github.com/user/packages/container/fedora45-ai-core-pre"
+          verified=false
+          for _ in {1..20}; do
+            if curl -fsSL \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "$package_url" \
+              | jq -e '.name == "fedora45-ai-core-pre" and .visibility == "private"' \
+                >/dev/null; then
+              verified=true
+              break
+            fi
+            sleep 3
+          done
+          [ "$verified" = true ]
+
+      - name: Trigger Core cascade
+        if: inputs.cascade
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE_TAG: ${{ steps.tags.outputs.version }}
+          PUSH_STABLE: ${{ inputs.push_stable }}
+          PUSH_LATEST: ${{ inputs.push_latest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run fedora45-ai-core-image.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$GITHUB_REF_NAME" \
+            -f "image_tag=$IMAGE_TAG" \
+            -f "core_pre_tag=$IMAGE_TAG" \
+            -f "push_stable=$PUSH_STABLE" \
+            -f "push_latest=$PUSH_LATEST" \
+            -f "cascade=true" \
+            -f "monitor_id=${{ inputs.monitor_id }}" \
+            -f "monitor_final=false"

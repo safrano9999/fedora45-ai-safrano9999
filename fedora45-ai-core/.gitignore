@@ -1,0 +1,14 @@
+/.resolved-build.env
+/build/vendor/
+/srv/
+/CONTAINER/
+/config.conf_example
+/container.example
+/env.example
+/requirements.txt
+*.env
+*_config.conf
+*_container.conf
+*_build.conf
+*.container
+*-compose.yml

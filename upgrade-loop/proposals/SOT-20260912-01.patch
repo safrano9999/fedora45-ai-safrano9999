@@ -1,0 +1,265 @@
+--- a/githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-base-image.yml
++++ b/githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-base-image.yml
+@@ -13,6 +13,11 @@
+         description: "fedora44-ai-core parent tag. Empty uses build.conf"
+         required: false
+         default: ""
++      push_latest:
++        description: "Also advance latest; false builds a candidate for external verification"
++        required: false
++        type: boolean
++        default: true
+       push_stable:
+         description: "Explicitly also move :stable to this build"
+         required: false
+@@ -63,6 +68,7 @@
+           REQUESTED_TAG: ${{ inputs.image_tag }}
+           CORE_TAG: ${{ inputs.core_tag }}
+           PUSH_STABLE: ${{ inputs.push_stable }}
++          PUSH_LATEST: ${{ inputs.push_latest }}
+         run: |
+           set -euo pipefail
+           set -a
+@@ -79,7 +85,7 @@
+             echo "image=$image"
+             echo "tags<<EOF"
+             echo "${image}:${version}"
+-            echo "${image}:latest"
++            [ "$PUSH_LATEST" != true ] || echo "${image}:latest"
+             [ "$PUSH_STABLE" != true ] || echo "${image}:stable"
+             echo "EOF"
+           } >> "$GITHUB_OUTPUT"
+@@ -198,6 +204,7 @@
+           GH_TOKEN: ${{ github.token }}
+           IMAGE_TAG: ${{ steps.refs.outputs.version }}
+           PUSH_STABLE: ${{ inputs.push_stable }}
++          PUSH_LATEST: ${{ inputs.push_latest }}
+         shell: bash
+         run: |
+           set -euo pipefail
+@@ -207,6 +214,7 @@
+             -f "image_tag=$IMAGE_TAG" \
+             -f "base_tag=$IMAGE_TAG" \
+             -f "push_stable=$PUSH_STABLE" \
++            -f "push_latest=$PUSH_LATEST" \
+             -f "cascade=true" \
+             -f "monitor_id=${{ inputs.monitor_id }}" \
+             -f "monitor_final=false"
+--- a/githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-core-image.yml
++++ b/githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-core-image.yml
+@@ -13,6 +13,11 @@
+         description: "fedora44-ai-core-pre parent tag. Empty uses build.conf"
+         required: false
+         default: ""
++      push_latest:
++        description: "Also advance latest; false builds a candidate for external verification"
++        required: false
++        type: boolean
++        default: true
+       push_stable:
+         description: "Explicitly also move :stable to this build"
+         required: false
+@@ -63,6 +68,7 @@
+           REQUESTED_TAG: ${{ inputs.image_tag }}
+           CORE_PRE_TAG: ${{ inputs.core_pre_tag }}
+           PUSH_STABLE: ${{ inputs.push_stable }}
++          PUSH_LATEST: ${{ inputs.push_latest }}
+         run: |
+           set -euo pipefail
+           set -a
+@@ -78,7 +84,7 @@
+             echo "image=$image"
+             echo "tags<<EOF"
+             echo "${image}:${version}"
+-            echo "${image}:latest"
++            [ "$PUSH_LATEST" != true ] || echo "${image}:latest"
+             [ "$PUSH_STABLE" != true ] || echo "${image}:stable"
+             echo "EOF"
+           } >> "$GITHUB_OUTPUT"
+@@ -331,6 +337,7 @@
+           GH_TOKEN: ${{ github.token }}
+           IMAGE_TAG: ${{ steps.refs.outputs.version }}
+           PUSH_STABLE: ${{ inputs.push_stable }}
++          PUSH_LATEST: ${{ inputs.push_latest }}
+         shell: bash
+         run: |
+           set -euo pipefail
+@@ -340,6 +347,7 @@
+             -f "image_tag=$IMAGE_TAG" \
+             -f "core_tag=$IMAGE_TAG" \
+             -f "push_stable=$PUSH_STABLE" \
++            -f "push_latest=$PUSH_LATEST" \
+             -f "cascade=true" \
+             -f "monitor_id=${{ inputs.monitor_id }}" \
+             -f "monitor_final=false"
+--- a/githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-core-pre-image.yml
++++ b/githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-core-pre-image.yml
+@@ -9,6 +9,11 @@
+         description: "Fixed YY.MM.N version. Empty selects the next monthly number."
+         required: false
+         default: ""
++      push_latest:
++        description: "Also advance latest; false builds a candidate for external verification"
++        required: false
++        type: boolean
++        default: true
+       push_stable:
+         description: "Explicitly also move :stable to this build"
+         required: false
+@@ -68,6 +73,7 @@
+           GH_TOKEN: ${{ github.token }}
+           REQUESTED_TAG: ${{ inputs.image_tag }}
+           PUSH_STABLE: ${{ inputs.push_stable }}
++          PUSH_LATEST: ${{ inputs.push_latest }}
+         run: |
+           set -euo pipefail
+           set -a
+@@ -84,7 +90,7 @@
+             echo "image=$image"
+             echo "tags<<EOF"
+             echo "${image}:${version}"
+-            echo "${image}:latest"
++            [ "$PUSH_LATEST" != true ] || echo "${image}:latest"
+             [ "$PUSH_STABLE" != true ] || echo "${image}:stable"
+             echo "EOF"
+           } >> "$GITHUB_OUTPUT"
+@@ -257,6 +263,7 @@
+           GH_TOKEN: ${{ github.token }}
+           IMAGE_TAG: ${{ steps.tags.outputs.version }}
+           PUSH_STABLE: ${{ inputs.push_stable }}
++          PUSH_LATEST: ${{ inputs.push_latest }}
+         shell: bash
+         run: |
+           set -euo pipefail
+@@ -266,6 +273,7 @@
+             -f "image_tag=$IMAGE_TAG" \
+             -f "core_pre_tag=$IMAGE_TAG" \
+             -f "push_stable=$PUSH_STABLE" \
++            -f "push_latest=$PUSH_LATEST" \
+             -f "cascade=true" \
+             -f "monitor_id=${{ inputs.monitor_id }}" \
+             -f "monitor_final=false"
+--- a/githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-kachelmann-image.yml
++++ b/githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-kachelmann-image.yml
+@@ -13,6 +13,11 @@
+         description: "fedora44-ai-base parent tag. Empty uses build.conf"
+         required: false
+         default: ""
++      push_latest:
++        description: "Also advance latest; false builds a candidate for external verification"
++        required: false
++        type: boolean
++        default: true
+       push_stable:
+         description: "Explicitly also move :stable to this build"
+         required: false
+@@ -63,6 +68,7 @@
+           REQUESTED_TAG: ${{ inputs.image_tag }}
+           BASE_TAG: ${{ inputs.base_tag }}
+           PUSH_STABLE: ${{ inputs.push_stable }}
++          PUSH_LATEST: ${{ inputs.push_latest }}
+         run: |
+           set -euo pipefail
+           set -a
+@@ -79,7 +85,7 @@
+             echo "image=$image"
+             echo "tags<<EOF"
+             echo "${image}:${version}"
+-            echo "${image}:latest"
++            [ "$PUSH_LATEST" != true ] || echo "${image}:latest"
+             [ "$PUSH_STABLE" != true ] || echo "${image}:stable"
+             echo "EOF"
+           } >> "$GITHUB_OUTPUT"
+@@ -224,6 +230,7 @@
+           GH_TOKEN: ${{ github.token }}
+           IMAGE_TAG: ${{ steps.refs.outputs.version }}
+           PUSH_STABLE: ${{ inputs.push_stable }}
++          PUSH_LATEST: ${{ inputs.push_latest }}
+         shell: bash
+         run: |
+           set -euo pipefail
+@@ -233,6 +240,7 @@
+             -f "image_tag=$IMAGE_TAG" \
+             -f "kachelmann_tag=$IMAGE_TAG" \
+             -f "push_stable=$PUSH_STABLE" \
++            -f "push_latest=$PUSH_LATEST" \
+             -f "cascade=true" \
+             -f "monitor_id=${{ inputs.monitor_id }}" \
+             -f "monitor_final=false"
+--- a/githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-safrano9999-full-image.yml
++++ b/githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-safrano9999-full-image.yml
+@@ -13,6 +13,11 @@
+         description: "fedora44-ai-safrano9999 parent tag. Empty uses build.conf"
+         required: false
+         default: ""
++      push_latest:
++        description: "Also advance latest; false builds a candidate for external verification"
++        required: false
++        type: boolean
++        default: true
+       push_stable:
+         description: "Explicitly also move :stable to this build"
+         required: false
+@@ -57,6 +62,7 @@
+           REQUESTED_TAG: ${{ inputs.image_tag }}
+           SAFRANO9999_TAG: ${{ inputs.safrano9999_tag }}
+           PUSH_STABLE: ${{ inputs.push_stable }}
++          PUSH_LATEST: ${{ inputs.push_latest }}
+         run: |
+           set -euo pipefail
+           set -a
+@@ -73,7 +79,7 @@
+             echo "image=$image"
+             echo "tags<<EOF"
+             echo "${image}:${version}"
+-            echo "${image}:latest"
++            [ "$PUSH_LATEST" != true ] || echo "${image}:latest"
+             [ "$PUSH_STABLE" != true ] || echo "${image}:stable"
+             echo "EOF"
+           } >> "$GITHUB_OUTPUT"
+--- a/githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-safrano9999-image.yml
++++ b/githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-safrano9999-image.yml
+@@ -13,6 +13,11 @@
+         description: "fedora44-ai-kachelmann parent tag. Empty uses build.conf"
+         required: false
+         default: ""
++      push_latest:
++        description: "Also advance latest; false builds a candidate for external verification"
++        required: false
++        type: boolean
++        default: true
+       push_stable:
+         description: "Explicitly also move :stable to this build"
+         required: false
+@@ -63,6 +68,7 @@
+           REQUESTED_TAG: ${{ inputs.image_tag }}
+           KACHELMANN_TAG: ${{ inputs.kachelmann_tag }}
+           PUSH_STABLE: ${{ inputs.push_stable }}
++          PUSH_LATEST: ${{ inputs.push_latest }}
+         run: |
+           set -euo pipefail
+           set -a
+@@ -79,7 +85,7 @@
+             echo "image=$image"
+             echo "tags<<EOF"
+             echo "${image}:${version}"
+-            echo "${image}:latest"
++            [ "$PUSH_LATEST" != true ] || echo "${image}:latest"
+             [ "$PUSH_STABLE" != true ] || echo "${image}:stable"
+             echo "EOF"
+           } >> "$GITHUB_OUTPUT"
+@@ -211,6 +217,7 @@
+           GH_TOKEN: ${{ github.token }}
+           IMAGE_TAG: ${{ steps.refs.outputs.version }}
+           PUSH_STABLE: ${{ inputs.push_stable }}
++          PUSH_LATEST: ${{ inputs.push_latest }}
+         shell: bash
+         run: |
+           set -euo pipefail
+@@ -220,5 +227,6 @@
+             -f "image_tag=$IMAGE_TAG" \
+             -f "safrano9999_tag=$IMAGE_TAG" \
+             -f "push_stable=$PUSH_STABLE" \
++            -f "push_latest=$PUSH_LATEST" \
+             -f "monitor_id=${{ inputs.monitor_id }}" \
+             -f "monitor_final=true"

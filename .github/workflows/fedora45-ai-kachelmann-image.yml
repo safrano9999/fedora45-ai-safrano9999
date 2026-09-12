@@ -1,0 +1,246 @@
+# Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
+name: fedora45-ai-kachelmann image
+run-name: ${{ inputs.monitor_id != '' && format('{0} [monitor:{1}:{2}]', github.workflow, inputs.monitor_id, inputs.monitor_final) || github.workflow }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Fixed YY.MM.N version. Empty selects the next monthly number."
+        required: false
+        default: ""
+      base_tag:
+        description: "fedora45-ai-base parent tag. Empty uses build.conf"
+        required: false
+        default: ""
+      push_latest:
+        description: "Also advance latest; false builds a candidate for external verification"
+        required: false
+        type: boolean
+        default: true
+      push_stable:
+        description: "Explicitly also move :stable to this build"
+        required: false
+        type: boolean
+        default: false
+      cascade:
+        description: "Build Safrano after this layer succeeds"
+        required: true
+        type: boolean
+        default: false
+      monitor_id:
+        description: "Optional event-monitor correlation id"
+        required: false
+        default: ""
+        type: string
+      monitor_final:
+        description: "This run is the final monitored stage"
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: fedora45-ai-kachelmann-image
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      actions: write
+    env:
+      DOCKER_BUILD_RECORD_UPLOAD: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free runner disk space
+        run: .github/scripts/free-runner-disk-space.sh
+
+      - name: Resolve image references
+        id: refs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_TAG: ${{ inputs.image_tag }}
+          BASE_TAG: ${{ inputs.base_tag }}
+          PUSH_STABLE: ${{ inputs.push_stable }}
+          PUSH_LATEST: ${{ inputs.push_latest }}
+        run: |
+          set -euo pipefail
+          set -a
+          . fedora45-ai-kachelmann/build.conf
+          set +a
+          base_ref="$AI_BASE_IMAGE"
+          [ -z "$BASE_TAG" ] || base_ref="${AI_BASE_IMAGE%:*}:$BASE_TAG"
+          image="${FEDORA45_AI_KACHELMANN_IMAGE%:*}"
+          version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG")"
+
+          {
+            echo "version=$version"
+            echo "base_ref=$base_ref"
+            echo "image=$image"
+            echo "tags<<EOF"
+            echo "${image}:${version}"
+            [ "$PUSH_LATEST" != true ] || echo "${image}:latest"
+            [ "$PUSH_STABLE" != true ] || echo "${image}:stable"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Configure source authentication
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        run: gh auth setup-git
+
+      - name: Prepare KACHELMANN build context
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        run: fedora45-ai-kachelmann/build/prepare-build-context.sh --no-cache
+
+      - name: Stage verified KACHELMANN APK
+        id: kachelmann_apk
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        run: |
+          python3 .github/scripts/stage-kachelmann-apk.py \
+            --destination fedora45-ai-kachelmann/safrano9999/KACHELMANN
+
+      - name: Resolve KACHELMANN build configuration
+        id: kachelmann_build
+        shell: bash
+        run: |
+          set -euo pipefail
+          resolved=fedora45-ai-kachelmann/.resolved-build.env
+          [ -s "$resolved" ] || {
+            echo "Missing $resolved" >&2
+            exit 1
+          }
+          {
+            echo "build_args<<EOF"
+            cat "$resolved"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          cache-binary: false
+          keep-state: false
+          cleanup: true
+
+      - name: Log in to private GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push KACHELMANN layer
+        uses: docker/build-push-action@v6
+        with:
+          context: ./fedora45-ai-kachelmann
+          file: ./fedora45-ai-kachelmann/Containerfile
+          target: ai-kachelmann
+          platforms: linux/amd64
+          pull: true
+          no-cache: true
+          push: true
+          tags: ${{ steps.refs.outputs.tags }}
+          labels: |
+            io.safrano9999.kachelmann.apk.release=${{ steps.kachelmann_apk.outputs.release_tag }}
+            io.safrano9999.kachelmann.apk.filename=${{ steps.kachelmann_apk.outputs.apk_filename }}
+            io.safrano9999.kachelmann.apk.sha256=${{ steps.kachelmann_apk.outputs.apk_sha256 }}
+          build-args: |
+            AI_BASE_IMAGE=${{ steps.refs.outputs.base_ref }}
+            ${{ steps.kachelmann_build.outputs.build_args }}
+
+      - name: Reclaim space after KACHELMANN build
+        run: .github/scripts/prune-container-build-space.sh
+
+      - name: Test published KACHELMANN layer
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="${{ steps.refs.outputs.image }}:${{ steps.refs.outputs.version }}"
+          docker pull "$image"
+          docker run --rm --entrypoint bash \
+            --env EXPECTED_APK_FILENAME="${{ steps.kachelmann_apk.outputs.apk_filename }}" \
+            --env EXPECTED_APK_SHA256="${{ steps.kachelmann_apk.outputs.apk_sha256 }}" \
+            "$image" -lc '
+            set -euo pipefail
+            grep -q "Fedora release 45" /etc/fedora-release
+            grep -Fqx "TasksMax=infinity" \
+              /etc/systemd/system/openclaw.service
+            test -x /usr/local/bin/openclaw-ephemeral.py
+            test -x /usr/local/bin/hermes-ephemeral
+            test -x /usr/local/bin/persistainer
+            test -d /opt/safrano9999/KACHELMANN
+            test -f /opt/safrano9999/KACHELMANN/openclaw.plugin.json
+            test "$(jq -r .id \
+              /opt/safrano9999/KACHELMANN/openclaw.plugin.json)" = kachelmann
+            test -f /opt/safrano9999/KACHELMANN/hermes/plugin.yaml
+            test -x /usr/local/bin/kachelmann-hermes-enable
+            test -f /etc/systemd/system/hermes.service.d/30-kachelmann.conf
+            mapfile -t apks < <(find /opt/safrano9999/KACHELMANN -maxdepth 1 \
+              -type f -name "kachelmann-20*.apk" -printf "%f\n" | sort)
+            test "${#apks[@]}" -eq 1
+            test "${apks[0]}" = "$EXPECTED_APK_FILENAME"
+            apk="/opt/safrano9999/KACHELMANN/${apks[0]}"
+            test "$(sha256sum "$apk" | cut -d " " -f 1)" = "$EXPECTED_APK_SHA256"
+            python3 -c "import sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); n=set(z.namelist()); assert {\"AndroidManifest.xml\",\"classes.dex\"} <= n; assert z.testzip() is None" "$apk"
+            python3 -c "import fastapi, sqlalchemy, uvicorn"
+            /usr/local/lib/hermes-agent/venv/bin/python -c "import sqlalchemy"
+            for project in JUGO VikAI PV_D-A-CH KIWIX_BRIDGE \
+              NAPOLEON_HILLS_AI_MASTERMIND_CLASSES \
+              SOLANA_AIRGAPPED_DEBIAN_WORKFLOW \
+              NaturalGrounding-Tiktok-Ying-Video-Manager \
+              DAILYNEWS ZEROINBOX SPANKER; do
+              test ! -e "/opt/safrano9999/$project"
+            done
+            systemctl is-enabled \
+              persistainer.service fedora44-ai-init-hooks.service \
+              cloudflared.service openclaw-config.service openclaw.service \
+              openclaw-ephemeral-schedule.service hermes-ephemeral.service \
+              hermes.service citadel.service citadel-scan.service \
+              codeanalyst.service kachelmann-webui.service kachelmann-mcp.service
+            test ! -e /etc/systemd/system/fedora44-ai.service
+          '
+          test "$(
+            docker image inspect \
+              --format '{{ index .Config.Labels "io.safrano9999.parent" }}' \
+              "$image"
+          )" = fedora45-ai-base
+          test "$(docker image inspect --format '{{ index .Config.Labels "io.safrano9999.kachelmann.apk.release" }}' "$image")" \
+            = "${{ steps.kachelmann_apk.outputs.release_tag }}"
+          test "$(docker image inspect --format '{{ index .Config.Labels "io.safrano9999.kachelmann.apk.filename" }}' "$image")" \
+            = "${{ steps.kachelmann_apk.outputs.apk_filename }}"
+          test "$(docker image inspect --format '{{ index .Config.Labels "io.safrano9999.kachelmann.apk.sha256" }}' "$image")" \
+            = "${{ steps.kachelmann_apk.outputs.apk_sha256 }}"
+          test "$(docker image inspect --format '{{.Config.User}}' "$image")" = root
+          test "$(docker image inspect --format '{{json .Config.Cmd}}' "$image")" \
+            = '["/sbin/init"]'
+          docker buildx imagetools inspect "$image" >/dev/null
+
+      - name: Trigger safrano9999 layer
+        if: inputs.cascade
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE_TAG: ${{ steps.refs.outputs.version }}
+          PUSH_STABLE: ${{ inputs.push_stable }}
+          PUSH_LATEST: ${{ inputs.push_latest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run fedora45-ai-safrano9999-image.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$GITHUB_REF_NAME" \
+            -f "image_tag=$IMAGE_TAG" \
+            -f "kachelmann_tag=$IMAGE_TAG" \
+            -f "push_stable=$PUSH_STABLE" \
+            -f "push_latest=$PUSH_LATEST" \
+            -f "cascade=true" \
+            -f "monitor_id=${{ inputs.monitor_id }}" \
+            -f "monitor_final=false"

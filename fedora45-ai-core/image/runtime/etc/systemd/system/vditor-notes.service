@@ -1,0 +1,17 @@
+[Unit]
+Description=Vditor Markdown workspace
+Requires=persistainer.service
+After=persistainer.service fedora44-ai-init-hooks.service
+
+[Service]
+Type=simple
+WorkingDirectory=/usr/local/lib/vditor-notes
+PassEnvironment=VDITOR_NOTES_PATH VDITOR_NOTES_PORT
+ExecStartPre=/bin/bash -lc 'mkdir -p "$${VDITOR_NOTES_PATH:-/data}"'
+ExecStart=/bin/bash -lc 'exec /usr/bin/python3 -m uvicorn app:app --host 0.0.0.0 --port "$${VDITOR_NOTES_PORT:-11100}" --proxy-headers --forwarded-allow-ips=*'
+ExecStartPost=/bin/bash -lc 'exec /usr/local/libexec/fedora44-wait-ready --timeout 60 tcp 127.0.0.1 "$${VDITOR_NOTES_PORT:-11100}"'
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

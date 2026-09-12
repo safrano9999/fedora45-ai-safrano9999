@@ -1,0 +1,15 @@
+[Unit]
+Description=Tailscale daemon
+Requires=persistainer.service
+After=network.target persistainer.service
+
+[Service]
+Type=simple
+PassEnvironment=TS_AUTHKEY TS_STATE_DIR
+Environment=TS_STATE_DIR=/var/lib/tailscale
+ExecCondition=/bin/bash -c '[ -n "$$TS_AUTHKEY" ] || [ -s "$${TS_STATE_DIR:-/var/lib/tailscale}/tailscaled.state" ]'
+ExecStart=/usr/sbin/tailscaled --state=${TS_STATE_DIR}/tailscaled.state
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

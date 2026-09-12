@@ -1,0 +1,16 @@
+[Unit]
+Description=BIP39 static web application
+After=network.target
+ConditionPathExists=/usr/local/share/bip39/index.html
+
+[Service]
+Type=simple
+WorkingDirectory=/usr/local/share/bip39
+ExecCondition=/bin/bash -lc '[ -n "$${BIP39_PORT:-}" ]'
+ExecStart=/bin/bash -lc 'exec python3 -m http.server "${BIP39_PORT}" --bind 0.0.0.0'
+ExecStartPost=/bin/bash -lc 'exec /usr/local/libexec/fedora44-wait-ready --timeout 60 tcp 127.0.0.1 "$${BIP39_PORT}"'
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

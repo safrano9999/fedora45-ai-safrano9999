@@ -1,0 +1,12 @@
+[Unit]
+Description=Cockpit Web Service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/libexec/cockpit-ws --port=9090 --no-tls
+ExecStartPost=/usr/local/libexec/fedora44-wait-ready --timeout 60 tcp 127.0.0.1 9090
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

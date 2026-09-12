@@ -1,0 +1,16 @@
+[Unit]
+Description=Tailscale state restore or authkey join
+Requires=persistainer.service tailscaled.service
+After=persistainer.service tailscaled.service
+
+[Service]
+Type=oneshot
+PassEnvironment=TS_AUTHKEY TS_HOSTNAME TS_EXTRA_ARGS TS_STATE_DIR
+Environment=TS_STATE_DIR=/var/lib/tailscale
+ExecCondition=/bin/bash -c '[ -n "$$TS_AUTHKEY" ] || [ -s "$${TS_STATE_DIR:-/var/lib/tailscale}/tailscaled.state" ]'
+ExecStart=/usr/local/bin/tailscale-state-up.sh
+RemainAfterExit=yes
+TimeoutStartSec=40
+
+[Install]
+WantedBy=multi-user.target

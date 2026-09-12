@@ -1,0 +1,31 @@
+# Container port block: 2=20000-29999, TUN=no host publishing, blank=manual.
+#default-preset: TUN
+CONTAINER_NR=TUN
+
+OPENCLAW_GATEWAY_PUBLISH_PORT=18789
+
+HERMES_DASHBOARD_PUBLISH_PORT=19119
+
+HERMES_API_SERVER_PUBLISH_PORT=18642
+
+#default-preset: 11100
+#required:
+VDITOR_NOTES_PUBLISH_PORT=11100
+
+#default-preset: 9090
+#required:
+COCKPIT_PUBLISH_PORT=9090
+
+FEDORA44_AI_CAPABILITIES=NET_ADMIN,NET_RAW
+
+FEDORA44_AI_DEVICES=/dev/net/tun
+
+#default-preset: ${CONTAINER_NAME}-tailscale:/var/lib/tailscale:Z
+TAILSCALE_VOLUMES=${CONTAINER_NAME}-tailscale:/var/lib/tailscale:Z
+
+#repeat-group: ADDITIONAL_LINE suffix02 ADDITIONAL_LINE
+#repeat-freeform: ADDITIONAL_LINE
+#choices: Network=slirp4netns:mtu=1500 Network=pasta:--map-host-loopback,169.254.1.2,--dns-host,1.1.1.1,--dns-host,9.9.9.9
+#default-preset: Network=pasta:--map-host-loopback,169.254.1.2,--dns-host,1.1.1.1,--dns-host,9.9.9.9
+#discover-podman-host-internal
+ADDITIONAL_LINE=Network=pasta:--map-host-loopback,169.254.1.2,--dns-host,1.1.1.1,--dns-host,9.9.9.9

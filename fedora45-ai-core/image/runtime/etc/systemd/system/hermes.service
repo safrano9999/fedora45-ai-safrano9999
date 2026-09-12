@@ -1,0 +1,19 @@
+[Unit]
+Description=Hermes Agent gateway
+Requires=persistainer.service hermes-ephemeral.service
+After=persistainer.service fedora44-ai-init-hooks.service tailscale-up.service hermes-ephemeral.service
+Wants=tailscale-up.service
+
+[Service]
+Type=simple
+Environment=HOME=/root
+ExecCondition=/bin/bash -c '[ "$${HERMES_START:-1}" = "1" ]'
+ExecStart=/bin/bash -lc 'set -e; if [ -n "$${HERMES_API_SERVER_KEY:-}" ]; then export API_SERVER_KEY="$$HERMES_API_SERVER_KEY"; fi; if [ -n "$${API_SERVER_KEY:-}" ]; then export API_SERVER_ENABLED=true; export API_SERVER_HOST="$${HERMES_API_SERVER_HOST:-0.0.0.0}"; export API_SERVER_PORT="$${HERMES_API_SERVER_PORT:-8642}"; fi; export GATEWAY_ALLOW_ALL_USERS=true; export TELEGRAM_ALLOW_ALL_USERS=true; export HERMES_ALLOW_ROOT_GATEWAY=1; export HERMES_ACCEPT_HOOKS=1; if [ -n "$${HERMES_TELEGRAMTOKEN:-}" ] && [ "$$HERMES_TELEGRAMTOKEN" != "Hermes-Agent" ]; then export TELEGRAM_BOT_TOKEN="$$HERMES_TELEGRAMTOKEN"; fi; exec /usr/local/bin/hermes gateway run --replace'
+ExecStartPost=/bin/bash -lc 'if [ -n "$${HERMES_API_SERVER_KEY:-}" ]; then exec /usr/local/libexec/fedora44-wait-ready --timeout 120 tcp 127.0.0.1 "$${HERMES_API_SERVER_PORT:-8642}"; fi'
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=150
+TimeoutStopSec=240
+
+[Install]
+WantedBy=multi-user.target

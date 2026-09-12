@@ -1,0 +1,229 @@
+#default-preset: CET 07:00,CET 13:00,CET 19:00
+OPENCLAW_CRONTAB_TIME=CET 07:00,CET 13:00,CET 19:00
+
+#default-preset: WELCOME,NEXTCLOUD
+OPENCLAW_CRONTAB_REPOS=WELCOME,NEXTCLOUD
+
+#default-preset: WELCOME,NEXTCLOUD
+OPENCLAW_REPOS_START_INIT=WELCOME,NEXTCLOUD
+
+#default-preset: 1
+CITADEL_CLOUDFLARE=1
+
+#CONTAINER-NAME
+#default-preset: fedora45-ai-core
+#required:
+CONTAINER_NAME=fedora45-ai-core
+
+#default-preset: ${CONTAINER_NAME}
+#required:
+TS_HOSTNAME=${CONTAINER_NAME}
+
+#default-preset: --ssh
+TS_EXTRA_ARGS=--ssh
+
+#mount-bind: FEDORA44_AI_INIT_HOOKS_PATH:/usr/local/share/fedora44-ai/init.d
+#default-preset: %config-conf/fedora44-ai-init.d
+FEDORA44_AI_INIT_HOOKS_PATH=%config-conf/fedora44-ai-init.d
+
+#mount-bind-ro-shared: CA_CERTIFICATES_PATH:/usr/local/share/ca-certificates-extra
+CA_CERTIFICATES_PATH=
+
+#choices: 0 1
+#default-preset: 0
+CLOUDFLARED_START=0
+
+#named-volume: /named_volumes/OPENCLAW /named_volumes/OPENCLAW/workspace /root/.openclaw/workspace dir
+#named-volume: /named_volumes/OPENCLAW /named_volumes/OPENCLAW/agents /root/.openclaw/agents dir
+#named-volume: /named_volumes/OPENCLAW /named_volumes/OPENCLAW/state /root/.openclaw/state dir
+#named-volume: /named_volumes/OPENCLAW /named_volumes/OPENCLAW/backups /root/.openclaw/backups dir
+#named-volume: /named_volumes/OPENCLAW /named_volumes/OPENCLAW/session-sqlite-migration-runs /root/.openclaw/session-sqlite-migration-runs dir
+#named-volume: /named_volumes/OPENCLAW /named_volumes/OPENCLAW/skills /root/.openclaw/skills dir
+#named-volume: /named_volumes/OPENCLAW /named_volumes/OPENCLAW/skill-workshop /root/.openclaw/skill-workshop dir
+#named-volume: /named_volumes/OPENCLAW /named_volumes/OPENCLAW/workspace-worker /root/.openclaw/workspace-worker dir
+#named-volume: /named_volumes/OPENCLAW /named_volumes/OPENCLAW/workspace-architect /root/.openclaw/workspace-architect dir
+#named-volume: /named_volumes/OPENCLAW /named_volumes/OPENCLAW/workspace-qc /root/.openclaw/workspace-qc dir
+#named-volume: /named_volumes/OPENCLAW /named_volumes/OPENCLAW/workspace-attestations /root/.openclaw/workspace-attestations dir
+#default-preset: 1
+OPENCLAW_PERSISTENT=1
+
+OPENCLAW_GATEWAY_PORT=18789
+
+#default-preset: dummy/note
+OPENCLAW_MODEL=dummy/note
+
+#default-preset: 1
+OPENCLAW_NOTE_FULL_MODE=1
+
+#when: NOTE_DB_BACKEND=file
+#required:
+NOTE_PATH=./OBSIDIAN/NOTES/INBOX
+
+#default-preset: 1
+NOTE_FEEDBACK=1
+
+#choices: none webhook cli
+#default-preset: none
+NOTE_TRIGGER_TYPE=none
+
+#when-not: NOTE_TRIGGER_TYPE=none
+#default-if: NOTE_TRIGGER_TYPE=webhook https://n8n.example.com/webhook/note
+#default-if: NOTE_TRIGGER_TYPE=cli openclaw agent --agent notes --message "Message: $NOTE_MESSAGE Date: $NOTE_DATE Time: $NOTE_TIME Path: $NOTE_PATH Channel: $NOTE_CHANNEL Account: $NOTE_ACCOUNT_ID Sender: $NOTE_SENDER_ID Message-ID: $NOTE_MESSAGE_ID Prompt: $NOTE_PROMPT"
+NOTE_TRIGGER=
+
+#default-preset: prompt_default.md
+NOTE_PROMPT=prompt_default.md
+
+HERMES_DASHBOARD_PORT=9119
+
+HERMES_API_SERVER_PORT=8642
+
+#default-preset: /data
+#required:
+VDITOR_NOTES_PATH=/data
+
+#default-preset: 11100
+#required:
+VDITOR_NOTES_PORT=11100
+
+#publish-host: FASTAPI_HOST
+#required: published host bind address
+FASTAPI_HOST=127.0.0.1
+
+# Trusted reverse-proxy IP addresses or CIDRs, comma-separated (not URLs).
+# Loopback preset for Tailscale Serve forwarding locally to the gateway.
+# Leave blank when no reverse proxy should be trusted.
+#default-preset: 127.0.0.1,::1
+OPENCLAW_TRUSTED_PROXIES=127.0.0.1,::1
+
+#default-preset: http://127.0.0.1:18789,http://localhost:18789,http://127.0.0.1:20789
+OPENCLAW_CONTROL_UI_ALLOWED_ORIGINS=http://127.0.0.1:18789,http://localhost:18789,http://127.0.0.1:20789
+
+# 1 preset: add detected Tailscale and CITADEL/Cloudflare origins
+#choices: 0 1
+#default-preset: 1
+OPENCLAW_CONTROL_UI_ALLOWED_ORIGINS_AUTO=1
+
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/state.db @HOME@/.hermes/state.db link
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/response_store.db @HOME@/.hermes/response_store.db link
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/kanban.db @HOME@/.hermes/kanban.db link
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/auth.json @HOME@/.hermes/auth.json link
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/SOUL.md @HOME@/.hermes/SOUL.md link
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/channel_directory.json @HOME@/.hermes/channel_directory.json link
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/gateway_state.json @HOME@/.hermes/gateway_state.json link
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/memories @HOME@/.hermes/memories dir
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/sessions @HOME@/.hermes/sessions dir
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/cron @HOME@/.hermes/cron dir
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/profiles @HOME@/.hermes/profiles dir
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/pairing @HOME@/.hermes/pairing dir
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/platforms @HOME@/.hermes/platforms dir
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/hooks @HOME@/.hermes/hooks dir
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/scripts @HOME@/.hermes/scripts dir
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/skills/custom @HOME@/.hermes/skills/custom dir
+#default-preset: 1
+HERMES_PERSISTENT=1
+
+#required: CODEANALYST internal web UI port
+CODEANALYST_PORT=11010
+
+#choices: tcp unix
+#required: CITADEL web UI transport
+CITADEL_WEBUI_TRANSPORT=tcp
+
+#required: CITADEL internal web UI port
+CITADEL_WEBUI_PORT=11000
+
+# Bare-metal only; containers keep using TCP.
+#required: CITADEL Unix socket path
+CITADEL_WEBUI_SOCKET=%t/citadel/citadel.sock
+
+#named-volume: /named_volumes/CITADEL /named_volumes/CITADEL/ports.filter.json /opt/safrano9999/CITADEL/ports.filter.json file
+#named-volume: /named_volumes/CITADEL /named_volumes/CITADEL/extensions/providers_state.json /opt/safrano9999/CITADEL/extensions/providers_state.json file
+#named-volume: /named_volumes/CITADEL /named_volumes/CITADEL/extensions/enabled/cloudflare/routes.json /opt/safrano9999/CITADEL/extensions/enabled/cloudflare/routes.json file
+#named-volume: /named_volumes/CITADEL /named_volumes/CITADEL/tailscale.json /opt/safrano9999/CITADEL/tailscale.json link
+#named-volume: /named_volumes/CITADEL /named_volumes/CITADEL/CADDYFILES /opt/safrano9999/CITADEL/CADDYFILES dir
+#choices: 0 1
+#default-preset: 1
+CITADEL_PERSISTENT=1
+
+# Optional: leave empty to disable subnet routes.
+CITADEL_SUBNET_IP=
+
+#choices: 0 1
+#default-preset: 0
+# HTTP services remain visible but are not exposed through providers when enabled.
+CITADEL_HTTPS_ONLY=0
+
+# Optional HTTP User-Agent for service discovery; leave empty to use curl's default.
+#default-preset: Mozilla/5.0 (compatible; CITADEL/1.0)
+CITADEL_USER_AGENT=Mozilla/5.0 (compatible; CITADEL/1.0)
+
+# Destructive: clear every Tailscale Serve/Funnel route before each scan and rebuild from scratch.
+#choices: 0 1
+#default-preset: 0
+CITADEL_CLEAR_TAILSCALE=0
+
+#default-preset: 0
+#choices: 0 1
+CITADEL_CONTAINER=0
+
+#when: CITADEL_CONTAINER=1
+#default-preset: 0
+#choices: 0 1
+CITADEL_CONTAINER_MAP=0
+
+#when: CITADEL_CONTAINER_MAP=1
+#default-preset: 65100
+CITADEL_DEDUPE_PORT=65100
+
+#default-preset: insert later
+CITADEL_TAILSCALE=true
+
+#choices: 0 1
+#default-preset: 1
+CITADEL_TAILSCALE_DEFAULT=1
+
+# Optional first public port for CITADEL-managed Tailscale HTTP Serve routes.
+# Leave empty or set 0 to disable the Tailscale HTTP dropdown.
+#default-preset: 0
+CITADEL_TAILSCALE_HTTP_START=
+
+# Optional first public port for CITADEL-managed Tailscale HTTPS Serve routes.
+# Leave empty or set 0 to disable the Tailscale HTTPS dropdown.
+#default-preset: 0
+CITADEL_TAILSCALE_HTTPS_START=0
+
+# Optional spacing between initially allocated Tailscale ports.
+# When omitted, CITADEL uses 10.
+#default-preset: 10
+CITADEL_TAILSCALE_RANGE=10
+
+# Optional central-Caddy export. Start 0 disables the generated Caddyfile.
+#default-preset: 0
+CITADEL_CADDY_HTTPS_START=0
+
+# Stable increment between generated central-Caddy HTTPS ports.
+#default-preset: 1
+CITADEL_CADDY_RANGE=1
+
+# Container DNS backend and central Tailscale hostname; required when enabled.
+CITADEL_CADDY_BACKEND=
+
+CITADEL_CADDY_HOST=
+
+#required: Enable Tailscale discovery (0/1)
+#default-preset: 0
+CITADEL_TS_DISCOVERY=0
+
+#default-preset: insert later
+CITADEL_CLOUDFLARE_DOMAIN=
+
+#default-preset: insert later
+CITADEL_CLOUDFLARE_ACCOUNT_ID=
+
+#default-preset: insert later
+CITADEL_CLOUDFLARE_ZONE_ID=
+
+#default-preset: insert later
+CITADEL_CLOUDFLARE_TUNNEL_ID=
+

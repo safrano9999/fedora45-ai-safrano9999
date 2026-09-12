@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vditor Notes</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/vendor/dist/index.css">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <button id="menu" class="mobile" type="button" title="Dateien einblenden">Dateien</button>
+    <strong>Vditor Notes</strong>
+    <span id="current">Keine Datei geöffnet</span>
+    <nav>
+      <button type="button" data-action="new-file">Neue Datei</button>
+      <button type="button" data-action="new-directory">Neuer Ordner</button>
+      <button type="button" data-action="rename">Umbenennen</button>
+      <button type="button" data-action="delete" class="danger">Löschen</button>
+      <button type="button" data-action="save" class="primary">Speichern</button>
+    </nav>
+  </header>
+  <main>
+    <aside id="sidebar">
+      <div class="sidebar-title">Workspace</div>
+      <div id="tree" role="tree"></div>
+    </aside>
+    <section class="editor-pane">
+      <div id="empty">Markdown-Datei auswählen oder neu anlegen.</div>
+      <div id="editor"></div>
+      <footer id="status">Bereit</footer>
+    </section>
+  </main>
+  <dialog id="entry-dialog">
+    <form method="dialog">
+      <h2 id="dialog-title">Eintrag</h2>
+      <label for="entry-name">Name</label>
+      <input id="entry-name" autocomplete="off" required>
+      <div class="dialog-actions">
+        <button value="cancel">Abbrechen</button>
+        <button value="default" class="primary">Übernehmen</button>
+      </div>
+    </form>
+  </dialog>
+  <script src="/vendor/dist/index.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+hook_dir="${FEDORA44_AI_INIT_HOOKS_DIR:-/usr/local/share/fedora44-ai/init.d}"
+
+[[ "$hook_dir" == /* && "$hook_dir" != / ]] || {
+    echo "Invalid FEDORA44_AI_INIT_HOOKS_DIR: $hook_dir" >&2
+    exit 2
+}
+[ -d "$hook_dir" ] || exit 0
+
+find "$hook_dir" -mindepth 1 -maxdepth 1 -type f \
+    \( -name '*.sh' -o -name '*.py' \) -print0 \
+  | LC_ALL=C sort -z \
+  | while IFS= read -r -d '' hook; do
+      case "$hook" in
+          *.sh) /bin/bash "$hook" ;;
+          *.py) /usr/bin/python3 "$hook" ;;
+      esac
+    done

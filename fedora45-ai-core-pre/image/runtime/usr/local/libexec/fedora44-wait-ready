@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+"""Wait only as long as one already-started service needs to become ready."""
+
+from __future__ import annotations
+
+import argparse
+import http.client
+import socket
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+
+def parser() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(prog="fedora44-wait-ready")
+    result.add_argument("--timeout", type=float, default=120.0)
+    subparsers = result.add_subparsers(dest="mode", required=True)
+
+    tcp = subparsers.add_parser("tcp")
+    tcp.add_argument("host")
+    tcp.add_argument("port", type=int)
+
+    http = subparsers.add_parser("http")
+    http.add_argument("url")
+    http.add_argument("status", type=int, nargs="?")
+
+    unix = subparsers.add_parser("unix")
+    unix.add_argument("path")
+    return result
+
+
+def validate(arguments: argparse.Namespace) -> None:
+    if not 0 < arguments.timeout <= 3600:
+        raise ValueError("--timeout must be greater than 0 and at most 3600 seconds")
+    if arguments.mode == "tcp" and not 1 <= arguments.port <= 65535:
+        raise ValueError("TCP port must be between 1 and 65535")
+    if arguments.mode == "http":
+        parsed = urllib.parse.urlsplit(arguments.url)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            raise ValueError("HTTP URL must use http or https and include a host")
+        if parsed.username is not None or parsed.password is not None:
+            raise ValueError("HTTP readiness URL must not contain credentials")
+        if arguments.status is not None and not 100 <= arguments.status <= 599:
+            raise ValueError("expected HTTP status must be between 100 and 599")
+    if arguments.mode == "unix" and not arguments.path.startswith("/"):
+        raise ValueError("UNIX socket path must be absolute")
+
+
+def tcp_ready(host: str, port: int, timeout: float) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def unix_ready(path: str, timeout: float) -> bool:
+    connection = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    connection.settimeout(timeout)
+    try:
+        connection.connect(path)
+        return True
+    except OSError:
+        return False
+    finally:
+        connection.close()
+
+
+def http_ready(url: str, expected_status: int | None, timeout: float) -> bool:
+    request = urllib.request.Request(
+        url,
+        method="GET",
+        headers={"User-Agent": "fedora44-wait-ready/1"},
+    )
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with opener.open(request, timeout=timeout) as response:
+            status = response.status
+    except urllib.error.HTTPError as error:
+        status = error.code
+    except (OSError, urllib.error.URLError, http.client.HTTPException):
+        return False
+    return status == expected_status if expected_status is not None else 100 <= status <= 599
+
+
+def main() -> int:
+    arguments = parser().parse_args()
+    try:
+        validate(arguments)
+    except ValueError as error:
+        print(f"fedora44-wait-ready: {error}", file=sys.stderr)
+        return 2
+
+    deadline = time.monotonic() + arguments.timeout
+    label = ""
+    while True:
+        remaining = deadline - time.monotonic()
+        attempt_timeout = max(0.05, min(1.0, remaining))
+        if arguments.mode == "tcp":
+            label = f"tcp://{arguments.host}:{arguments.port}"
+            ready = tcp_ready(arguments.host, arguments.port, attempt_timeout)
+        elif arguments.mode == "http":
+            label = arguments.url
+            ready = http_ready(arguments.url, arguments.status, attempt_timeout)
+        else:
+            label = arguments.path
+            ready = unix_ready(arguments.path, attempt_timeout)
+
+        if ready:
+            print(f"fedora44-wait-ready: ready: {label}")
+            return 0
+        if remaining <= 0:
+            print(
+                f"fedora44-wait-ready: timed out after {arguments.timeout:g}s: {label}",
+                file=sys.stderr,
+            )
+            return 1
+        time.sleep(min(0.25, remaining))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

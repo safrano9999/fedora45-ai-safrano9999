@@ -1,0 +1,232 @@
+# Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
+name: fedora45-ai-safrano9999 image
+run-name: ${{ inputs.monitor_id != '' && format('{0} [monitor:{1}:{2}]', github.workflow, inputs.monitor_id, inputs.monitor_final) || github.workflow }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Fixed YY.MM.N version. Empty selects the next monthly number."
+        required: false
+        default: ""
+      kachelmann_tag:
+        description: "fedora45-ai-kachelmann parent tag. Empty uses build.conf"
+        required: false
+        default: ""
+      push_latest:
+        description: "Also advance latest; false builds a candidate for external verification"
+        required: false
+        type: boolean
+        default: true
+      push_stable:
+        description: "Explicitly also move :stable to this build"
+        required: false
+        type: boolean
+        default: false
+      cascade:
+        description: "Build optional Full after this layer succeeds"
+        required: true
+        type: boolean
+        default: false
+      monitor_id:
+        description: "Optional event-monitor correlation id"
+        required: false
+        default: ""
+        type: string
+      monitor_final:
+        description: "This run is the final monitored cascade stage"
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: fedora45-ai-safrano9999-image
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      actions: write
+    env:
+      DOCKER_BUILD_RECORD_UPLOAD: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free runner disk space
+        run: .github/scripts/free-runner-disk-space.sh
+
+      - name: Resolve image references
+        id: refs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_TAG: ${{ inputs.image_tag }}
+          KACHELMANN_TAG: ${{ inputs.kachelmann_tag }}
+          PUSH_STABLE: ${{ inputs.push_stable }}
+          PUSH_LATEST: ${{ inputs.push_latest }}
+        run: |
+          set -euo pipefail
+          set -a
+          . fedora45-ai-safrano9999/build.conf
+          set +a
+          kachelmann_ref="$AI_KACHELMANN_IMAGE"
+          [ -z "$KACHELMANN_TAG" ] || kachelmann_ref="${AI_KACHELMANN_IMAGE%:*}:$KACHELMANN_TAG"
+          image="${FEDORA45_AI_SAFRANO9999_IMAGE%:*}"
+          version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG")"
+
+          {
+            echo "version=$version"
+            echo "kachelmann_ref=$kachelmann_ref"
+            echo "image=$image"
+            echo "tags<<EOF"
+            echo "${image}:${version}"
+            [ "$PUSH_LATEST" != true ] || echo "${image}:latest"
+            [ "$PUSH_STABLE" != true ] || echo "${image}:stable"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Configure source authentication
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        run: gh auth setup-git
+
+      - name: Prepare Safrano build context
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        run: fedora45-ai-safrano9999/build/prepare-build-context.sh --no-cache
+
+      - name: Resolve Safrano build configuration
+        id: safrano_build
+        shell: bash
+        run: |
+          set -euo pipefail
+          resolved=fedora45-ai-safrano9999/.resolved-build.env
+          [ -s "$resolved" ] || {
+            echo "Missing $resolved" >&2
+            exit 1
+          }
+          {
+            echo "build_args<<EOF"
+            cat "$resolved"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          cache-binary: false
+          keep-state: false
+          cleanup: true
+
+      - name: Log in to private GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Safrano layer
+        uses: docker/build-push-action@v6
+        with:
+          context: ./fedora45-ai-safrano9999
+          file: ./fedora45-ai-safrano9999/Containerfile
+          target: ai-safrano9999
+          platforms: linux/amd64
+          pull: true
+          no-cache: true
+          push: true
+          tags: ${{ steps.refs.outputs.tags }}
+          build-args: |
+            AI_KACHELMANN_IMAGE=${{ steps.refs.outputs.kachelmann_ref }}
+            ${{ steps.safrano_build.outputs.build_args }}
+
+      - name: Reclaim space after Safrano build
+        run: .github/scripts/prune-container-build-space.sh
+
+      - name: Test published Safrano layer
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="${{ steps.refs.outputs.image }}:${{ steps.refs.outputs.version }}"
+          docker pull "$image"
+          docker run --rm --entrypoint bash \
+            "$image" -lc '
+            set -euo pipefail
+            grep -q "Fedora release 45" /etc/fedora-release
+            grep -Fqx "TasksMax=infinity" \
+              /etc/systemd/system/openclaw.service
+            test -x /usr/local/bin/openclaw-ephemeral.py
+            test -x /usr/local/bin/openclaw-ephemeral-yolo
+            test -x /usr/local/bin/hermes-ephemeral
+            test -x /usr/local/bin/persistainer
+            /usr/local/lib/hermes-agent/venv/bin/python -c "import sqlalchemy"
+            test -f /root/.openclaw/extensions/note/openclaw.plugin.json
+            for project in WELCOME CODEANALYST CITADEL DIESDAS- NEXTCLOUD \
+              JUGO PV_D-A-CH KIWIX_BRIDGE \
+              NAPOLEON_HILLS_AI_MASTERMIND_CLASSES \
+              SOLANA_AIRGAPPED_DEBIAN_WORKFLOW \
+              NaturalGrounding-Tiktok-Ying-Video-Manager \
+              DAILYNEWS ZEROINBOX SPANKER KACHELMANN \
+              safrano9999-paper; do
+              test -d "/opt/safrano9999/$project"
+            done
+            test -L /README/paper.pdf
+            test "$(readlink /README/paper.pdf)" = \
+              /opt/safrano9999/safrano9999-paper/paper.pdf
+            test -s /README/paper.pdf
+            mapfile -t apks < <(find /opt/safrano9999/KACHELMANN -maxdepth 1 \
+              -type f -name "kachelmann-20*.apk" -printf "%f\n" | sort)
+            test "${#apks[@]}" -eq 1
+            apk="/opt/safrano9999/KACHELMANN/${apks[0]}"
+            python3 -c "import sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); n=set(z.namelist()); assert {\"AndroidManifest.xml\",\"classes.dex\"} <= n; assert z.testzip() is None" "$apk"
+            systemctl is-enabled \
+              persistainer.service fedora44-ai-init-hooks.service \
+              tailscaled.service tailscale-up.service cloudflared.service \
+              cockpit.service vditor-notes.service openclaw-config.service \
+              openclaw.service openclaw-ephemeral-schedule.service \
+              hermes-ephemeral.service hermes.service hermes-dashboard.service \
+              codeanalyst.service citadel.service citadel-scan.service \
+              jugo.service pvdach.service \
+              pvdach-qgis-webhook.service kiwix-bridge.service \
+              napoleon.service naturalgrounding.service bip39.service \
+              spanker-webui.service kachelmann-webui.service \
+              kachelmann-mcp.service
+            test ! -e /opt/safrano9999/VikAI
+            test ! -e /usr/local/bin/vikai-bootstrap-openclaw-agents
+            test ! -e /etc/systemd/system/vikai-bootstrap-openclaw-agents.service
+            test ! -e /etc/systemd/system/fedora44-ai.service
+          '
+          test "$(
+            docker image inspect \
+              --format '{{ index .Config.Labels "io.safrano9999.parent" }}' \
+              "$image"
+          )" = fedora45-ai-kachelmann
+          test "$(docker image inspect --format '{{.Config.User}}' "$image")" = root
+          test "$(docker image inspect --format '{{json .Config.Cmd}}' "$image")" \
+            = '["/sbin/init"]'
+          docker buildx imagetools inspect "$image" >/dev/null
+
+      - name: Trigger safrano9999-full layer
+        if: inputs.cascade
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE_TAG: ${{ steps.refs.outputs.version }}
+          PUSH_STABLE: ${{ inputs.push_stable }}
+          PUSH_LATEST: ${{ inputs.push_latest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run fedora45-ai-safrano9999-full-image.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$GITHUB_REF_NAME" \
+            -f "image_tag=$IMAGE_TAG" \
+            -f "safrano9999_tag=$IMAGE_TAG" \
+            -f "push_stable=$PUSH_STABLE" \
+            -f "push_latest=$PUSH_LATEST" \
+            -f "monitor_id=${{ inputs.monitor_id }}" \
+            -f "monitor_final=true"

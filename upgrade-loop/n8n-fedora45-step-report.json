@@ -1,0 +1,249 @@
+{
+  "id": "fedora45StepReport",
+  "name": "Fedora45 Step Report",
+  "active": false,
+  "nodes": [
+    {
+      "id": "bcdfa176-19ee-59a0-9cff-8d7622456e9a",
+      "name": "Reporter design",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -200
+      ],
+      "parameters": {
+        "content": "## Shared per-step PDF reporter\n**Skeleton only.** Called once after each executed business step or selected decision branch.\nPersist facts → LLM summary (1–2 sentences) → deterministic fallback if needed → append to the run PDF → preserve and return the original result.\nThe reporter does not log itself recursively. The main workflow sends the final PDF through OpenClaw → Telegram.\n**Selected model:** Astra via local LiteLLM. Prompt and data mapping are still pending.",
+        "width": 2060,
+        "height": 260,
+        "color": 6
+      }
+    },
+    {
+      "id": "a98eb7cd-6a82-5bb2-9b79-dea3aae529f9",
+      "name": "Receive completed step",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        120
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "disabled": true,
+      "notes": "Layout placeholder. Receive run ID, step, sequence/attempt, branch, deterministic result, duration, artifacts, and original pipeline data. Also accept failure/timeout results."
+    },
+    {
+      "id": "89c6b612-1fdb-50e4-bdb9-4bd1383fec33",
+      "name": "Persist result and redact secrets",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        280,
+        120
+      ],
+      "parameters": {},
+      "disabled": true,
+      "notes": "Layout placeholder. Persist the machine-readable step record first; sanitize any content before passing it to the LLM or PDF."
+    },
+    {
+      "id": "8dd93bdf-2fd7-54d0-8e27-2d3a61028145",
+      "name": "LLM - summarize in 1–2 sentences",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        560,
+        120
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": ""
+      },
+      "disabled": true,
+      "notes": "Disabled skeleton. Uses Astra through the local LiteLLM service. Prompt and input mapping are intentionally pending. Write 1–2 concise English sentences from the sanitized deterministic step result. Preserve pass/fail status; use the existing fallback path on failure."
+    },
+    {
+      "id": "55be2053-8fe2-5d01-85e1-3b023b638cad",
+      "name": "Summary available and usable?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        840,
+        120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "disabled": true,
+      "notes": "Layout placeholder. Accept a concise summary only if available and consistent with the recorded outcome. Model failure, timeout, or invalid output uses the fallback."
+    },
+    {
+      "id": "327bf8c9-e772-59cd-b0b8-56805a273e9e",
+      "name": "Use deterministic fallback summary",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        340
+      ],
+      "parameters": {},
+      "disabled": true,
+      "notes": "Layout placeholder. Use step name, status, and concise recorded error/result when the LLM cannot provide a valid summary."
+    },
+    {
+      "id": "123f6e3e-1cee-51cc-a64f-798032dc4eec",
+      "name": "Append step and save run PDF",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        120
+      ],
+      "parameters": {},
+      "disabled": true,
+      "notes": "Layout placeholder. Append this step section in execution order to one report per run and update its PDF immediately. Preserve deterministic status and include repeated attempts. Use an atomic save; retain the structured record if rendering fails for final regeneration."
+    },
+    {
+      "id": "a5cd5609-0ae3-540f-89d5-5930e8792f10",
+      "name": "Return original step result",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        120
+      ],
+      "parameters": {},
+      "disabled": true,
+      "notes": "Layout placeholder. Return the original pipeline data and branch result unchanged, with the report reference. Reporting must not alter decision outcomes."
+    },
+    {
+      "id": "991775fd-fcb6-5818-8b57-3d25fe113c25",
+      "name": "Astra - LiteLLM (summary)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        560,
+        670
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "astra",
+          "mode": "id"
+        },
+        "responsesApiEnabled": true,
+        "options": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "fedora45LiteLLM",
+          "name": "LiteLLM - Astra (core network)"
+        }
+      },
+      "disabled": true,
+      "notes": "Configured model: astra → chatgpt/gpt-6-astra. Direct internal endpoint http://litellm-database:4000/v1 on Podman network core. The credential is stored only in local n8n; its LiteLLM key is limited to astra. No proxy or external URL is involved."
+    }
+  ],
+  "connections": {
+    "Receive completed step": {
+      "main": [
+        [
+          {
+            "node": "Persist result and redact secrets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist result and redact secrets": {
+      "main": [
+        [
+          {
+            "node": "LLM - summarize in 1–2 sentences",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM - summarize in 1–2 sentences": {
+      "main": [
+        [
+          {
+            "node": "Summary available and usable?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary available and usable?": {
+      "main": [
+        [
+          {
+            "node": "Append step and save run PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Use deterministic fallback summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use deterministic fallback summary": {
+      "main": [
+        [
+          {
+            "node": "Append step and save run PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append step and save run PDF": {
+      "main": [
+        [
+          {
+            "node": "Return original step result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Astra - LiteLLM (summary)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "LLM - summarize in 1–2 sentences",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}

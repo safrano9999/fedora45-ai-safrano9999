@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+current=$(sed -n 's/^ARG HERMES_VERSION=//p' ../fedora45-ai-core-pre/Containerfile); latest=$(curl -fsSL --max-time 10 https://api.github.com/repos/NousResearch/hermes-agent/releases/latest | jq -er '.name | split(" ")[2] | ltrimstr("v")'); if [ "$current" = "$latest" ]; then printf 'Hermes: up to date — version: %s\n' "$current"; else printf 'Hermes: New version available! actual %s, latest %s\n' "$current" "$latest"; fi
+current=$(sed -n 's/^ARG OPENCLAW_VERSION=//p' ../fedora45-ai-core-pre/Containerfile); latest=$(curl -fsSL --max-time 10 https://api.github.com/repos/openclaw/openclaw/releases/latest | jq -er '.tag_name | ltrimstr("v")'); if [ "$current" = "$latest" ]; then printf 'OpenClaw: up to date — version: %s\n' "$current"; else printf 'OpenClaw: New version available! actual %s, latest %s\n' "$current" "$latest"; fi

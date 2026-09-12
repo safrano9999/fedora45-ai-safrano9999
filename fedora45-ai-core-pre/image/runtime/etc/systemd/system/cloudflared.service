@@ -1,0 +1,15 @@
+[Unit]
+Description=Cloudflare Tunnel connector
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+PassEnvironment=CLOUDFLARED_START TUNNEL_TOKEN
+ExecCondition=/bin/bash -c 'case "$${CLOUDFLARED_START:-0}" in 1) [ -n "$${TUNNEL_TOKEN:-}" ] || { echo "TUNNEL_TOKEN is required when CLOUDFLARED_START=1" >&2; exit 255; } ;; 0) exit 1 ;; *) echo "CLOUDFLARED_START must be exactly 0 or 1" >&2; exit 255 ;; esac'
+ExecStart=/usr/local/bin/cloudflared tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

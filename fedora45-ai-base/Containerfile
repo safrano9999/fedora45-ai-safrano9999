@@ -1,0 +1,79 @@
+ARG AI_CORE_IMAGE
+FROM ${AI_CORE_IMAGE} AS ai-base
+
+ARG FEDORA44_AI_BASE_SOURCE_KEY
+
+LABEL org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
+      org.opencontainers.image.title="fedora45-ai-base" \
+      org.opencontainers.image.description="Fedora 45 AI Base repository and service contributions." \
+      io.safrano9999.parent="fedora45-ai-core" \
+      io.safrano9999.base-source-tags.sha256="${FEDORA44_AI_BASE_SOURCE_KEY}"
+
+USER root
+
+COPY requirements.base.txt /requirements.base.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r /requirements.base.txt \
+ && pip check
+
+COPY .fedora44-ai-base-source-tags.tsv /README/fedora44-ai-base-source-tags.tsv
+COPY .fedora44-ai-repositories.list /usr/local/share/fedora44-ai/base-repositories.list
+COPY .fedora44-runtime/manifest.tsv /README/fedora45-ai-base-runtime-assets.tsv
+COPY .fedora44-image-runtime/manifest.tsv /usr/local/share/fedora44-ai/base-runtime-files.tsv
+COPY .fedora44-image-runtime/systemd-enable.list /usr/local/share/fedora44-ai/base-systemd-enable.list
+COPY .fedora44-image-runtime/rootfs/ /
+
+COPY safrano9999/ /opt/safrano9999/
+
+COPY .fedora44-runtime/nextcloud-fedora64-plugin-latest.zip \
+     .fedora44-runtime/nextcloud-fedora64-plugin-latest.zip.sha256 \
+     /tmp/nextcloud-runtime/
+RUN cd /tmp/nextcloud-runtime \
+ && sha256sum --check --strict nextcloud-fedora64-plugin-latest.zip.sha256 \
+ && rm -rf /opt/safrano9999/NEXTCLOUD/runtime \
+ && unzip -q nextcloud-fedora64-plugin-latest.zip 'runtime/*' \
+      -d /opt/safrano9999/NEXTCLOUD \
+ && test -x /opt/safrano9999/NEXTCLOUD/runtime/opt/nextcloudcmd/bin/nextcloudcmd \
+ && rm -rf /tmp/nextcloud-runtime
+
+RUN test -f /opt/safrano9999/safrano9999-paper/paper.pdf \
+ && ln -sfnT \
+      /opt/safrano9999/safrano9999-paper/paper.pdf \
+      /usr/local/share/fedora44-ai/paper.pdf \
+ && ln -sfnT \
+      /opt/safrano9999/safrano9999-paper/paper.pdf \
+      /README/paper.pdf
+
+RUN mkdir -p /opt/safrano9999/CITADEL/extensions/enabled \
+ && if [ -d /opt/safrano9999/CITADEL/extensions/disabled/subnet ]; then \
+      mv /opt/safrano9999/CITADEL/extensions/disabled/subnet \
+         /opt/safrano9999/CITADEL/extensions/enabled/subnet; \
+    fi \
+ && if [ -d /opt/safrano9999/CITADEL/extensions/disabled/tailscale ]; then \
+      mv /opt/safrano9999/CITADEL/extensions/disabled/tailscale \
+         /opt/safrano9999/CITADEL/extensions/enabled/tailscale; \
+    fi \
+ && chmod 0755 /opt/safrano9999/CITADEL/scan.sh
+
+COPY .fedora44-image-buildtime/ /tmp/fedora44-image-buildtime/
+COPY build/run-container-buildtime.sh /tmp/fedora44-image-buildtime/run-container-buildtime
+RUN --network=none \
+    /tmp/fedora44-image-buildtime/run-container-buildtime \
+      /tmp/fedora44-image-buildtime \
+      fedora45-ai-base \
+      /opt/safrano9999 \
+ && rm -rf /tmp/fedora44-image-buildtime \
+ && rm -rf /opt/safrano9999/*/image/runtime
+
+RUN /usr/local/bin/openclaw-ephemeral.py configure \
+ && find /root/.openclaw -maxdepth 1 -name 'openclaw.json*' -delete
+
+RUN while IFS= read -r unit || [ -n "$unit" ]; do \
+      [ -n "$unit" ] || continue; \
+      systemctl enable "$unit"; \
+    done < /usr/local/share/fedora44-ai/base-systemd-enable.list
+
+USER root
+WORKDIR /root
+STOPSIGNAL SIGRTMIN+3
+CMD ["/sbin/init"]

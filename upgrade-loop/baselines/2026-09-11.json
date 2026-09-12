@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-09-11T21:04:47.758490+00:00",
+  "scope": {
+    "chain": "Fedora44 latest",
+    "startLayer": "core-pre",
+    "targetLayer": "safrano9999",
+    "includeFull": false
+  },
+  "repositorySnapshotPolicy": "Complete repository main commits captured by the movable stable tags, including systemd units, setup scripts, generators and examples.",
+  "imageSourcePolicy": "Image build commits and consumed source commits are recorded separately; they can differ from the complete repository snapshots.",
+  "repositories": [
+    {
+      "repository": "safrano9999/CITADEL",
+      "ref": "refs/tags/stable",
+      "commit": "19da13a662840b32da93cddd86d751371c6a43e3"
+    },
+    {
+      "repository": "safrano9999/CODEANALYST",
+      "ref": "refs/tags/stable",
+      "commit": "44e8afcab72ccdafe9c94690faf358d80fcbf58c"
+    },
+    {
+      "repository": "safrano9999/DAILYNEWS",
+      "ref": "refs/tags/stable",
+      "commit": "5d166299e50d809a9f5a4fd8617defab11e92f2b"
+    },
+    {
+      "repository": "safrano9999/DIESDAS-",
+      "ref": "refs/tags/stable",
+      "commit": "7878d75cc10171ffc60a6ba7a8734c32923441fa"
+    },
+    {
+      "repository": "safrano9999/fedora-ai-safrano9999",
+      "ref": "refs/tags/stable",
+      "commit": "ae718e772da772206e094f2a40aae14d9f66fb64"
+    },
+    {
+      "repository": "safrano9999/hermes-ephemeral-latest",
+      "ref": "refs/tags/stable",
+      "commit": "b38d16565ddf272ccc97b4dc305b0d9cf11d3bbe"
+    },
+    {
+      "repository": "safrano9999/JUGO",
+      "ref": "refs/tags/stable",
+      "commit": "9c93ce9da063ea2b3449cbf860926683763fe92e"
+    },
+    {
+      "repository": "safrano9999/KACHELMANN",
+      "ref": "refs/tags/stable",
+      "commit": "9e8af78b3d26649007c6068625c30a455d4082e5"
+    },
+    {
+      "repository": "safrano9999/KIWIX_BRIDGE",
+      "ref": "refs/tags/stable",
+      "commit": "be9b2ed68d6c0092fa95eb55d12edcba9d757f1e"
+    },
+    {
+      "repository": "safrano9999/NAPOLEON_HILLS_AI_MASTERMIND_CLASSES",
+      "ref": "refs/tags/stable",
+      "commit": "d5725cfae7ab813625b2ff63243e8ed54fc0330b"
+    },
+    {
+      "repository": "safrano9999/NaturalGrounding-Tiktok-Ying-Video-Manager",
+      "ref": "refs/tags/stable",
+      "commit": "6d3e0bcd26f50fb4598e81409a148c1331671837"
+    },
+    {
+      "repository": "safrano9999/NEXTCLOUD",
+      "ref": "refs/tags/stable",
+      "commit": "173378bf96ecae51bca500f93aad2314f76404b7"
+    },
+    {
+      "repository": "safrano9999/NOTE",
+      "ref": "refs/tags/stable",
+      "commit": "483e70e8e3033f04bc00e3053daa4965f8686e49"
+    },
+    {
+      "repository": "safrano9999/openclaw-deterministic-latest",
+      "ref": "refs/tags/stable",
+      "commit": "82c4532384771234c4b38f8adae43493b2bb4c9e"
+    },
+    {
+      "repository": "safrano9999/openclaw-ephemeral-latest",
+      "ref": "refs/tags/stable",
+      "commit": "b75cc2038051a455bbadbd1019adf0681da08fce"
+    },
+    {
+      "repository": "safrano9999/persistainer",
+      "ref": "refs/tags/stable",
+      "commit": "053b2d361815c6bc1da783d5a7c34951ea500485"
+    },
+    {
+      "repository": "safrano9999/PV_D-A-CH",
+      "ref": "refs/tags/stable",
+      "commit": "1433f710ca5db05f783f959e0f1bc4da062dd5bf"
+    },
+    {
+      "repository": "safrano9999/safrano9999-paper",
+      "ref": "refs/tags/stable",
+      "commit": "b46cc727e855773e43a087f8e37cd7fe36fccd36"
+    },
+    {
+      "repository": "safrano9999/SCRIPTS",
+      "ref": "refs/tags/stable",
+      "commit": "1024a5b03eb790ca9d0cacea19f572581f33f2d3"
+    },
+    {
+      "repository": "safrano9999/SOLANA_AIRGAPPED_DEBIAN_WORKFLOW",
+      "ref": "refs/tags/stable",
+      "commit": "2f181988d4ec8849f5757f0d533282282f8704f0"
+    },
+    {
+      "repository": "safrano9999/SPANKER",
+      "ref": "refs/tags/stable",
+      "commit": "395a1113f7051d7d4ef4df595de63a5f46ff8fe6"
+    },
+    {
+      "repository": "safrano9999/WELCOME",
+      "ref": "refs/tags/stable",
+      "commit": "66813ba0841d6d14711b47188cebf7b0470ca711"
+    },
+    {
+      "repository": "safrano9999/ZEROINBOX",
+      "ref": "refs/tags/stable",
+      "commit": "db149f57e3e735dec2c0d54f48db153e391f20f1"
+    }
+  ],
+  "images": [
+    {
+      "layer": "core-pre",
+      "reference": "ghcr.io/safrano9999/fedora44-ai-core-pre-latest:stable",
+      "digest": "sha256:296da241606f01a9bde2cf0c75d181d966e8cdd044ebbabb0c7570db2a469f54",
+      "buildRepository": "safrano9999/fedora-ai-safrano9999",
+      "buildCommit": "887b0eeb9c3238bc4308bb3674ec58fb94eecea7",
+      "buildRun": "https://github.com/safrano9999/fedora-ai-safrano9999/actions/runs/34535959777",
+      "sourceCommits": {
+        "safrano9999/persistainer": "053b2d361815c6bc1da783d5a7c34951ea500485"
+      }
+    },
+    {
+      "layer": "core",
+      "reference": "ghcr.io/safrano9999/fedora44-ai-core-latest:stable",
+      "digest": "sha256:eae5607ef1f3b9103fb39e05444971eb39354aa6f06553b68fa1cf3f09fee92d",
+      "buildRepository": "safrano9999/fedora-ai-safrano9999",
+      "buildCommit": "e41ec6b1d45750e3e0635a80c8081f56ca0aeba1",
+      "buildRun": "https://github.com/safrano9999/fedora-ai-safrano9999/actions/runs/34543765652",
+      "sourceCommits": {
+        "safrano9999/openclaw-ephemeral-latest": "6bb20fa9de6462d2b88f408c69d7db4912e77277",
+        "safrano9999/hermes-ephemeral-latest": "1ced7135bd8fdee88bbc5233580fb967b70e66c7",
+        "safrano9999/openclaw-deterministic-latest": "8104bb5e10345e46b95d4766108120b51f3fa339",
+        "safrano9999/NOTE": "69a045cd46951af097e2c09d0b73fd40adedd204"
+      }
+    },
+    {
+      "layer": "base",
+      "reference": "ghcr.io/safrano9999/fedora44-ai-base-latest:stable",
+      "digest": "sha256:6d324ab4822084b8c712d5e257d2d743859c3998211cf7f2d219074889b6ce7f",
+      "buildRepository": "safrano9999/fedora-ai-safrano9999",
+      "buildCommit": "e41ec6b1d45750e3e0635a80c8081f56ca0aeba1",
+      "buildRun": "https://github.com/safrano9999/fedora-ai-safrano9999/actions/runs/34544257534",
+      "sourceCommits": {
+        "safrano9999/WELCOME": "66813ba0841d6d14711b47188cebf7b0470ca711",
+        "safrano9999/CITADEL": "19da13a662840b32da93cddd86d751371c6a43e3",
+        "safrano9999/NEXTCLOUD": "173378bf96ecae51bca500f93aad2314f76404b7",
+        "safrano9999/CODEANALYST": "44e8afcab72ccdafe9c94690faf358d80fcbf58c",
+        "safrano9999/DIESDAS-": "7878d75cc10171ffc60a6ba7a8734c32923441fa",
+        "safrano9999/safrano9999-paper": "b46cc727e855773e43a087f8e37cd7fe36fccd36"
+      }
+    },
+    {
+      "layer": "kachelmann",
+      "reference": "ghcr.io/safrano9999/fedora44-ai-kachelmann-latest:stable",
+      "digest": "sha256:79a0b02d01845000c37b79dab94a9c64105b0b271b2362bc46897e9d4c5a6532",
+      "buildRepository": "safrano9999/fedora-ai-safrano9999",
+      "buildCommit": "e41ec6b1d45750e3e0635a80c8081f56ca0aeba1",
+      "buildRun": "https://github.com/safrano9999/fedora-ai-safrano9999/actions/runs/34544872315",
+      "sourceCommits": {
+        "safrano9999/KACHELMANN": "9e8af78b3d26649007c6068625c30a455d4082e5"
+      }
+    },
+    {
+      "layer": "safrano9999",
+      "reference": "ghcr.io/safrano9999/fedora44-ai-safrano9999-latest:stable",
+      "digest": "sha256:aa25b8c6ffc6dce7c743082ccd3253f454bcc6957aca15185e94ad96262f9057",
+      "buildRepository": "safrano9999/fedora-ai-safrano9999",
+      "buildCommit": "e41ec6b1d45750e3e0635a80c8081f56ca0aeba1",
+      "buildRun": "https://github.com/safrano9999/fedora-ai-safrano9999/actions/runs/34545430233",
+      "sourceCommits": {
+        "safrano9999/DAILYNEWS": "5d166299e50d809a9f5a4fd8617defab11e92f2b",
+        "safrano9999/ZEROINBOX": "db149f57e3e735dec2c0d54f48db153e391f20f1",
+        "safrano9999/SPANKER": "395a1113f7051d7d4ef4df595de63a5f46ff8fe6",
+        "safrano9999/JUGO": "9c93ce9da063ea2b3449cbf860926683763fe92e",
+        "safrano9999/PV_D-A-CH": "1433f710ca5db05f783f959e0f1bc4da062dd5bf",
+        "safrano9999/KIWIX_BRIDGE": "be9b2ed68d6c0092fa95eb55d12edcba9d757f1e",
+        "safrano9999/NAPOLEON_HILLS_AI_MASTERMIND_CLASSES": "d5725cfae7ab813625b2ff63243e8ed54fc0330b",
+        "safrano9999/SOLANA_AIRGAPPED_DEBIAN_WORKFLOW": "2f181988d4ec8849f5757f0d533282282f8704f0",
+        "safrano9999/NaturalGrounding-Tiktok-Ying-Video-Manager": "6d3e0bcd26f50fb4598e81409a148c1331671837"
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+/.resolved-build.env
+/build/vendor/
+/CONTAINER/
+/config.conf_example
+/container.example
+/env.example
+/requirements.txt
+**/__pycache__/
+**/*.py[cod]
+*.env
+*_config.conf
+*_container.conf
+*_build.conf
+*.container
+*-compose.yml

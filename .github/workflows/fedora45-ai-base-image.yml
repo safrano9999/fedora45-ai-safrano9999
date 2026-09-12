@@ -1,0 +1,220 @@
+# Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
+name: fedora45-ai-base image
+run-name: ${{ inputs.monitor_id != '' && format('{0} [monitor:{1}:{2}]', github.workflow, inputs.monitor_id, inputs.monitor_final) || github.workflow }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Fixed YY.MM.N version. Empty selects the next monthly number."
+        required: false
+        default: ""
+      core_tag:
+        description: "fedora45-ai-core parent tag. Empty uses build.conf"
+        required: false
+        default: ""
+      push_latest:
+        description: "Also advance latest; false builds a candidate for external verification"
+        required: false
+        type: boolean
+        default: true
+      push_stable:
+        description: "Explicitly also move :stable to this build"
+        required: false
+        type: boolean
+        default: false
+      cascade:
+        description: "Build KACHELMANN after Base succeeds"
+        required: true
+        type: boolean
+        default: false
+      monitor_id:
+        description: "Optional event-monitor correlation id"
+        required: false
+        default: ""
+        type: string
+      monitor_final:
+        description: "This run is the final monitored cascade stage"
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: fedora45-ai-base-image
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      actions: write
+    env:
+      DOCKER_BUILD_RECORD_UPLOAD: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free runner disk space
+        run: .github/scripts/free-runner-disk-space.sh
+
+      - name: Resolve image references
+        id: refs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_TAG: ${{ inputs.image_tag }}
+          CORE_TAG: ${{ inputs.core_tag }}
+          PUSH_STABLE: ${{ inputs.push_stable }}
+          PUSH_LATEST: ${{ inputs.push_latest }}
+        run: |
+          set -euo pipefail
+          set -a
+          . fedora45-ai-base/build.conf
+          set +a
+          core_ref="$AI_CORE_IMAGE"
+          [ -z "$CORE_TAG" ] || core_ref="${AI_CORE_IMAGE%:*}:$CORE_TAG"
+          image="${FEDORA45_AI_BASE_IMAGE%:*}"
+          version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG")"
+
+          {
+            echo "version=$version"
+            echo "core_ref=$core_ref"
+            echo "image=$image"
+            echo "tags<<EOF"
+            echo "${image}:${version}"
+            [ "$PUSH_LATEST" != true ] || echo "${image}:latest"
+            [ "$PUSH_STABLE" != true ] || echo "${image}:stable"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Configure source authentication
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        run: gh auth setup-git
+
+      - name: Prepare Base build context
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        run: fedora45-ai-base/build/prepare-build-context.sh --no-cache
+
+      - name: Resolve Base build configuration
+        id: base_build
+        shell: bash
+        run: |
+          set -euo pipefail
+          resolved=fedora45-ai-base/.resolved-build.env
+          [ -s "$resolved" ] || {
+            echo "Missing $resolved" >&2
+            exit 1
+          }
+          {
+            echo "build_args<<EOF"
+            cat "$resolved"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          cache-binary: false
+          keep-state: false
+          cleanup: true
+
+      - name: Log in to private GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Base
+        uses: docker/build-push-action@v6
+        with:
+          context: ./fedora45-ai-base
+          file: ./fedora45-ai-base/Containerfile
+          target: ai-base
+          platforms: linux/amd64
+          pull: true
+          no-cache: true
+          push: true
+          tags: ${{ steps.refs.outputs.tags }}
+          build-args: |
+            AI_CORE_IMAGE=${{ steps.refs.outputs.core_ref }}
+            ${{ steps.base_build.outputs.build_args }}
+
+      - name: Reclaim space after Base build
+        run: .github/scripts/prune-container-build-space.sh
+
+      - name: Test published Base layer
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="${{ steps.refs.outputs.image }}:${{ steps.refs.outputs.version }}"
+          docker pull "$image"
+          docker run --rm --entrypoint bash "$image" -lc '
+            set -euo pipefail
+            grep -q "Fedora release 45" /etc/fedora-release
+            grep -Fqx "TasksMax=infinity" \
+              /etc/systemd/system/openclaw.service
+            test -x /usr/local/bin/openclaw-ephemeral.py
+            test -x /usr/local/bin/openclaw-ephemeral-yolo
+            test -x /usr/local/bin/hermes-ephemeral
+            test -x /usr/local/bin/persistainer
+            test -f /root/.openclaw/extensions/note/openclaw.plugin.json
+            for project in WELCOME CODEANALYST CITADEL DIESDAS- NEXTCLOUD \
+              safrano9999-paper; do
+              test -d "/opt/safrano9999/$project"
+            done
+            for project in JUGO VikAI PV_D-A-CH KIWIX_BRIDGE \
+              NAPOLEON_HILLS_AI_MASTERMIND_CLASSES \
+              SOLANA_AIRGAPPED_DEBIAN_WORKFLOW \
+              NaturalGrounding-Tiktok-Ying-Video-Manager \
+              DAILYNEWS ZEROINBOX SPANKER KACHELMANN; do
+              test ! -e "/opt/safrano9999/$project"
+            done
+            test -L /README/paper.pdf
+            test "$(readlink /README/paper.pdf)" = \
+              /opt/safrano9999/safrano9999-paper/paper.pdf
+            test -s /README/paper.pdf
+            systemctl is-enabled \
+              persistainer.service fedora44-ai-init-hooks.service \
+              tailscaled.service tailscale-up.service cloudflared.service \
+              cockpit.service vditor-notes.service openclaw-config.service \
+              openclaw.service openclaw-ephemeral-schedule.service \
+              hermes-ephemeral.service hermes.service hermes-dashboard.service \
+              codeanalyst.service citadel.service citadel-scan.service
+            test ! -e /etc/systemd/system/fedora44-ai.service
+          '
+          test "$(
+            docker image inspect \
+              --format '{{ index .Config.Labels "io.safrano9999.parent" }}' \
+              "$image"
+          )" = fedora45-ai-core
+          test "$(docker image inspect --format '{{.Config.User}}' "$image")" = root
+          test "$(docker image inspect --format '{{json .Config.Cmd}}' "$image")" \
+            = '["/sbin/init"]'
+          docker buildx imagetools inspect "$image" >/dev/null
+
+      - name: Trigger kachelmann layer
+        if: inputs.cascade
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE_TAG: ${{ steps.refs.outputs.version }}
+          PUSH_STABLE: ${{ inputs.push_stable }}
+          PUSH_LATEST: ${{ inputs.push_latest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run fedora45-ai-kachelmann-image.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref "$GITHUB_REF_NAME" \
+            -f "image_tag=$IMAGE_TAG" \
+            -f "base_tag=$IMAGE_TAG" \
+            -f "push_stable=$PUSH_STABLE" \
+            -f "push_latest=$PUSH_LATEST" \
+            -f "cascade=true" \
+            -f "monitor_id=${{ inputs.monitor_id }}" \
+            -f "monitor_final=false"

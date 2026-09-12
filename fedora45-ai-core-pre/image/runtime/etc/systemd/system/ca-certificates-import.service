@@ -1,0 +1,12 @@
+[Unit]
+Description=Import optional mounted CA certificates
+ConditionPathIsDirectory=/usr/local/share/ca-certificates-extra
+Before=network.target persistainer.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/import-ca-certificates
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

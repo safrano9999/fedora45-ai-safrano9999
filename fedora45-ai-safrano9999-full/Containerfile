@@ -1,0 +1,48 @@
+ARG AI_SAFRANO9999_IMAGE
+FROM ${AI_SAFRANO9999_IMAGE} AS ai-safrano9999-full
+
+ARG SAFRANO9999_FULL_SOURCE_KEY
+
+LABEL org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
+      org.opencontainers.image.title="fedora45-ai-safrano9999-full" \
+      org.opencontainers.image.description="Optional VikAI agents on Fedora AI Safrano." \
+      io.safrano9999.parent="fedora45-ai-safrano9999" \
+      io.safrano9999.source-tags.sha256="${SAFRANO9999_FULL_SOURCE_KEY}"
+
+USER root
+
+COPY requirements.safrano9999-full.txt /requirements.safrano9999-full.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r /requirements.safrano9999-full.txt \
+ && pip check
+
+COPY .safrano9999-full-source-tags.tsv /README/safrano9999-full-source-tags.tsv
+COPY .fedora44-ai-repositories.list /usr/local/share/fedora44-ai/safrano9999-full-repositories.list
+COPY .fedora44-image-runtime/manifest.tsv /usr/local/share/fedora44-ai/safrano9999-full-runtime-files.tsv
+COPY .fedora44-image-runtime/systemd-enable.list /usr/local/share/fedora44-ai/safrano9999-full-systemd-enable.list
+COPY .fedora44-image-runtime/rootfs/ /
+
+COPY safrano9999/ /opt/safrano9999/
+
+COPY .fedora44-image-buildtime/ /tmp/fedora44-image-buildtime/
+COPY build/run-container-buildtime.sh /tmp/fedora44-image-buildtime/run-container-buildtime
+RUN --network=none \
+    /tmp/fedora44-image-buildtime/run-container-buildtime \
+      /tmp/fedora44-image-buildtime \
+      fedora45-ai-safrano9999-full \
+      /opt/safrano9999 \
+ && rm -rf /tmp/fedora44-image-buildtime \
+ && rm -rf /opt/safrano9999/*/image/runtime
+
+RUN /usr/local/bin/openclaw-ephemeral.py configure \
+ && find /root/.openclaw -maxdepth 1 -name 'openclaw.json*' -delete
+
+RUN while IFS= read -r unit || [ -n "$unit" ]; do \
+      [ -n "$unit" ] || continue; \
+      systemctl enable "$unit"; \
+    done < /usr/local/share/fedora44-ai/safrano9999-full-systemd-enable.list
+
+USER root
+WORKDIR /root
+STOPSIGNAL SIGRTMIN+3
+CMD ["/sbin/init"]

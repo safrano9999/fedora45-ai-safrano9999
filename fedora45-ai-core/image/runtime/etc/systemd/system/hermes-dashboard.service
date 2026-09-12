@@ -1,0 +1,17 @@
+[Unit]
+Description=Hermes Agent dashboard
+Requires=hermes.service
+After=hermes.service
+
+[Service]
+Type=simple
+Environment=HOME=/root
+ExecCondition=/bin/bash -c '[ "$${HERMES_START:-1}" = "1" ]'
+ExecStart=/bin/bash -lc 'exec /usr/local/bin/hermes dashboard --host 0.0.0.0 --port "$${HERMES_DASHBOARD_PORT:-9119}" --no-open --insecure --skip-build'
+ExecStartPost=/bin/bash -lc 'exec /usr/local/libexec/fedora44-wait-ready --timeout 120 tcp 127.0.0.1 "$${HERMES_DASHBOARD_PORT:-9119}"'
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=150
+
+[Install]
+WantedBy=multi-user.target

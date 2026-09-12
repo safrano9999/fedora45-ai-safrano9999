@@ -1,0 +1,62 @@
+# Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
+name: fedora44-ai example chain
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: fedora45-ai-example-chain-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+
+      - name: Generate Fedora example chain
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/fedora45-ai-example-chain.py chain \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --owner "$GITHUB_REPOSITORY_OWNER"
+
+      - name: Commit generated examples when changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          generated=(
+            fedora45-ai-core/fedora45-ai-core.env_example
+            fedora45-ai-core/fedora45-ai-core.config.conf_example
+            fedora45-ai-core/fedora45-ai-core.container_example
+            fedora45-ai-base/fedora45-ai-base.env_example
+            fedora45-ai-base/fedora45-ai-base.config.conf_example
+            fedora45-ai-base/fedora45-ai-base.container_example
+            fedora45-ai-safrano9999/fedora45-ai-safrano9999.env_example
+            fedora45-ai-safrano9999/fedora45-ai-safrano9999.config.conf_example
+            fedora45-ai-safrano9999/fedora45-ai-safrano9999.container_example
+            fedora45-ai-kachelmann/fedora45-ai-kachelmann.env_example
+            fedora45-ai-kachelmann/fedora45-ai-kachelmann.config.conf_example
+            fedora45-ai-kachelmann/fedora45-ai-kachelmann.container_example
+            fedora45-ai-safrano9999-full/fedora45-ai-safrano9999-full.env_example
+            fedora45-ai-safrano9999-full/fedora45-ai-safrano9999-full.config.conf_example
+            fedora45-ai-safrano9999-full/fedora45-ai-safrano9999-full.container_example
+          )
+          git add -- "${generated[@]}"
+          if git diff --cached --quiet --exit-code; then
+            echo "Fedora example chain is already current."
+            exit 0
+          fi
+          git config user.name safrano9999
+          git config user.email info@127.0.0.1
+          git commit -m "Update Fedora example chain"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

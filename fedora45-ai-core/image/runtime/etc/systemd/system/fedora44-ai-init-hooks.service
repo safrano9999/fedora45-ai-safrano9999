@@ -1,0 +1,14 @@
+[Unit]
+Description=Run configured Fedora44 AI initialization hooks
+Requires=persistainer.service
+After=persistainer.service
+ConditionDirectoryNotEmpty=/usr/local/share/fedora44-ai/init.d
+
+[Service]
+Type=oneshot
+Environment=FEDORA44_AI_INIT_HOOKS_DIR=/usr/local/share/fedora44-ai/init.d
+ExecStart=/usr/local/bin/fedora44-ai-init-hooks
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export LC_ALL=C
+
+source_dir="${1:-/usr/local/share/ca-certificates-extra}"
+anchor_dir="${2:-/etc/pki/ca-trust/source/anchors}"
+update_command="${3:-/usr/bin/update-ca-trust}"
+prefix=runtime-extra-ca-
+
+[ "$#" -le 3 ] || { echo "Usage: import-ca-certificates [SOURCE [ANCHORS [UPDATE_COMMAND]]]" >&2; exit 2; }
+[ -d "$source_dir" ] || exit 0
+[ -d "$anchor_dir" ] || { echo "Missing CA anchor directory: $anchor_dir" >&2; exit 1; }
+[ -x "$update_command" ] || { echo "Missing CA update command: $update_command" >&2; exit 1; }
+
+stage="$(mktemp -d)"
+trap 'rm -rf -- "$stage"' EXIT
+install_options=(-m 0644)
+[ "$EUID" -ne 0 ] || install_options=(-o root -g root -m 0644)
+certificate_list="$stage/certificates.list"
+find -P "$source_dir" -maxdepth 1 -type f \
+    \( -name '*.crt' -o -name '*.pem' \) -print0 | sort -z > "$certificate_list"
+
+while IFS= read -r -d '' certificate; do
+    basic_constraints="$(openssl x509 -in "$certificate" -noout \
+        -ext basicConstraints 2>/dev/null)" || {
+        echo "Invalid CA certificate: $certificate" >&2
+        exit 1
+    }
+    grep -Eq '^[[:space:]]*CA:TRUE([[:space:]]*,.*)?[[:space:]]*$' \
+        <<< "$basic_constraints" || {
+            echo "Certificate is not a CA: $certificate" >&2
+            exit 1
+        }
+    fingerprint="$(openssl x509 -in "$certificate" -outform DER | sha256sum | cut -d' ' -f1)"
+    openssl x509 -in "$certificate" -out "$stage/${prefix}${fingerprint}.crt"
+done < "$certificate_list"
+
+find "$anchor_dir" -mindepth 1 -maxdepth 1 -name "${prefix}*.crt" \
+    \( -type f -o -type l \) -delete
+find "$stage" -maxdepth 1 -type f -name "${prefix}*.crt" -exec \
+    install "${install_options[@]}" {} "$anchor_dir/" \;
+"$update_command"
+[ ! -x /usr/local/lib/hermes-agent/venv/bin/python ] || ln -sfnT -- /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem "$(/usr/local/lib/hermes-agent/venv/bin/python -m certifi)"

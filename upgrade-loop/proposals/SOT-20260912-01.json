@@ -1,0 +1,53 @@
+{
+  "request_id": "SOT-20260912-01",
+  "status": "applied",
+  "reason": "Existing build workflows unconditionally move latest before the required external integration tests. The upgrade loop needs candidate builds that preserve latest until verification.",
+  "scope": "Only six Fedora44 image-workflow SOT definitions; config.sh and shared config/setup logic are untouched. Generated workflow copies will be synchronized after approval.",
+  "behavior": "New push_latest input defaults to true. The upgrade loop sends false; fixed image version tags are always published. Cascades propagate the option. Existing callers keep their behavior.",
+  "patch_sha256": "dc022455eb9a6a79b1959503d84176ec91badf45b32432c6cea204e64f5df371",
+  "files": [
+    {
+      "path": "githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-base-image.yml",
+      "before_sha256": "ac5c497bc27f7e0be4761b49b6d122d8660fa9db51a20c5cf60e66c399eb240e",
+      "after_sha256": "257a010362b489e549529ea8ce3e01c96d610684948dcba2469e662ac184cd15"
+    },
+    {
+      "path": "githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-core-image.yml",
+      "before_sha256": "27ce1a3ab80b0b16ccec4c2e9040047a4fe8b49b8cba8a0bed55680ea27dfcfd",
+      "after_sha256": "72234e873b597b986447f1888fb20f36d18d0c2f8dc160259ffd77a1645122a2"
+    },
+    {
+      "path": "githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-core-pre-image.yml",
+      "before_sha256": "4f06edb51f31237231558fb12edf7ba2fead17e37eb3ca9a9817fa2f986f3178",
+      "after_sha256": "1068851283bb8077962315b7b1ef72fe1e109104a8e4832ad491fed1fcafb9c2"
+    },
+    {
+      "path": "githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-kachelmann-image.yml",
+      "before_sha256": "ac5223b90df6c1fd03f5280457bf6fe6b78aafd6c8e03b7442645b0315853bad",
+      "after_sha256": "cc60a2f7262e7fec91dc07e0b245286ce84e207bf3af9ebde953355221d601af"
+    },
+    {
+      "path": "githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-safrano9999-full-image.yml",
+      "before_sha256": "07d86589d8a84e2a02ea42b7fbb0607a4f0822080c3cfa0cce24cf98f93638f3",
+      "after_sha256": "849930461310c04a63063835246253e89fc1708a6def6ef655ce12eb30920fe1"
+    },
+    {
+      "path": "githubactions/fedora-ai-safrano9999/workflows/fedora44-ai-safrano9999-image.yml",
+      "before_sha256": "eb53b1354cd413633b256959072d7547e1cad3c70b6dcb991d25e577698de444",
+      "after_sha256": "cf458697afa5a2152e1de5696e7cdd1be84174d03ad6bce834c20234e41fa885"
+    }
+  ],
+  "approval": {
+    "source": "User message in the current conversation after the Telegram proposal and clarification",
+    "message": "ok ja bau das ein",
+    "recorded_at": "2026-09-12T00:36:05.588817+00:00",
+    "patch_sha256": "dc022455eb9a6a79b1959503d84176ec91badf45b32432c6cea204e64f5df371"
+  },
+  "validation": {
+    "exact_approved_patch": true,
+    "generated_copies_match": true,
+    "tag_resolution_cases_passed": 24,
+    "cascade_dispatch_cases_passed": 10,
+    "live_build_started": false
+  }
+}
