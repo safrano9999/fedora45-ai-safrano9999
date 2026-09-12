@@ -1,0 +1,476 @@
+{
+  "kind": "pre-migration baseline",
+  "recorded_at": "2026-09-12T03:24:12.877289+00:00",
+  "target": {
+    "os": "Fedora 45",
+    "image_version": "2026.9.1",
+    "openclaw": "2026.9.4",
+    "hermes": "0.21.2",
+    "node": "Fedora nodejs26 RPM"
+  },
+  "baseline": {
+    "os": {
+      "status": "PASS",
+      "output": "fedora 44"
+    },
+    "node": {
+      "status": "PASS",
+      "output": "v26.8.2"
+    },
+    "openclaw": "2026.9.3",
+    "hermes": "0.21.0",
+    "services": {
+      "status": "PASS",
+      "output": "active\nactive\nactive\nactive"
+    }
+  },
+  "models": [
+    {
+      "engine": "openclaw",
+      "agent": "main",
+      "status": "PASS",
+      "provider": "openai",
+      "model": "gpt-5.6-luna"
+    },
+    {
+      "engine": "openclaw",
+      "agent": "auto",
+      "timestamp": "2026-09-12T03:09:15.327352+00:00",
+      "exit_code": 0,
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "status": "PASS"
+    },
+    {
+      "engine": "openclaw",
+      "agent": "goldesel",
+      "timestamp": "2026-09-12T03:09:15.328317+00:00",
+      "exit_code": 0,
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "status": "PASS"
+    },
+    {
+      "engine": "openclaw",
+      "agent": "kaki",
+      "timestamp": "2026-09-12T03:09:36.349250+00:00",
+      "exit_code": 0,
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "status": "PASS"
+    },
+    {
+      "engine": "openclaw",
+      "agent": "christ",
+      "timestamp": "2026-09-12T03:09:36.351116+00:00",
+      "exit_code": 0,
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "status": "PASS"
+    },
+    {
+      "engine": "openclaw",
+      "agent": "health",
+      "timestamp": "2026-09-12T03:10:01.289108+00:00",
+      "exit_code": 0,
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "status": "PASS"
+    },
+    {
+      "engine": "openclaw",
+      "agent": "haus",
+      "timestamp": "2026-09-12T03:10:01.356934+00:00",
+      "exit_code": 0,
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "status": "PASS"
+    },
+    {
+      "engine": "openclaw",
+      "agent": "familie",
+      "timestamp": "2026-09-12T03:10:21.088711+00:00",
+      "exit_code": 0,
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "status": "PASS"
+    },
+    {
+      "engine": "openclaw",
+      "agent": "salesbot",
+      "timestamp": "2026-09-12T03:10:21.096025+00:00",
+      "exit_code": 0,
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "status": "PASS"
+    },
+    {
+      "engine": "openclaw",
+      "agent": "mtg",
+      "timestamp": "2026-09-12T03:10:38.754234+00:00",
+      "exit_code": 0,
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "status": "PASS"
+    },
+    {
+      "engine": "hermes",
+      "agent": "default",
+      "status": "PASS",
+      "configured_provider": "litellm",
+      "configured_model": "luna"
+    }
+  ],
+  "openclaw_mcp_projection": [
+    {
+      "agent": "main",
+      "status": "PASS",
+      "servers": [
+        "firefly-mcp",
+        "hibiscus-mcp",
+        "kachelmann-mcp-safrano9999-ucore",
+        "mailfathom",
+        "nextcloud-mcp",
+        "paperless-mcp",
+        "thunderbird-mcp",
+        "vikunja-mcp"
+      ]
+    },
+    {
+      "agent": "auto",
+      "status": "PASS",
+      "servers": [
+        "firefly-mcp",
+        "hibiscus-mcp",
+        "kachelmann-mcp-safrano9999-ucore",
+        "mailfathom",
+        "nextcloud-mcp",
+        "paperless-mcp",
+        "thunderbird-mcp",
+        "vikunja-mcp"
+      ]
+    },
+    {
+      "agent": "goldesel",
+      "status": "PASS",
+      "servers": [
+        "firefly-mcp",
+        "hibiscus-mcp",
+        "kachelmann-mcp-safrano9999-ucore",
+        "mailfathom",
+        "nextcloud-mcp",
+        "paperless-mcp",
+        "thunderbird-mcp",
+        "vikunja-mcp"
+      ]
+    },
+    {
+      "agent": "kaki",
+      "status": "PASS",
+      "servers": [
+        "firefly-mcp",
+        "hibiscus-mcp",
+        "kachelmann-mcp-safrano9999-ucore",
+        "mailfathom",
+        "nextcloud-mcp",
+        "paperless-mcp",
+        "thunderbird-mcp",
+        "vikunja-mcp"
+      ]
+    },
+    {
+      "agent": "christ",
+      "status": "PASS",
+      "servers": [
+        "firefly-mcp",
+        "hibiscus-mcp",
+        "kachelmann-mcp-safrano9999-ucore",
+        "mailfathom",
+        "nextcloud-mcp",
+        "paperless-mcp",
+        "thunderbird-mcp",
+        "vikunja-mcp"
+      ]
+    },
+    {
+      "agent": "health",
+      "status": "PASS",
+      "servers": [
+        "firefly-mcp",
+        "hibiscus-mcp",
+        "kachelmann-mcp-safrano9999-ucore",
+        "mailfathom",
+        "nextcloud-mcp",
+        "paperless-mcp",
+        "thunderbird-mcp",
+        "vikunja-mcp"
+      ]
+    },
+    {
+      "agent": "haus",
+      "status": "PASS",
+      "servers": [
+        "firefly-mcp",
+        "hibiscus-mcp",
+        "kachelmann-mcp-safrano9999-ucore",
+        "mailfathom",
+        "nextcloud-mcp",
+        "paperless-mcp",
+        "thunderbird-mcp",
+        "vikunja-mcp"
+      ]
+    },
+    {
+      "agent": "familie",
+      "status": "PASS",
+      "servers": [
+        "firefly-mcp",
+        "hibiscus-mcp",
+        "kachelmann-mcp-safrano9999-ucore",
+        "mailfathom",
+        "nextcloud-mcp",
+        "paperless-mcp",
+        "thunderbird-mcp",
+        "vikunja-mcp"
+      ]
+    },
+    {
+      "agent": "salesbot",
+      "status": "PASS",
+      "servers": [
+        "firefly-mcp",
+        "hibiscus-mcp",
+        "kachelmann-mcp-safrano9999-ucore",
+        "mailfathom",
+        "nextcloud-mcp",
+        "paperless-mcp",
+        "thunderbird-mcp",
+        "vikunja-mcp"
+      ]
+    },
+    {
+      "agent": "mtg",
+      "status": "PASS",
+      "servers": [
+        "mtg-archidekt",
+        "mtg-commander"
+      ]
+    }
+  ],
+  "hermes_global_mcp": [
+    "firefly-mcp",
+    "hibiscus-mcp",
+    "kachelmann-mcp-safrano9999-ucore",
+    "mailfathom",
+    "mtg-archidekt",
+    "mtg-commander",
+    "nextcloud-mcp",
+    "paperless-mcp",
+    "thunderbird-mcp",
+    "vikunja-mcp"
+  ],
+  "mcp_discovery": [
+    {
+      "name": "firefly-mcp",
+      "status": "PASS",
+      "tools": 43,
+      "tool_names_sha256": "816f6d7c3d1872c5d531b5aee19395011ceaffcdfe303f2f765245d89b68a498"
+    },
+    {
+      "name": "paperless-mcp",
+      "status": "PASS",
+      "tools": 44,
+      "tool_names_sha256": "e828f274739eef916fe9470b8ed66507d628446d9af72976a477883c2d5077f5"
+    },
+    {
+      "name": "nextcloud-mcp",
+      "status": "PASS",
+      "tools": 151,
+      "tool_names_sha256": "b915759ac470466c82f6b13b105c265aa32644a15348fb25a24878e4fcf1c913"
+    },
+    {
+      "name": "kachelmann-mcp-safrano9999-ucore",
+      "status": "PASS",
+      "tools": 31,
+      "tool_names_sha256": "21bd10517bdb31a3749e0d09efda676d6652e59de194017b8021e6190fff8849"
+    },
+    {
+      "name": "mailfathom",
+      "status": "PASS",
+      "tools": 5,
+      "tool_names_sha256": "c8a22003869ba31d5103cf0311a8e294375d9affc3b049679db79aa51fb0258d"
+    },
+    {
+      "name": "thunderbird-mcp",
+      "status": "PASS",
+      "tools": 40,
+      "tool_names_sha256": "d060cadddd341a0ea506110b5c06090208a1a2656cfa470fb9f4139c40766532"
+    },
+    {
+      "name": "vikunja-mcp",
+      "status": "PASS",
+      "tools": 16,
+      "tool_names_sha256": "9786674927d3f9140ca057fdb41b3ad9a8dff3bf1162c8ff6a4f6aa435ee63de"
+    },
+    {
+      "name": "hibiscus-mcp",
+      "status": "PASS",
+      "tools": 3,
+      "tool_names_sha256": "5c14456057cb1eed7a57f98d1e3abf5af698f742530fa7e0ee144f53b397c397"
+    },
+    {
+      "name": "mtg-commander",
+      "status": "PASS",
+      "tools": 19,
+      "tool_names_sha256": "33c60f73a2a1691607076844e30f5a3991c9bf28b73b8939027ee323ffbdf1ee"
+    },
+    {
+      "name": "mtg-archidekt",
+      "status": "PASS",
+      "tools": 16,
+      "tool_names_sha256": "6a269bb86c095a6b7c8f0b95eb70068fa4596910cb41a04249a1daaa0003e772"
+    }
+  ],
+  "mcp_read_calls": [
+    {
+      "server": "firefly-mcp",
+      "status": "PASS",
+      "attempts": [
+        {
+          "name": "firefly-mcp",
+          "status": "PASS",
+          "tool": "list_account",
+          "response_bytes": 2716
+        }
+      ]
+    },
+    {
+      "server": "paperless-mcp",
+      "status": "PASS",
+      "attempts": [
+        {
+          "name": "paperless-mcp",
+          "status": "PASS",
+          "tool": "paperless_storage_paths_list",
+          "response_bytes": 553
+        }
+      ]
+    },
+    {
+      "server": "nextcloud-mcp",
+      "status": "PASS",
+      "attempts": [
+        {
+          "name": "nextcloud-mcp",
+          "status": "PASS",
+          "tool": "nc_webdav_list_directory",
+          "response_bytes": 6203
+        }
+      ]
+    },
+    {
+      "server": "kachelmann-mcp-safrano9999-ucore",
+      "status": "PASS",
+      "attempts": [
+        {
+          "name": "kachelmann-mcp-safrano9999-ucore",
+          "status": "PASS",
+          "tool": "kachelmann_list_tables",
+          "response_bytes": 2382
+        }
+      ]
+    },
+    {
+      "server": "mailfathom",
+      "status": "PASS",
+      "attempts": [
+        {
+          "name": "mailfathom",
+          "status": "PASS",
+          "tool": "list_accounts",
+          "response_bytes": 3885
+        }
+      ]
+    },
+    {
+      "server": "thunderbird-mcp",
+      "status": "PASS",
+      "attempts": [
+        {
+          "name": "thunderbird-mcp",
+          "status": "PASS",
+          "tool": "listAccounts",
+          "response_bytes": 326
+        }
+      ]
+    },
+    {
+      "server": "vikunja-mcp",
+      "status": "PASS",
+      "attempts": [
+        {
+          "name": "vikunja-mcp",
+          "status": "PASS",
+          "tool": "vikunja_teams",
+          "response_bytes": 271
+        }
+      ]
+    },
+    {
+      "server": "hibiscus-mcp",
+      "status": "PASS",
+      "attempts": [
+        {
+          "name": "hibiscus-mcp",
+          "status": "PASS",
+          "tool": "get_balance",
+          "response_bytes": 437
+        }
+      ]
+    },
+    {
+      "server": "mtg-commander",
+      "status": "PASS",
+      "attempts": [
+        {
+          "name": "mtg-commander",
+          "status": "PASS",
+          "tool": "get_banned_list",
+          "response_bytes": 1934
+        }
+      ]
+    },
+    {
+      "server": "mtg-archidekt",
+      "status": "PASS",
+      "attempts": [
+        {
+          "name": "mtg-archidekt",
+          "status": "FAIL",
+          "error": "HTTPError",
+          "http_status": 500
+        },
+        {
+          "name": "mtg-archidekt",
+          "status": "PASS",
+          "tool": "list_personal_decks",
+          "response_bytes": 3416
+        }
+      ]
+    }
+  ],
+  "citadel": {
+    "status": "PASS",
+    "checked": 45,
+    "passed": 45,
+    "groups": {
+      "loopback": 15,
+      "public": 15,
+      "tailscale": 15
+    }
+  },
+  "notes": [
+    "The first Archidekt read failed with a closed Redis buffer. A fresh read succeeded; the service and image were unchanged.",
+    "Checks create dedicated model probe sessions and do not deliver channel messages."
+  ]
+}

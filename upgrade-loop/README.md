@@ -4,6 +4,8 @@ The Fedora45 migration upgrades Hermes to 0.21.2 and OpenClaw to 2026.9.4, inclu
 
 [Import all four n8n workflows](n8n-fedora45-all.json) · [Main loop](n8n-fedora45-workflow.json) · [Shared repair](n8n-fedora45-repair.json) · [Integration tests](n8n-fedora45-integration.json) · [Checkpoint reporting](n8n-fedora45-step-report.json).
 
+The manual Fedora45 bootstrap records its [pre-migration baseline](evidence/fedora45-2026.9.1-baseline.json). Repeatable container probes cover [agent model replies](probes/runtime-models.py) and the installed [per-agent MCP projection](probes/runtime-mcp-projection.mjs); model probes use dedicated sessions without channel delivery.
+
 The main canvas contains 78 nodes instead of 158. Reporting calls drop from 81 to 23 (71.6%): structured results travel in the execution-local `run.events` array; Astra summarizes only decision checkpoints and outcomes. The final PDF is rendered once from the complete run. Application adapters and existing empty decision placeholders remain disabled and unimplemented; this refactoring does not make the deployment loop executable.
 
 The repair and reporting LLM nodes use **Astra** through local LiteLLM: `astra` → `chatgpt/gpt-6-astra`, at `http://litellm-database:4000/v1` on Podman network `core`. LiteLLM stores the model persistently; n8n stores its credential locally. All four workflows remain inactive. Checkpoint and repair prompts are defined; deterministic business adapters and the final PDF renderer remain pending.
