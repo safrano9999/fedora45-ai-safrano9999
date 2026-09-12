@@ -24,7 +24,6 @@ COPY .fedora45-ai-repositories.list /usr/local/share/fedora45-ai/safrano9999-rep
 COPY .fedora45-image-runtime/manifest.tsv /usr/local/share/fedora45-ai/safrano9999-runtime-files.tsv
 COPY .fedora45-image-runtime/systemd-enable.list /usr/local/share/fedora45-ai/safrano9999-systemd-enable.list
 COPY .fedora45-image-runtime/rootfs/ /
-COPY runtime/ /
 
 COPY safrano9999/ /opt/safrano9999/
 RUN sed -i 's/psycopg\[binary\]/psycopg/g' /opt/safrano9999/*/requirements.txt
