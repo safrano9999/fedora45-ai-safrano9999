@@ -55,7 +55,7 @@ def check(task):
             passed = passed and f"{result.get('provider')}/{result.get('model')}" == expected_models[agent]
         else:
             passed = completed.stdout.strip() == marker
-        if args.tool_call and passed:
+        if args.tool_call and (passed or engine == "hermes"):
             if engine == "openclaw":
                 history = subprocess.run(["openclaw", "gateway", "call", "chat.history", "--json",
                                           "--params", json.dumps({"sessionKey": session_key, "limit": 30})],
@@ -71,9 +71,14 @@ def check(task):
                                        (sessions[0][0], "FEDORA_TOOL_PROBE_OK")).fetchall() if len(sessions) == 1 else []
                     if len(sessions) == 1:
                         model, base_url = db.execute("SELECT model,billing_base_url FROM sessions WHERE id=?", sessions[0]).fetchone()
+                        reply = db.execute("SELECT content FROM messages WHERE session_id=? AND role='assistant' AND length(content)>0 ORDER BY id DESC LIMIT 1",
+                                           sessions[0]).fetchone()
                         result.update(model=model, expected_model=hermes_model["default"],
-                                      provider_route_matches=base_url == hermes_model["base_url"])
-                        passed = model == hermes_model["default"] and result["provider_route_matches"]
+                                      provider_route_matches=base_url == hermes_model["base_url"],
+                                      model_reply_verified=bool(reply and reply[0].strip() == marker))
+                        # The CLI can print user-configured banners and usage statistics.
+                        passed = (model == hermes_model["default"] and result["provider_route_matches"]
+                                  and result["model_reply_verified"])
             result["verified_tool_results"] = len(calls)
             passed = passed and bool(calls)
         result["status"] = "PASS" if passed else "FAIL"

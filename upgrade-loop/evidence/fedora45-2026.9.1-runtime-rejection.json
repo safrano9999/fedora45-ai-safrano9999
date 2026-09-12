@@ -1,0 +1,66 @@
+{
+  "candidate": "2026.9.1",
+  "status": "REJECTED_AND_ROLLED_BACK",
+  "production_after_rollback": {
+    "platform": "Fedora44",
+    "openclaw": "2026.9.3",
+    "hermes": "0.21.0",
+    "model_probe": "PASS",
+    "gateway_http": 200
+  },
+  "acceptance_failure": {
+    "http_links_passed": 43,
+    "http_links_total": 45,
+    "failed_components": [
+      "OpenClaw local HTTP",
+      "OpenClaw Tailscale HTTP"
+    ],
+    "model_probe": "TIMEOUT"
+  },
+  "isolated_reproduction": {
+    "full_agent_state_copy": true,
+    "channels_enabled": false,
+    "cron_enabled": false,
+    "heartbeats_enabled": false,
+    "http_passed": 1,
+    "http_timed_out": 5,
+    "http_timeout_seconds": 10,
+    "model_probe": "TIMEOUT",
+    "cpu_throttling": false,
+    "oom": false
+  },
+  "profile": {
+    "duration_seconds": 425.993009,
+    "provider_model_policy_inclusive_seconds": 273.331,
+    "catalog_identity_inclusive_seconds": 261.687,
+    "interpretation": "Repeated provider policy preparation blocks the gateway event loop during model catalog projection."
+  },
+  "repair": {
+    "repository": "safrano9999/openclaw-deterministic-latest",
+    "commit": "b4a2928282c1b2168367a021a07b8ea12ad77fbe",
+    "release": "2026.9.4-deterministic.2",
+    "build_url": "https://github.com/safrano9999/openclaw-deterministic-latest/actions/runs/34677958802",
+    "status": "PACKAGE_VERIFIED",
+    "source_tests_passed": 37,
+    "regression_inventory_reads_before": 402,
+    "regression_inventory_reads_after": 2,
+    "original_source_regression_failed_as_expected": true,
+    "release_ci_tests_passed": 637,
+    "package_sha256": "93ead31d91db56564e58ac9313b9f73c8191ec1a2dc04fc841faa6b54f1b796c"
+  },
+  "next_candidate": "2026.9.2",
+  "latest_promoted": false,
+  "sot_changed": false,
+  "limitations": [
+    "The repaired package has not yet passed full-state runtime acceptance.",
+    "The n8n workflows remain inactive scaffolds; this was a manual acceptance run."
+  ],
+  "hermes_full_state_probe": {
+    "model": "luna",
+    "provider_route_matches": true,
+    "model_reply_verified": true,
+    "verified_tool_results": 1,
+    "status": "PASS",
+    "fixture_configured_before_probe": true
+  }
+}
