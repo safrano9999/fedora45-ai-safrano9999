@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const [packageDir, baselinePath] = process.argv.slice(2);
+const [packageDir, baselinePath, agentCsv] = process.argv.slice(2);
 const baseline = JSON.parse(fs.readFileSync(baselinePath));
 const api = (file) => import(pathToFileURL(path.join(packageDir, "dist", file)));
 const { loadConfig } = await api("plugin-sdk/config-runtime.js");
@@ -19,10 +19,12 @@ const probes = JSON.parse(fs.readFileSync(new URL("./mcp-read-calls.json", impor
 const entries = cfg.agents.entries;
 const agents = Array.isArray(entries) ? entries.map((entry) => entry.id) : Object.keys(entries);
 assert.deepEqual(agents.toSorted(), Object.keys(baseline.openclaw_agents).toSorted());
+const selected = agentCsv ? agentCsv.split(",") : agents;
+assert(selected.every((agent) => agents.includes(agent)), "Unknown OpenClaw agent");
 const enabled = Object.keys(cfg.mcp.servers).filter((name) => cfg.mcp.servers[name].enabled !== false);
 assert.deepEqual(enabled.toSorted(), Object.keys(probes).toSorted(), "Review changed MCP inventory");
 const results = [];
-for (const agent of agents) {
+for (const agent of selected) {
   const sessionId = `upgrade-mcp-${randomUUID()}`;
   const result = { agent, timestamp: new Date().toISOString(), calls: [], denied: [], status: "FAIL" };
   let lease;
