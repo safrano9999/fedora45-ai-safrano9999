@@ -10,3 +10,5 @@
 - Existing business adapters and decision placeholders remain disabled. The missing final renderer fails explicitly instead of pretending a PDF exists. The structural refactor is not an executable deployment implementation.
 
 Import `n8n-fedora45-all.json` to install the main, repair, integration and reporting workflows together. The existing LiteLLM credential is referenced, never exported with a key.
+
+Runtime validation: the local n8n task runner executes the reporter and receives a real Astra summary through LiteLLM Chat Completions. An intentional FAIL remains FAIL. JSON payload cloning and the existing local credential reference are compatible with the installed n8n runtime.

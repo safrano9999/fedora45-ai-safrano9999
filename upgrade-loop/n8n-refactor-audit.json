@@ -8,5 +8,12 @@
   "integration_nodes": 12,
   "reporter_nodes": 8,
   "existing_if_conditions_unchanged": true,
-  "application_adapters": "Existing skeleton; not implemented by structural refactoring"
+  "application_adapters": "Existing skeleton; not implemented by structural refactoring",
+  "reporter_live_test": {
+    "status": "PASS",
+    "model": "astra",
+    "endpoint": "http://litellm-database:4000/v1/chat/completions",
+    "intentional_failure_preserved": true,
+    "fallback_used": false
+  }
 }

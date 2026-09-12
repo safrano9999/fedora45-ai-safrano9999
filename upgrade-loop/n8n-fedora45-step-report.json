@@ -26,7 +26,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nreturn $input.all().map(i=>{const j=structuredClone(i.json); const mode=j.reportMode; const checkpoint=typeof j.checkpoint===\"string\"?JSON.parse(j.checkpoint):j.checkpoint; const prev=j.previousDecision; delete j.reportMode;delete j.checkpoint;delete j.previousDecision;j.run ??= {id:String($execution.id),events:[],summaries:[]}; if (prev && [\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.output===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); return {...i,json:{payload:j,reportMode:mode,checkpoint,summaryInput:safe(j.run.events)}};});",
+        "jsCode": "function safe(v,k=\"\") { if (/token|password|secret|authorization|api.?key/i.test(k)) return \"[REDACTED]\"; if (Array.isArray(v)) return v.map(x=>safe(x)); if (v && typeof v===\"object\") return Object.fromEntries(Object.entries(v).filter(([k])=>k!==\"run\").map(([k,x])=>[k,safe(x,k)])); return v; }\nreturn $input.all().map(i=>{const j=JSON.parse(JSON.stringify(i.json)); const mode=j.reportMode; const checkpoint=typeof j.checkpoint===\"string\"?JSON.parse(j.checkpoint):j.checkpoint; const prev=j.previousDecision; delete j.reportMode;delete j.checkpoint;delete j.previousDecision;j.run ??= {id:String($execution.id),events:[],summaries:[]}; if (prev && [\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.output===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); return {...i,json:{payload:j,reportMode:mode,checkpoint,summaryInput:safe(j.run.events)}};});",
         "mode": "runOnceForAllItems"
       },
       "disabled": true
@@ -129,12 +129,12 @@
           "value": "astra",
           "mode": "id"
         },
-        "responsesApiEnabled": true,
+        "responsesApiEnabled": false,
         "options": {}
       },
       "credentials": {
         "openAiApi": {
-          "id": "fedora45LiteLLM",
+          "id": "fedora44LiteLLM",
           "name": "LiteLLM - Astra (core network)"
         }
       },
@@ -151,7 +151,7 @@
         240
       ],
       "parameters": {
-        "jsCode": "const input=$(\"Prepare checkpoint and preserve payload\").item.json; return $input.all().map(i=>{const j=structuredClone(input.payload); const text=typeof i.json.text===\"string\" && i.json.text.trim()?i.json.text.trim():\"Checkpoint recorded. See deterministic step results.\";j.run.summaries.push({checkpoint:input.checkpoint,timestamp:new Date().toISOString(),text});return {...i,json:j};});",
+        "jsCode": "const input=$(\"Prepare checkpoint and preserve payload\").item.json; return $input.all().map(i=>{const j=JSON.parse(JSON.stringify(input.payload)); const text=typeof i.json.text===\"string\" && i.json.text.trim()?i.json.text.trim():\"Checkpoint recorded. See deterministic step results.\";j.run.summaries.push({checkpoint:input.checkpoint,timestamp:new Date().toISOString(),text});return {...i,json:j};});",
         "mode": "runOnceForAllItems"
       },
       "disabled": true
