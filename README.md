@@ -55,6 +55,10 @@ Hermes so its installer keeps the system Node. Python development headers suppor
 source builds on Fedora's Python 3.15; Psycopg uses Fedora's libpq. Other floating
 channels (Codex CLI, Claude and uv) keep their previous selection strategy.
 
+The Nous API-key patch follows Hermes 0.21.2's credential owners and preserves
+interactive OAuth. Its 16 API-key regressions and 169 related upstream checks
+pass, including the default chat transport and optional native Messages transport.
+
 ## Publishing and deployment
 
 The planned n8n workflow for repeatable builds, regression tests and corrections

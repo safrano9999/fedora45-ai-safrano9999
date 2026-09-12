@@ -1,19 +1,19 @@
 diff --git a/agent/auxiliary_client.py b/agent/auxiliary_client.py
-index 8901747332d21768c53d9d8a2de45f16ca2fd302..263e332f7e6d26320d99036a643b3ed366115d83 100644
+index 1bf338593175c9a0332945326cbae7e615df75e8..f844ff79431c7905a5c1d945ccc5ab584a97fb43 100644
 --- a/agent/auxiliary_client.py
 +++ b/agent/auxiliary_client.py
-@@ -167,7 +167,7 @@ def aux_probe_mode():
-     finally:
+@@ -106,7 +106,7 @@ def aux_probe_mode():
          _aux_probe_state.active = prev
+ 
  
 -from agent.credential_pool import load_pool
 +from agent.credential_pool import AUTH_TYPE_API_KEY, load_pool
  from agent.model_metadata import (
-     MINIMUM_CONTEXT_LENGTH,
-     get_model_context_length,
-@@ -2760,6 +2760,13 @@ def _resolve_nous_pool_runtime_api(*, force_refresh: bool = False) -> Optional[t
-     if entry is None:
-         return None
+     MINIMUM_CONTEXT_LENGTH, get_model_context_length,
+     strip_codex_context_variant_suffix as _strip_codex_ctx_variant,
+@@ -1908,6 +1908,13 @@ def _resolve_nous_pool_runtime_api(*, force_refresh: bool = False) -> Optional[t
+         return {k: getattr(e, k, None) for k in (
+             "agent_key", "agent_key_expires_at", "access_token", "expires_at", "scope")}
  
 +    if getattr(entry, "auth_type", None) == AUTH_TYPE_API_KEY:
 +        api_key = _pool_runtime_api_key(entry)
@@ -22,14 +22,14 @@ index 8901747332d21768c53d9d8a2de45f16ca2fd302..263e332f7e6d26320d99036a643b3ed3
 +            return None
 +        return api_key, base_url
 +
-     state = {
-         "agent_key": getattr(entry, "agent_key", None),
-         "agent_key_expires_at": getattr(entry, "agent_key_expires_at", None),
+     if force_refresh or not _agent_key_is_usable(_entry_state(entry), _nous_min_key_ttl_seconds()):
+         try:
+             refreshed = pool.try_refresh_current()
 diff --git a/agent/credential_pool.py b/agent/credential_pool.py
-index 8eca1740a555b511efb5ef51ad0b4a06c9ae3115..89c1ac42c8b3d19d5ebb53eb47bd88fe7c2c39b7 100644
+index b76e53d866a77a1fa3821b09cbf941f9ebcd4c3d..d7f33feaedf25752c4cf8907f130d316d4d14332 100644
 --- a/agent/credential_pool.py
 +++ b/agent/credential_pool.py
-@@ -279,9 +279,10 @@ class PooledCredential:
+@@ -269,9 +269,9 @@ class PooledCredential:
  
      @property
      def runtime_api_key(self) -> str:
@@ -37,60 +37,60 @@ index 8eca1740a555b511efb5ef51ad0b4a06c9ae3115..89c1ac42c8b3d19d5ebb53eb47bd88fe
 +        if self.provider == "nous" and self.auth_type == AUTH_TYPE_OAUTH:
              # Nous stores the runtime inference credential in agent_key for
 -            # compatibility. It must be a NAS invoke JWT.
-+            # OAuth compatibility. It must be a NAS invoke JWT. Direct API-key
-+            # credentials use access_token like every other API-key provider.
++            # OAuth compatibility. Direct API keys use access_token below.
              for token, expires_at in (
                  (self.agent_key, self.agent_key_expires_at),
                  (self.access_token, self.expires_at),
-@@ -3349,7 +3350,7 @@ def _seed_from_env(provider: str, entries: List[PooledCredential]) -> Tuple[bool
-         return changed, active_sources
+@@ -2614,7 +2614,7 @@ def _seed_from_env(provider: str, entries: List[PooledCredential]) -> Tuple[bool
+         return seed.result
  
      pconfig = PROVIDER_REGISTRY.get(provider)
 -    if not pconfig or pconfig.auth_type != AUTH_TYPE_API_KEY:
 +    if not pconfig or not pconfig.api_key_env_vars:
-         return changed, active_sources
+         return seed.result
  
      env_url = ""
 diff --git a/hermes_cli/auth.py b/hermes_cli/auth.py
-index 963fe0632c2bc831ca3a273ca90e700586088adc..e561872ec9f7a25f0d5e616c1b0bf38ee66dda68 100644
+index 8bbcc5b795b824101c007f06fb63f286ccfbca25..1d313ff1f2cdcc6c9411e2a6c1d5b661b192deab 100644
 --- a/hermes_cli/auth.py
 +++ b/hermes_cli/auth.py
-@@ -255,6 +255,7 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
-         inference_base_url=DEFAULT_NOUS_INFERENCE_URL,
-         client_id=DEFAULT_NOUS_CLIENT_ID,
-         scope=DEFAULT_NOUS_SCOPE,
-+        api_key_env_vars=("NOUS_API_KEY",),
-     ),
-     "openai-codex": ProviderConfig(
-         id="openai-codex",
-@@ -2037,7 +2038,7 @@ def is_provider_explicitly_configured(provider_id: str) -> bool:
-     if pconfig is None:
-         from hermes_cli.providers import get_provider
+@@ -176,7 +176,7 @@ _REGISTRY_ROWS: Tuple[Any, ...] = (
+     ProviderConfig(
+         "nous", "Nous Portal", "oauth_device_code", portal_base_url=DEFAULT_NOUS_PORTAL_URL,
+         inference_base_url=DEFAULT_NOUS_INFERENCE_URL, client_id=DEFAULT_NOUS_CLIENT_ID,
+-        scope=DEFAULT_NOUS_SCOPE),
++        scope=DEFAULT_NOUS_SCOPE, api_key_env_vars=("NOUS_API_KEY",)),
+     ProviderConfig("openai-codex", "OpenAI Codex", "oauth_external", inference_base_url=DEFAULT_CODEX_BASE_URL),
+     ("openai-api", "OpenAI API", "https://api.openai.com/v1", ("OPENAI_API_KEY",), "OPENAI_BASE_URL"),
+     ProviderConfig(
+@@ -1138,7 +1138,7 @@ def _explicit_env_credentials_present(normalized: str) -> bool:
          pconfig = get_provider(normalized)
--    if pconfig and pconfig.auth_type == "api_key":
-+    if pconfig and pconfig.api_key_env_vars:
-         for env_var in pconfig.api_key_env_vars:
-             if env_var in _IMPLICIT_ENV_VARS:
-                 continue
-@@ -2373,9 +2374,10 @@ def resolve_provider(
-     except Exception as e:
-         logger.debug("Could not pre-read active auth provider: %s", e)
+         if not pconfig:
+             return False
+-    if pconfig.auth_type == "api_key":
++    if pconfig.api_key_env_vars:
+         return any(_env_secret(v) for v in pconfig.api_key_env_vars if v not in _IMPLICIT_ENV_VARS)
+     if pconfig.auth_type == "aws_sdk":
+         return _env_secret("AWS_BEARER_TOKEN_BEDROCK") or (
+@@ -1411,10 +1411,10 @@ _NO_AUTO_DETECT_PROVIDERS = frozenset({"copilot", "lmstudio"})
  
--    # Auto-detect API-key providers by checking their env vars
-+    # Auto-detect providers with API-key credentials, including providers whose
-+    # primary interactive auth flow is OAuth (for example Nous).
+ def _env_key_auto_detected(
+     scoped_key_env: Callable[[str], str], oauth_active: Optional[str]) -> Optional[str]:
+-    """First registry api_key provider (registry order) with a usable env key, warning when it
++    """First registry provider (registry order) with a usable API key, warning when it
+     preempts a logged-in OAuth provider so a stale key in ~/.hermes/.env never switches silently."""
      for pid, pconfig in PROVIDER_REGISTRY.items():
--        if pconfig.auth_type != "api_key":
-+        if not pconfig.api_key_env_vars:
+-        if pconfig.auth_type != "api_key" or pid in _NO_AUTO_DETECT_PROVIDERS:
++        if not pconfig.api_key_env_vars or pid in _NO_AUTO_DETECT_PROVIDERS:
              continue
-         # GitHub tokens are commonly present for repo/tool access but should not
-         # hijack inference auto-selection unless the user explicitly chooses
+         for env_var in pconfig.api_key_env_vars:
+             if has_usable_secret(scoped_key_env(env_var)):
 diff --git a/hermes_cli/nous_auth_keepalive.py b/hermes_cli/nous_auth_keepalive.py
-index 947bbd17871cd1b8f13ebc3db4625474992197de..3911175af1278839e1bc927bf2c052ea9f708b9f 100644
+index 67d55e9a661f1bef198d86d173e3ffcb35116e1e..180758b18693a963ce26568330c64f0d34eb0322 100644
 --- a/hermes_cli/nous_auth_keepalive.py
 +++ b/hermes_cli/nous_auth_keepalive.py
-@@ -54,7 +54,7 @@ def _refresh_selected_pool_entry(
-     pool exists but no entry can be used, and None when no Nous pool exists.
+@@ -120,7 +120,7 @@ def _refresh_selected_pool_entry(*, min_key_ttl_seconds: int, min_access_ttl_sec
+     no usable entry; None = no Nous pool.
      """
      try:
 -        from agent.credential_pool import load_pool
@@ -98,66 +98,55 @@ index 947bbd17871cd1b8f13ebc3db4625474992197de..3911175af1278839e1bc927bf2c052ea
  
          pool = load_pool("nous")
      except Exception as exc:
-@@ -73,6 +73,9 @@ def _refresh_selected_pool_entry(
+@@ -135,6 +135,8 @@ def _refresh_selected_pool_entry(*, min_key_ttl_seconds: int, min_access_ttl_sec
+         return False
      if entry is None:
          return False
- 
 +    if getattr(entry, "auth_type", None) == AUTH_TYPE_API_KEY:
 +        return bool(getattr(entry, "runtime_api_key", None))
-+
-     access_expiring = _is_expiring(
-         getattr(entry, "expires_at", None),
-         ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
+     if min_access_ttl_seconds is None:
+         min_access_ttl_seconds = ACCESS_TOKEN_REFRESH_SKEW_SECONDS
+     access_expiring = _is_expiring(getattr(entry, "expires_at", None), min_access_ttl_seconds)
 diff --git a/hermes_cli/providers.py b/hermes_cli/providers.py
-index 87e2136a963447f4e44cd0f2dd0c21ec75cabbdb..fda8ab86b3aa37fcb40572ac293824b20f19ac75 100644
+index 54380eb718631d4293d529e86e6a48e5b00d5dc7..a0651b5e80d2a09b7602847c6b9e8eea8d060022 100644
 --- a/hermes_cli/providers.py
 +++ b/hermes_cli/providers.py
-@@ -58,6 +58,7 @@ HERMES_OVERLAYS: Dict[str, HermesOverlay] = {
-     "nous": HermesOverlay(
-         transport="openai_chat",
-         auth_type="oauth_device_code",
-+        extra_env_vars=("NOUS_API_KEY",),
-         base_url_override="https://inference-api.nousresearch.com/v1",
-     ),
-     "openai-codex": HermesOverlay(
+@@ -29,7 +29,7 @@ class HermesOverlay:
+ HERMES_OVERLAYS: Dict[str, HermesOverlay] = {
+     "moa": HermesOverlay(auth_type="virtual", base_url_override="moa://local"),
+     "openrouter": HermesOverlay(is_aggregator=True, base_url_env_var="OPENROUTER_BASE_URL"),
+-    "nous": HermesOverlay(auth_type="oauth_device_code", base_url_override="https://inference-api.nousresearch.com/v1"),
++    "nous": HermesOverlay(auth_type="oauth_device_code", extra_env_vars=("NOUS_API_KEY",), base_url_override="https://inference-api.nousresearch.com/v1"),
+     "openai-codex": HermesOverlay(transport="codex_responses", auth_type="oauth_external",
+                                   base_url_override="https://chatgpt.com/backend-api/codex"),
+     "openai-api": HermesOverlay(transport="codex_responses", base_url_override="https://api.openai.com/v1",
 diff --git a/hermes_cli/runtime_provider.py b/hermes_cli/runtime_provider.py
-index b663a92ca5e7c0f6605bfcaebce5d89196b293bd..7003daa2d63ebb781525c996ece16be7ea36ae8c 100644
+index 37dc514bcfa03ee660604f9340d92a8309b647c4..7d7ad3baf7e3e4530a4ff99946f1e9ad42f00153 100644
 --- a/hermes_cli/runtime_provider.py
 +++ b/hermes_cli/runtime_provider.py
-@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
+@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
  
  from hermes_cli import auth as auth_mod
- from agent.credential_pool import (
+ from agent.credential_pool import (  # custom_provider_pool_key_candidates is read via origin by runtime_provider_custom
 +    AUTH_TYPE_OAUTH,
-     CredentialPool,
-     PooledCredential,
-     credential_pool_matches_provider,
-@@ -2114,13 +2115,17 @@ def resolve_runtime_provider(
-                 getattr(entry, "runtime_api_key", None)
-                 or getattr(entry, "access_token", "")
-             )
--        # For Nous, the pool entry's runtime_api_key is the agent_key
-+        # For Nous OAuth, the pool entry's runtime_api_key is the agent_key
-         # compatibility field. It must be an invoke JWT. The pool doesn't
-         # refresh it during selection (that would trigger network calls in
-         # non-runtime contexts like `hermes auth list`). If the key is
-         # expired/missing, refresh the selected pool entry before falling back
-         # to singleton auth resolution.
--        if provider == "nous" and entry is not None:
-+        if (
-+            provider == "nous"
-+            and entry is not None
-+            and getattr(entry, "auth_type", AUTH_TYPE_OAUTH) == AUTH_TYPE_OAUTH
-+        ):
-             min_ttl = max(60, env_int("HERMES_NOUS_MIN_KEY_TTL_SECONDS", 1800))
-             nous_state = {
-                 "agent_key": getattr(entry, "agent_key", None),
+     CredentialPool, PooledCredential, credential_pool_matches_provider, custom_provider_pool_key_candidates,  # noqa: F401
+     load_pool,
+ )
+@@ -531,7 +532,7 @@ def _resolve_from_pool(provider: str, requested_provider: str, model_cfg: Dict[s
+     if entry is None:
+         return None
+     pool_api_key = _pool_entry_api_key(entry)
+-    if provider == "nous":
++    if provider == "nous" and getattr(entry, "auth_type", AUTH_TYPE_OAUTH) == AUTH_TYPE_OAUTH:
+         entry, pool_api_key = _refresh_nous_pool_entry(pool, entry, pool_api_key)
+     if pool_api_key and credential_pool_matches_provider(pool, provider, base_url=_pool_entry_base_url(entry)):
+         return _resolve_runtime_from_pool_entry(provider=provider, entry=entry, requested_provider=requested_provider,
 diff --git a/tests/hermes_cli/test_nous_api_key.py b/tests/hermes_cli/test_nous_api_key.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..286d4bb2ab85095aa6011c0e77f56b0c3a808efe
+index 0000000000000000000000000000000000000000..4e1451ddd5fea4528e9e84436957f96f2e248153
 --- /dev/null
 +++ b/tests/hermes_cli/test_nous_api_key.py
-@@ -0,0 +1,100 @@
+@@ -0,0 +1,108 @@
 +"""Direct Nous API keys share the real pool without entering OAuth flows."""
 +
 +from unittest.mock import Mock
@@ -224,10 +213,18 @@ index 0000000000000000000000000000000000000000..286d4bb2ab85095aa6011c0e77f56b0c
 +
 +@pytest.mark.parametrize("requested", ["nous", "auto"])
 +@pytest.mark.parametrize(
-+    ("model", "api_mode"),
-+    [("hermes-test-model", "chat_completions"), ("anthropic/test-model", "anthropic_messages")],
++    ("model", "wire", "api_mode"),
++    [
++        ("hermes-test-model", None, "chat_completions"),
++        ("anthropic/test-model", None, "chat_completions"),
++        ("hermes-test-model", "native", "chat_completions"),
++        ("anthropic/test-model", "native", "anthropic_messages"),
++    ],
 +)
-+def test_nous_api_key_resolves_main_runtime(nous_key, no_oauth_refresh, requested, model, api_mode):
++def test_nous_api_key_resolves_main_runtime(nous_key, no_oauth_refresh, requested, model, wire, api_mode, tmp_path, monkeypatch):
++    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
++    if wire:
++        (tmp_path / "config.yaml").write_text(f"nous:\n  anthropic_wire: {wire}\n")
 +    runtime = runtime_provider.resolve_runtime_provider(requested=requested, target_model=model)
 +    assert runtime["provider"] == "nous"
 +    assert runtime["api_key"] == nous_key
