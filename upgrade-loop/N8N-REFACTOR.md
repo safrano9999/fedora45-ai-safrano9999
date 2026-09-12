@@ -1,6 +1,6 @@
 # Fedora45 workflow refactoring
 
-- Main workflow: 158 → 78 nodes. All four workflows: 121 nodes (previous main + reporter: 167).
+- Main workflow: 158 → 83 nodes. All four workflows: 128 nodes (previous main + reporter: 167).
 - Reporting calls: 81 → 23, including final rendering (71.6% fewer). No per-business-step reporting subworkflow calls remain.
 - Repair proposals share one Astra model and chain. Artifact-specific deterministic validation, attempt limits, review conditions and retry routes are retained in the shared repair workflow.
 - The entire eight-node integration block, including its original coverage gate, moved to an independently callable workflow.
@@ -13,4 +13,6 @@ Import `n8n-fedora45-all.json` to install the main, repair, integration and repo
 
 Runtime validation: the local n8n task runner executes the reporter and receives a real Astra summary through LiteLLM Chat Completions. An intentional FAIL remains FAIL. JSON payload cloning and the existing local credential reference are compatible with the installed n8n runtime.
 
-Redaction is maintained once in `report-redaction.js`. Run `python3 generate-workflows.py` after editing it, then `python3 generate-workflows.py --check` before publishing/importing. The generator refreshes 46 embedded helpers and the four-workflow bundle. Copies remain in the portable JSON export; no runtime library, extra node or per-step subworkflow call is needed.
+Redaction is maintained once in `report-redaction.js`. Run `python3 generate-workflows.py` after editing it, then `python3 generate-workflows.py --check` before publishing/importing. The generator refreshes 48 embedded helpers and the four-workflow bundle. Copies remain in the portable JSON export; no runtime library, extra node or per-step subworkflow call is needed.
+
+Startup policy: four native five-minute Wait nodes cover candidate startup, deployment, rollback and standalone integration entry. Candidate startup and rollback recovery checks are separate steps. All SOT/source edits require prior user discussion and explicit Go; startup model-catalog loading alone is no source-patch trigger. Existing gate conditions and tagging outcomes remain unchanged.

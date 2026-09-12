@@ -1,11 +1,11 @@
 {
   "main_before": 158,
-  "main_after": 78,
+  "main_after": 83,
   "report_calls_before": 81,
   "report_calls_after": 23,
   "report_call_reduction_percent": 71.6,
   "repair_nodes": 23,
-  "integration_nodes": 12,
+  "integration_nodes": 14,
   "reporter_nodes": 8,
   "existing_if_conditions_unchanged": true,
   "application_adapters": "Existing skeleton; not implemented by structural refactoring",
@@ -15,5 +15,13 @@
     "endpoint": "http://litellm-database:4000/v1/chat/completions",
     "intentional_failure_preserved": true,
     "fallback_used": false
-  }
+  },
+  "boot_wait_minutes": 5,
+  "boot_wait_paths": [
+    "candidate",
+    "production",
+    "rollback",
+    "standalone integration"
+  ],
+  "source_and_sot_changes_require_prior_user_go": true
 }

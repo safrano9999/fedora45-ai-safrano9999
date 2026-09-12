@@ -32,7 +32,7 @@
         "jsCode": "// BEGIN GENERATED: report-redaction.js\n// Shared source for the generated n8n reporting helpers.\nfunction safe(value, key = \"\") {\n  if (/token|password|secret|authorization|api.?key/i.test(key)) return \"[REDACTED]\";\n  if (Array.isArray(value)) return value.map((item) => safe(item));\n  if (value && typeof value === \"object\") {\n    return Object.fromEntries(\n      Object.entries(value)\n        .filter(([field]) => field !== \"run\")\n        .map(([field, item]) => [field, safe(item, field)]),\n    );\n  }\n  return value;\n}\n// END GENERATED: report-redaction.js\nconst out=$input.all().map(i=> {const j=JSON.parse(JSON.stringify(i.json)); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Test OpenClaw MCP for every agent\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
       },
       "disabled": true,
-      "notes": "Disabled skeleton. For each OpenClaw agent, verify the exact expected MCP server/tool visibility, absence of unassigned servers, authentication, and a non-destructive tool call on every assigned enabled server. Compare against configured MCP_ALLOW. Record every agent-server result; listing alone is insufficient. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+      "notes": "Disabled skeleton. For each OpenClaw agent, verify the exact expected MCP server/tool visibility, absence of unassigned servers, authentication, and a non-destructive tool call on every assigned enabled server. Compare against configured MCP_ALLOW. Record every agent-server result; listing alone is insufficient. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED. After each container start/recreation, wait a full 5 minutes for ALL services before ANY health, readiness, port, CLI, model, MCP, Citadel, Tailscale or other runtime test. Record startup and test timestamps. OpenClaw initially builds its model catalog; record first and repeated calls separately. Preserve actual failures and NOT_TESTED; do not infer a source defect from startup delay. All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch."
     },
     {
       "id": "7d0b4c1e-454b-5c85-a354-ee3e2f1c0dfd",
@@ -48,7 +48,7 @@
         "jsCode": "// BEGIN GENERATED: report-redaction.js\n// Shared source for the generated n8n reporting helpers.\nfunction safe(value, key = \"\") {\n  if (/token|password|secret|authorization|api.?key/i.test(key)) return \"[REDACTED]\";\n  if (Array.isArray(value)) return value.map((item) => safe(item));\n  if (value && typeof value === \"object\") {\n    return Object.fromEntries(\n      Object.entries(value)\n        .filter(([field]) => field !== \"run\")\n        .map(([field, item]) => [field, safe(item, field)]),\n    );\n  }\n  return value;\n}\n// END GENERATED: report-redaction.js\nconst out=$input.all().map(i=> {const j=JSON.parse(JSON.stringify(i.json)); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Test Hermes MCP for every agent\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
       },
       "disabled": true,
-      "notes": "Disabled skeleton. For every configured Hermes agent/profile, test authentication and a non-destructive tool call on every enabled MCP server. Hermes ignores the OpenClaw per-agent MCP selection field and keeps global MCP access. Record every agent-server result. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+      "notes": "Disabled skeleton. For every configured Hermes agent/profile, test authentication and a non-destructive tool call on every enabled MCP server. Hermes ignores the OpenClaw per-agent MCP selection field and keeps global MCP access. Record every agent-server result. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED. After each container start/recreation, wait a full 5 minutes for ALL services before ANY health, readiness, port, CLI, model, MCP, Citadel, Tailscale or other runtime test. Record startup and test timestamps. OpenClaw initially builds its model catalog; record first and repeated calls separately. Preserve actual failures and NOT_TESTED; do not infer a source defect from startup delay. All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch."
     },
     {
       "id": "80637789-3604-5b85-a3ff-68c11cf4306e",
@@ -64,7 +64,7 @@
         "jsCode": "// BEGIN GENERATED: report-redaction.js\n// Shared source for the generated n8n reporting helpers.\nfunction safe(value, key = \"\") {\n  if (/token|password|secret|authorization|api.?key/i.test(key)) return \"[REDACTED]\";\n  if (Array.isArray(value)) return value.map((item) => safe(item));\n  if (value && typeof value === \"object\") {\n    return Object.fromEntries(\n      Object.entries(value)\n        .filter(([field]) => field !== \"run\")\n        .map(([field, item]) => [field, safe(item, field)]),\n    );\n  }\n  return value;\n}\n// END GENERATED: report-redaction.js\nconst out=$input.all().map(i=> {const j=JSON.parse(JSON.stringify(i.json)); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Test all OpenClaw agent models\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
       },
       "disabled": true,
-      "notes": "Disabled skeleton. Resolve each agent’s inherited default or explicit primary model and configured fallbacks. Send a small real request through the candidate OpenClaw runtime for every agent-model combination. Verify credentials, usable response, and tool-calling compatibility; a models-list response alone is insufficient. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+      "notes": "Disabled skeleton. Resolve each agent’s inherited default or explicit primary model and configured fallbacks. Send a small real request through the candidate OpenClaw runtime for every agent-model combination. Verify credentials, usable response, and tool-calling compatibility; a models-list response alone is insufficient. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED. After each container start/recreation, wait a full 5 minutes for ALL services before ANY health, readiness, port, CLI, model, MCP, Citadel, Tailscale or other runtime test. Record startup and test timestamps. OpenClaw initially builds its model catalog; record first and repeated calls separately. Preserve actual failures and NOT_TESTED; do not infer a source defect from startup delay. All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch."
     },
     {
       "id": "50e16ee6-310f-50a3-a3f8-f26411301963",
@@ -80,7 +80,7 @@
         "jsCode": "// BEGIN GENERATED: report-redaction.js\n// Shared source for the generated n8n reporting helpers.\nfunction safe(value, key = \"\") {\n  if (/token|password|secret|authorization|api.?key/i.test(key)) return \"[REDACTED]\";\n  if (Array.isArray(value)) return value.map((item) => safe(item));\n  if (value && typeof value === \"object\") {\n    return Object.fromEntries(\n      Object.entries(value)\n        .filter(([field]) => field !== \"run\")\n        .map(([field, item]) => [field, safe(item, field)]),\n    );\n  }\n  return value;\n}\n// END GENERATED: report-redaction.js\nconst out=$input.all().map(i=> {const j=JSON.parse(JSON.stringify(i.json)); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Test all Hermes agent models\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
       },
       "disabled": true,
-      "notes": "Disabled skeleton. For each configured Hermes agent/profile, resolve default/explicit primary models and fallbacks, then send a small real request through the candidate Hermes runtime for each agent-model combination. Verify credentials, usable response, and tool-calling compatibility. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+      "notes": "Disabled skeleton. For each configured Hermes agent/profile, resolve default/explicit primary models and fallbacks, then send a small real request through the candidate Hermes runtime for each agent-model combination. Verify credentials, usable response, and tool-calling compatibility. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED. After each container start/recreation, wait a full 5 minutes for ALL services before ANY health, readiness, port, CLI, model, MCP, Citadel, Tailscale or other runtime test. Record startup and test timestamps. OpenClaw initially builds its model catalog; record first and repeated calls separately. Preserve actual failures and NOT_TESTED; do not infer a source defect from startup delay. All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch."
     },
     {
       "id": "618620ac-5876-50d9-829d-97b2c92244f1",
@@ -96,7 +96,7 @@
         "jsCode": "// BEGIN GENERATED: report-redaction.js\n// Shared source for the generated n8n reporting helpers.\nfunction safe(value, key = \"\") {\n  if (/token|password|secret|authorization|api.?key/i.test(key)) return \"[REDACTED]\";\n  if (Array.isArray(value)) return value.map((item) => safe(item));\n  if (value && typeof value === \"object\") {\n    return Object.fromEntries(\n      Object.entries(value)\n        .filter(([field]) => field !== \"run\")\n        .map(([field, item]) => [field, safe(item, field)]),\n    );\n  }\n  return value;\n}\n// END GENERATED: report-redaction.js\nconst out=$input.all().map(i=> {const j=JSON.parse(JSON.stringify(i.json)); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Test Citadel and every configured link\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
       },
       "disabled": true,
-      "notes": "Disabled skeleton. Start and render candidate Citadel. Match all rendered entries to the expected inventory, open every link, follow expected redirects/authentication, and verify the intended target page/service functions. For container-backed targets, prove the candidate image serves the response rather than the existing production instance. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+      "notes": "Disabled skeleton. Start and render candidate Citadel. Match all rendered entries to the expected inventory, open every link, follow expected redirects/authentication, and verify the intended target page/service functions. For container-backed targets, prove the candidate image serves the response rather than the existing production instance. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED. After each container start/recreation, wait a full 5 minutes for ALL services before ANY health, readiness, port, CLI, model, MCP, Citadel, Tailscale or other runtime test. Record startup and test timestamps. OpenClaw initially builds its model catalog; record first and repeated calls separately. Preserve actual failures and NOT_TESTED; do not infer a source defect from startup delay. All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch."
     },
     {
       "id": "2f1f35f8-ec93-553c-9da4-19e9e2747101",
@@ -112,7 +112,7 @@
         "jsCode": "// BEGIN GENERATED: report-redaction.js\n// Shared source for the generated n8n reporting helpers.\nfunction safe(value, key = \"\") {\n  if (/token|password|secret|authorization|api.?key/i.test(key)) return \"[REDACTED]\";\n  if (Array.isArray(value)) return value.map((item) => safe(item));\n  if (value && typeof value === \"object\") {\n    return Object.fromEntries(\n      Object.entries(value)\n        .filter(([field]) => field !== \"run\")\n        .map(([field, item]) => [field, safe(item, field)]),\n    );\n  }\n  return value;\n}\n// END GENERATED: report-redaction.js\nconst out=$input.all().map(i=> {const j=JSON.parse(JSON.stringify(i.json)); j.run ??= {id:String($execution.id),events:[],summaries:[]}; const prev=$prevNode; if ([\"All checklist items passed?\", \"All integrations covered and passed?\", \"Build successful?\", \"Correction approved?\", \"Ephemeral generators compatible?\", \"Ephemeral prechecks completed?\", \"Ephemeral publication verified?\", \"Ephemeral repair attempts remaining?\", \"New container healthy?\", \"Own patch regressions passed?\", \"Own patches compatible?\", \"Preflight passed?\", \"Repair attempts remaining?\", \"Repair verification passed?\", \"Result clean?\", \"Rollback healthy?\", \"Stable baseline ready?\", \"Update available?\"].includes(prev.name)) j.run.events.push({kind:\"decision\",step:prev.name,branch:prev.outputIndex===0?\"yes\":\"no\",timestamp:new Date().toISOString()}); j.run.events.push({kind:\"step\",step:\"Test every Tailscale link\",status:j.stepResult?.status ?? \"NOT_TESTED\",timestamp:new Date().toISOString(),data:safe(j.stepResult?.data ?? j)}); return {...i,json:j};}); return out;"
       },
       "disabled": true,
-      "notes": "Disabled skeleton. Probe every configured Tailscale URL/address from the intended tailnet client context, including links shown in Citadel. Verify DNS, routing, TLS where applicable, expected authentication, and the actual target response. Record the result for each link; do not silently skip inaccessible destinations. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED."
+      "notes": "Disabled skeleton. Probe every configured Tailscale URL/address from the intended tailnet client context, including links shown in Citadel. Verify DNS, routing, TLS where applicable, expected authentication, and the actual target response. Record the result for each link; do not silently skip inaccessible destinations. Structured result recording is attached; the business adapter remains unimplemented and is NOT_TESTED. After each container start/recreation, wait a full 5 minutes for ALL services before ANY health, readiness, port, CLI, model, MCP, Citadel, Tailscale or other runtime test. Record startup and test timestamps. OpenClaw initially builds its model catalog; record first and repeated calls separately. Preserve actual failures and NOT_TESTED; do not infer a source defect from startup delay. All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch."
     },
     {
       "id": "2a38e93f-18e7-5f13-949c-00f2f6349c3e",
@@ -145,8 +145,8 @@
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1,
       "position": [
-        1020,
-        240
+        -680,
+        0
       ],
       "parameters": {
         "inputSource": "passthrough"
@@ -213,6 +213,40 @@
         }
       },
       "disabled": true
+    },
+    {
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 5,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -340,
+        0
+      ],
+      "id": "c06b82c4-1da8-427d-b693-ca9ebe8365fe",
+      "name": "Wait 5 minutes - all integration services",
+      "webhookId": "9157def0-34a5-4366-a08b-62248ea4e43c",
+      "notesInFlow": true,
+      "notes": "After each container start/recreation, wait a full 5 minutes for ALL services before ANY health, readiness, port, CLI, model, MCP, Citadel, Tailscale or other runtime test. Record startup and test timestamps. OpenClaw initially builds its model catalog; record first and repeated calls separately. Preserve actual failures and NOT_TESTED; do not infer a source defect from startup delay."
+    },
+    {
+      "id": "7c4da709-3675-483b-87f0-0f7eed460a49",
+      "name": "Mandatory startup and change policy",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        -500
+      ],
+      "parameters": {
+        "width": 2300,
+        "height": 390,
+        "color": 5,
+        "content": "## All integrations: WAIT 5 MINUTES before testing\nAfter each container start/recreation, wait a full 5 minutes for ALL services before ANY health, readiness, port, CLI, model, MCP, Citadel, Tailscale or other runtime test. Record startup and test timestamps. OpenClaw initially builds its model catalog; record first and repeated calls separately. Preserve actual failures and NOT_TESTED; do not infer a source defect from startup delay.\nThe standalone workflow always waits on entry, including when called by the main loop.\nAll SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch."
+      }
     }
   ],
   "connections": {
@@ -220,7 +254,7 @@
       "main": [
         [
           {
-            "node": "Inventory all agents MCP models and links",
+            "node": "Wait 5 minutes - all integration services",
             "type": "main",
             "index": 0
           }
@@ -327,6 +361,17 @@
         [
           {
             "node": "All integrations covered and passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5 minutes - all integration services": {
+      "main": [
+        [
+          {
+            "node": "Inventory all agents MCP models and links",
             "type": "main",
             "index": 0
           }

@@ -6,13 +6,13 @@ The Fedora45 migration upgrades Hermes to 0.21.2 and OpenClaw to 2026.9.4, inclu
 
 The manual Fedora45 bootstrap records its [pre-migration baseline](evidence/fedora45-2026.9.1-baseline.json). Repeatable container probes cover [agent model replies](probes/runtime-models.py) and the installed [per-agent MCP projection](probes/runtime-mcp-projection.mjs); model probes use dedicated sessions without channel delivery.
 
-The main canvas contains 78 nodes instead of 158. Reporting calls drop from 81 to 23 (71.6%): structured results travel in the execution-local `run.events` array; Astra summarizes only decision checkpoints and outcomes. The final PDF is rendered once from the complete run. Application adapters and existing empty decision placeholders remain disabled and unimplemented; this refactoring does not make the deployment loop executable.
+The main canvas contains 83 nodes instead of 158. Reporting calls drop from 81 to 23 (71.6%): structured results travel in the execution-local `run.events` array; Astra summarizes only decision checkpoints and outcomes. The final PDF is rendered once from the complete run. Application adapters and existing empty decision placeholders remain disabled and unimplemented; this refactoring does not make the deployment loop executable.
 
 The repair and reporting LLM nodes use **Astra** through local LiteLLM: `astra` → `chatgpt/gpt-6-astra`, at `http://litellm-database:4000/v1` on Podman network `core`. LiteLLM stores the model persistently; n8n stores its credential locally. All four workflows remain inactive. Checkpoint and repair prompts are defined; deterministic business adapters and the final PDF renderer remain pending.
 
-The requirements below are binding acceptance rules. The first executable run targets **Hermes 0.21.2 and OpenClaw 2026.9.4**. Update `openclaw-ephemeral`, the Hermes adaptations, and the deterministic OpenClaw patch where compatibility requires it. Bounded LLM-assisted corrections must pass the same tests; they may not remove checks, weaken acceptance criteria, or silently omit a patch.
+The requirements below are binding acceptance rules. The first executable run targets **Hermes 0.21.2 and OpenClaw 2026.9.4**. Propose changes to `openclaw-ephemeral`, Hermes adaptations or OpenClaw patches only when compatibility evidence requires them; applying any source change needs prior user discussion and explicit Go. Bounded LLM-assisted corrections must pass the same tests; they may not remove checks, weaken acceptance criteria, or silently omit a patch.
 
-**Protected SOT:** Keep `SCRIPTS`, shared source-of-truth files such as `config.sh`, and their hardlinked copies unchanged by default. Changes are exceptional. Before applying one, prepare the exact diff and explain why it is unavoidable, then send the proposal through the **Telegram main agent**. Wait for the user's explicit **Go** for that proposal. Silence or an LLM's decision is not approval; changed proposals require a new Go. This rule also applies to automatic repairs and self-optimization.
+**SOT and source-code changes require prior approval — ALWAYS:** All SOT and source-code changes ALWAYS require prior discussion and the user's explicit Go for the exact proposed diff, through the Telegram main agent. This includes SCRIPTS/config.sh, hardlinks, OpenClaw, Hermes, generators and repair scripts. An LLM cannot approve or apply a change autonomously. Initial model-catalog loading or first-call slowness alone never justifies a source patch. Prepare the exact diff and reason, discuss it with the user, and wait for Go before changing SOT or source code. Silence, test failures or a successful verification are not approval; a changed proposal requires a new Go. This also applies to automatic repairs and self-optimization.
 
 ## Background: What is a "Loop" here?
 
@@ -94,7 +94,7 @@ After version validation and the initial generator checks, run these steps in or
    Pull the frozen `stable` images locally through Smart1 via `mcp-safrano9999`. Generate Quadlets from existing configuration with `Image=...:stable`, using the planned Quadlet-only setup command. Run `systemctl --user daemon-reload` as the owning user, without restarting containers. Verify the stable image references and unchanged container IDs, start times, and service PIDs before continuing.
 
 3. **Prepare the affected ephemeral generators**
-   - Use the first checks' recorded results. For each incompatible generator, Astra prepares a correction in an isolated checkout; deterministic tests run again against both the target version and the frozen current version. Repeat only within the configured per-generator attempt limit. SOT changes still require the Telegram main-agent Go before application.
+   - Use the first checks' recorded results. For each incompatible generator, Astra prepares a correction in an isolated checkout; deterministic tests run again against both the target version and the frozen current version. Repeat only within the configured per-generator attempt limit. Every SOT or source-code change requires prior discussion and explicit Telegram main-agent Go before application.
    - Once all affected generators are compatible, publish their tested commits on `main` and move each repository's Git tag `latest` to its exact tested commit through `mcp-safrano9999`. This also applies when no code correction was needed. Verify every remote commit and peeled tag; a partial publication or verification failure blocks the image build.
    - Record and use those exact commits as subsequent build inputs. Do not resolve moving `main` or `latest` references again during the run. The Core build-context script accepts `OPENCLAW_EPHEMERAL_COMMIT` and `HERMES_EPHEMERAL_COMMIT` as exact commit inputs; ordinary builds still default to `main`.
    - These are the standalone generator repositories' Git `latest` tags. Fedora image `latest` tags remain gated by the complete image tests in Step 4. Every check, correction attempt, and publication result is included in the PDF.
@@ -133,7 +133,11 @@ Multiple GHCR tags cannot move in one atomic transaction. Promote only after the
 
 ## 4. Check — test-container checklist
 
-The container is started on a trial basis (CI or local sandbox) and checked against a defined checklist:
+Start the container, **wait a full five minutes for ALL services**, then begin the checklist. No readiness, port, CLI, model, MCP, Citadel, Tailscale or other runtime test runs during this boot interval. Apply the same order after deployment, rollback and every restart during testing. The independently callable integration workflow always waits five minutes on entry, including calls from the main loop.
+
+OpenClaw builds its model catalog initially. Record first and repeated calls separately; initial slowness alone is normal and does not justify a source patch. Preserve actual failures and `NOT_TESTED`. Record container-start, wait-completion and test timestamps in the run report.
+
+Checklist after the wait:
 
 - [ ] Does the container start without a crash loop?
 - [ ] Are all expected processes/services running?
@@ -179,7 +183,7 @@ Triggered only when the result validation from Step 1 fails (e.g. a 3rd party ch
 
 1. **LLM escalation**
    The AI receives: the failing script, the raw (broken) 3rd-party output, and the error/reason the validation failed.
-   Task: adapt `check-versions.sh` so it correctly handles the new format.
+   Task: propose a minimal diff for `check-versions.sh`. Discuss it with the user and obtain explicit Go before applying any source edit, including in a repair checkout.
 
 2. **Verification of the adapted script**
    The changed script is **never adopted blindly**:
@@ -187,7 +191,7 @@ Triggered only when the result validation from Step 1 fails (e.g. a 3rd party ch
    - It's also run against historical test fixtures (old formats must keep working)
 
 3. **Adoption**
-   Only after passing verification → committed, ideally as a PR with a review step, before it's promoted into the production pipeline path.
+   Only the explicitly approved diff may be applied and verified; after passing verification it may be committed and adopted. Verification does not replace prior user approval.
 
 **Turn limit:** If the AI can't reliably fix the script after X attempts → abort, human is notified, the last known-good state stays active.
 
@@ -199,13 +203,14 @@ Triggered only when the result validation from Step 1 fails (e.g. a 3rd party ch
 - Generate the Quadlets from existing configuration with `Image=...:latest`.
 - Run `systemctl --user daemon-reload` as the owning user.
 - Recreate the containers from the verified `latest` image. A plain `podman restart` does not replace a container's image.
+- Wait a full five minutes for all services before any post-deploy test, including readiness checks.
 - Optional: blue-green deployment — the new container comes up in parallel, and only after another health check does the old one get shut down (minimizes downtime & rollback risk)
 
 ### Post-check
 
 A small mini-loop after the restart:
 - Is the new container stable?
-- If not → restore `:stable` in the Quadlets, run `daemon-reload`, recreate the containers from the frozen stable images, and verify recovery.
+- If not → restore `:stable` in the Quadlets, run `daemon-reload`, recreate the containers from the frozen stable images, wait a full five minutes for all services, then verify recovery.
 
 ---
 
@@ -291,6 +296,9 @@ check-versions.sh ──► Result clean? ──no──► Self-healing loop (A
    GH Action build ──► Image with unique tag
         │
         ▼
+   Start candidate → WAIT 5 MINUTES for all services
+        │
+        ▼
    Test-container checklist ──fail──► Abort, "stable" tag stays the rollback target
         │ ok
         ▼
@@ -324,7 +332,10 @@ check-versions.sh ──► Result clean? ──no──► Self-healing loop (A
    Quadlets → latest ──► daemon-reload ──► recreate containers
         │
         ▼
-   Health check ──fail──► Quadlets → stable → daemon-reload → recreate → verify recovery
+   WAIT 5 MINUTES for all services
+        │
+        ▼
+   Health check ──fail──► Quadlets → stable → daemon-reload → recreate → WAIT 5 MINUTES → verify recovery
         │ ok
         ▼
    Finalize accumulated PDF (all steps) ──► OpenClaw ──► Telegram

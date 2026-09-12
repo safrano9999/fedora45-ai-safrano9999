@@ -108,7 +108,7 @@
       ],
       "parameters": {
         "promptType": "define",
-        "text": "=Summarize this checkpoint in 1–2 English sentences, using only recorded facts. Preserve failures and NOT_TESTED; do not make decisions or infer success. Checkpoint: {{ JSON.stringify($json.checkpoint) }} Records: {{ JSON.stringify($json.summaryInput) }}"
+        "text": "=Summarize this checkpoint in 1–2 English sentences, using only recorded facts. Preserve failures and NOT_TESTED; do not make decisions or infer success. Initial OpenClaw model-catalog loading is normal. Distinguish startup observations, first calls and repeated calls; initial slowness alone does not establish a source defect. Source/SOT edits always need prior user discussion and explicit Go. Checkpoint: {{ JSON.stringify($json.checkpoint) }} Records: {{ JSON.stringify($json.summaryInput) }}"
       },
       "disabled": true,
       "notes": "Disabled skeleton. Uses Astra through the local LiteLLM service. Prompt and input mapping are intentionally pending. Write 1–2 concise English sentences from the sanitized deterministic step result. Preserve pass/fail status; use the existing fallback path on failure.",
