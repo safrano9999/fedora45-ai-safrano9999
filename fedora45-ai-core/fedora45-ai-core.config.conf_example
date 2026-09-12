@@ -102,15 +102,6 @@ OPENCLAW_MODEL_FAST_MODE=off
 #default-preset: high
 OPENCLAW_MODEL_THINKING=high
 
-# Vienna wall-clock values, for example: CET 07:00,CET 19:00
-OPENCLAW_CRONTAB_TIME=
-
-# Repository directory names whose plugin hooks run at every configured time.
-OPENCLAW_CRONTAB_REPOS=
-
-# Repository directory names whose plugin hooks run once after gateway startup.
-OPENCLAW_REPOS_START_INIT=
-
 #named-volume: /named_volumes/HERMES /named_volumes/HERMES/state.db @HOME@/.hermes/state.db link
 #named-volume: /named_volumes/HERMES /named_volumes/HERMES/response_store.db @HOME@/.hermes/response_store.db link
 #named-volume: /named_volumes/HERMES /named_volumes/HERMES/kanban.db @HOME@/.hermes/kanban.db link
