@@ -138,7 +138,7 @@ jobs:
             build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/environment.py
             build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/mcp.py
             build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/providers.py
-            build/vendor/hermes-ephemeral/image/runtime/etc/systemd/system/hermes-ephemeral.service
+            build/vendor/hermes-ephemeral/image/runtime/etc/systemd/system/hermes-config.service
           )
           for file in "${vendor_files[@]}"; do
             [ -s "$file" ] || {
@@ -242,7 +242,7 @@ jobs:
               tailscaled.service \
               tailscale-up.service cockpit.service bip39.service vditor-notes.service \
               openclaw-config.service openclaw.service \
-              openclaw-ephemeral-schedule.service hermes-ephemeral.service \
+              openclaw-ephemeral-schedule.service hermes-config.service \
               hermes.service \
               hermes-dashboard.service; do
               test -f "/etc/systemd/system/$unit" \

@@ -203,7 +203,7 @@ jobs:
             systemctl is-enabled \
               persistainer.service fedora45-ai-init-hooks.service \
               cloudflared.service openclaw-config.service openclaw.service \
-              openclaw-ephemeral-schedule.service hermes-ephemeral.service \
+              openclaw-ephemeral-schedule.service hermes-config.service \
               hermes.service citadel.service citadel-scan.service \
               codeanalyst.service kachelmann-webui.service kachelmann-mcp.service
             test ! -e /etc/systemd/system/fedora45-ai.service

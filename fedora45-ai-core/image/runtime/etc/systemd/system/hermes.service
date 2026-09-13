@@ -1,8 +1,8 @@
 [Unit]
 Description=Hermes Agent gateway
-Requires=persistainer.service hermes-ephemeral.service
-After=persistainer.service fedora45-ai-init-hooks.service tailscale-up.service hermes-ephemeral.service
-Wants=tailscale-up.service
+Requires=persistainer.service hermes-config.service
+After=persistainer.service fedora45-ai-init-hooks.service tailscale-up.service hermes-config.service
+Wants=tailscale-up.service fedora45-ai-init-hooks.service
 
 [Service]
 Type=simple

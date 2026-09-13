@@ -2,7 +2,7 @@
 Description=OpenClaw gateway
 Requires=persistainer.service openclaw-config.service
 After=persistainer.service fedora45-ai-init-hooks.service tailscale-up.service openclaw-config.service
-Wants=tailscale-up.service
+Wants=tailscale-up.service fedora45-ai-init-hooks.service
 
 [Service]
 Type=simple

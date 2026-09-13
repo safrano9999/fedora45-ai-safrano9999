@@ -1,7 +1,9 @@
 [Unit]
 Description=Run configured Fedora45 AI initialization hooks
 Requires=persistainer.service
-After=persistainer.service
+Wants=openclaw-config.service hermes-config.service
+After=persistainer.service openclaw-config.service hermes-config.service
+Before=openclaw.service hermes.service
 ConditionDirectoryNotEmpty=/usr/local/share/fedora45-ai/init.d
 
 [Service]
@@ -9,6 +11,7 @@ Type=oneshot
 Environment=FEDORA45_AI_INIT_HOOKS_DIR=/usr/local/share/fedora45-ai/init.d
 ExecStart=/usr/local/bin/fedora45-ai-init-hooks
 RemainAfterExit=yes
+TimeoutStartSec=600
 
 [Install]
 WantedBy=multi-user.target

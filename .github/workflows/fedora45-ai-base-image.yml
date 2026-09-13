@@ -184,7 +184,7 @@ jobs:
               tailscaled.service tailscale-up.service cloudflared.service \
               cockpit.service vditor-notes.service openclaw-config.service \
               openclaw.service openclaw-ephemeral-schedule.service \
-              hermes-ephemeral.service hermes.service hermes-dashboard.service \
+              hermes-config.service hermes.service hermes-dashboard.service \
               codeanalyst.service citadel.service citadel-scan.service
             test ! -e /etc/systemd/system/fedora45-ai.service
           '

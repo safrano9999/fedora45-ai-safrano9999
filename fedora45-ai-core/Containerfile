@@ -98,6 +98,8 @@ PY
 COPY image/runtime/ /
 COPY build/vendor/hermes-ephemeral/image/runtime/ /
 
+RUN python3 /usr/local/libexec/openclaw-tts-provider-order.py
+
 RUN chmod 0755 \
       /usr/local/bin/fedora45-ai-init-hooks \
       /usr/local/bin/hermes-ephemeral \
@@ -108,7 +110,7 @@ RUN chmod 0755 \
       openclaw-config.service \
       openclaw.service \
       openclaw-ephemeral-schedule.service \
-      hermes-ephemeral.service \
+      hermes-config.service \
       hermes.service \
       hermes-dashboard.service
 

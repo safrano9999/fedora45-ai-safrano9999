@@ -55,10 +55,9 @@ network-online
 ├── direct stateless listeners
 └── persistainer.service
     ├── tailscaled.service -> tailscale-up.service
-    ├── fedora45-ai-init-hooks.service
     ├── persistent application listeners
-    ├── openclaw-config.service -> optional VikAI bootstrap -> openclaw.service
-    └── hermes-ephemeral.service -> hermes.service -> hermes-dashboard.service
+    ├── openclaw-config.service -> optional init hooks -> optional VikAI bootstrap -> openclaw.service
+    └── hermes-config.service -> optional init hooks -> hermes.service -> hermes-dashboard.service
 
 configured Nextcloud accounts
 ├── boot -> nextcloud-sync@N.service

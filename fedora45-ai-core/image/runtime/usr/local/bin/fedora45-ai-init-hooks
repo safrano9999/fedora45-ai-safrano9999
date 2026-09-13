@@ -9,7 +9,7 @@ hook_dir="${FEDORA45_AI_INIT_HOOKS_DIR:-/usr/local/share/fedora45-ai/init.d}"
 }
 [ -d "$hook_dir" ] || exit 0
 
-find "$hook_dir" -mindepth 1 -maxdepth 1 -type f \
+find "$hook_dir" -mindepth 1 -type f \
     \( -name '*.sh' -o -name '*.py' \) -print0 \
   | LC_ALL=C sort -z \
   | while IFS= read -r -d '' hook; do
