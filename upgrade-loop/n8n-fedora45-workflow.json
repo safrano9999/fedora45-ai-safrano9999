@@ -3616,7 +3616,8 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "executionTimeout": 18000
+    "executionTimeout": 18000,
+    "availableInMCP": true
   },
   "pinData": {},
   "tags": []

@@ -579,7 +579,8 @@
     "executionOrder": "v1",
     "saveDataErrorExecution": "all",
     "saveDataSuccessExecution": "all",
-    "executionTimeout": 18000
+    "executionTimeout": 18000,
+    "availableInMCP": true
   },
   "pinData": {}
 }
