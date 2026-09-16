@@ -77,6 +77,9 @@ class PreparationTests(unittest.TestCase):
             for node in workflow['nodes']:
                 self.assertNotIn(node['type'], forbidden)
                 self.assertNotIn('fedora45HostRunner', json.dumps(node))
+                if node['type'] == 'CUSTOM.fedora45Sources':
+                    self.assertIn(node['parameters']['operation'], ['inventory', 'sync'])
+                    self.assertEqual(node['credentials']['httpHeaderAuth']['id'], 'fedora45GitHubPreparation')
                 if node['type'] == 'n8n-nodes-base.httpRequest':
                     if node['name'] == 'Download preparation evidence':
                         self.assertEqual(node['parameters']['authentication'], 'none')
@@ -87,6 +90,16 @@ class PreparationTests(unittest.TestCase):
                     if node['parameters'].get('method', 'GET') != 'GET':
                         self.assertEqual(node['parameters']['method'], 'POST')
                         self.assertTrue(node['parameters']['url'].endswith('/fedora45-container-preparation.yml/dispatches'))
+
+    def test_source_sync_is_after_validated_handoff_only(self):
+        workflow = json.loads((prep.ROOT / 'n8n-fedora45-workflow.json').read_text())
+        incoming = [source for source, outputs in workflow['connections'].items()
+                    for channel in outputs['main'] for edge in channel
+                    if edge['node'] == 'Sync sources for ready build']
+        self.assertEqual(incoming, ['Handoff to Hermes'])
+        preview = workflow['connections']['Sources preview?']['main']
+        self.assertEqual(preview[0][0]['node'], 'Discover source repositories')
+        self.assertEqual(preview[1][0]['node'], 'Published version pins')
 
     def test_handoff_rejects_partial_or_wrong_generator_evidence(self):
         workflow = json.loads((prep.ROOT / 'n8n-fedora45-workflow.json').read_text())

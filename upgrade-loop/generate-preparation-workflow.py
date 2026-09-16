@@ -52,13 +52,23 @@ const webhook=Object.prototype.hasOwnProperty.call(item.json,'headers');
 let raw='';
 if(item.binary?.data) raw=(await this.helpers.getBinaryDataBuffer(0,'data')).toString('utf8').trim();
 else if(typeof item.json.body==='string') raw=item.json.body.trim();
-if(!['','--check','--validate-only'].includes(raw)) throw new Error('Expected an empty body, --check or --validate-only');
+if(!['','--check','--validate-only','--sources'].includes(raw)) throw new Error('Expected an empty body, --check, --validate-only or --sources');
 const query=item.json.query??{};
 const check=Object.prototype.hasOwnProperty.call(query,'--check') || raw==='--check';
 const validate_only=Object.prototype.hasOwnProperty.call(query,'--validate-only') || raw==='--validate-only';
-if(check&&validate_only)throw new Error('Choose one check mode');
-return [{json:{webhook,check,validate_only}}];
+const sources=Object.prototype.hasOwnProperty.call(query,'--sources') || raw==='--sources';
+if([check,validate_only,sources].filter(Boolean).length>1)throw new Error('Choose one check mode');
+const target=query.target||'fedora45-ai-safrano9999',source_ref=query.ref||'main';
+if(!/^fedora45-ai-[a-z0-9-]+$/.test(target))throw new Error('Invalid target image');
+if(!sources&&query.ref)throw new Error('The ref parameter belongs to --sources');
+return [{json:{webhook,check,validate_only,sources,target,source_ref}}];
 """, -200)
+branch("Sources preview?", "={{ $json.sources }}", -200, -180)
+source_credentials={"httpHeaderAuth": {"id": "fedora45GitHubPreparation", "name": "Fedora45 GitHub preparation"}}
+preview=node("Discover source repositories", "code", {"operation":"inventory"}, 20, -180,
+             credentials=source_credentials)
+preview["type"]="CUSTOM.fedora45Sources"
+node("Return source inventory", "respondToWebhook", {"respondWith":"json","responseBody":"={{ $json }}","options":{"responseCode":200}}, 240, -180, 1.4)
 http("Published version pins", base + "/contents/fedora45-ai-core-pre/Containerfile?ref=main", 20)
 http("Latest OpenClaw release", "https://api.github.com/repos/openclaw/openclaw/releases/latest", 240)
 http("Latest Hermes release", "https://api.github.com/repos/NousResearch/hermes-agent/releases/latest", 460)
@@ -145,14 +155,23 @@ if(report.status!=='NO_UPDATE'){
  }
  if(report.checks?.hermes_patch?.status!=='PASS')throw new Error('Missing patch evidence');
 }
-return [{json:{...report,next:'User/Hermes controls build and pull through Safrano MCP; container tests are a separate routine after restart.'}}];
+return [{json:{...report,target:$('Read request').first().json.target,next:'User/Hermes controls build and pull through Safrano MCP; container tests are a separate routine after restart.'}}];
 """, 4420)
+sync=node("Sync sources for ready build", "code", {"operation":"sync"}, 4640,
+          credentials=source_credentials, retryOnFail=False,
+          notes="Only READY_FOR_BUILD clones/updates depth-1 sources inside the existing n8n volume. No image build or repository scripts.")
+sync["type"]="CUSTOM.fedora45Sources"
 
 for source,target in [("Manual preparation","Read request"),("Webhook - preparation or --check","Read request"),("Read request","Published version pins"),("Published version pins","Latest OpenClaw release"),("Latest OpenClaw release","Latest Hermes release"),("Latest Hermes release","Validate versions"),("Validate versions","Check only?"),("Check only?","Return two version lines"),("Webhook request?","Accept preparation"),("Accept preparation","Upstream update available?"),("Upstream update available?","Prepare request"),("Prepare request","Dispatch preparation Action"),("Dispatch preparation Action","Wait for preparation"),("Wait for preparation","Read preparation runs"),("Read preparation runs","Match exact preparation run"),("Match exact preparation run","Preparation finished?"),("Preparation finished?","Read preparation artifacts"),("Read preparation artifacts","Select evidence artifact"),("Select evidence artifact","Resolve evidence download"),("Resolve evidence download","Validate evidence URL"),("Validate evidence URL","Download preparation evidence"),("Download preparation evidence","Unpack evidence"),("Unpack evidence","Handoff to Hermes")]:link(source,target)
 for source,target in [("Check only?","Webhook request?"),("Webhook request?","Upstream update available?"),("Upstream update available?","No update"),("Preparation finished?","Wait for preparation")]:link(source,target,1)
+connections["Read request"]={"main":[[{"node":"Sources preview?","type":"main","index":0}]]}
+link("Sources preview?","Discover source repositories")
+link("Discover source repositories","Return source inventory")
+link("Sources preview?","Published version pins",1)
+link("Handoff to Hermes","Sync sources for ready build")
 
 workflow={"id":"fedora45LoopDraft","name":"Fedora45 Container Preparation","active":True,"nodes":nodes,"connections":connections,
-          "settings":{"executionOrder":"v1","executionTimeout":3900,"availableInMCP":True,"saveDataErrorExecution":"all","saveDataSuccessExecution":"all"}}
+          "settings":{"executionOrder":"v1","executionTimeout":3600,"availableInMCP":True,"saveDataErrorExecution":"all","saveDataSuccessExecution":"all"}}
 (ROOT/'n8n-fedora45-workflow.json').write_text(json.dumps(workflow,indent=2,ensure_ascii=False)+'\n')
 for suffix,identifier,title in [('integration','fedora45Integration','Integration'),('repair','fedora45Repair','Repair'),('step-report','fedora45StepReport','Step Report')]:
     retired={"id":identifier,"name":"Fedora45 Retired Host "+title,"active":False,"nodes":[

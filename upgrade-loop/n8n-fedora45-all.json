@@ -141,7 +141,77 @@
           0
         ],
         "parameters": {
-          "jsCode": "const item=$input.first();\nconst webhook=Object.prototype.hasOwnProperty.call(item.json,'headers');\nlet raw='';\nif(item.binary?.data) raw=(await this.helpers.getBinaryDataBuffer(0,'data')).toString('utf8').trim();\nelse if(typeof item.json.body==='string') raw=item.json.body.trim();\nif(!['','--check','--validate-only'].includes(raw)) throw new Error('Expected an empty body, --check or --validate-only');\nconst query=item.json.query??{};\nconst check=Object.prototype.hasOwnProperty.call(query,'--check') || raw==='--check';\nconst validate_only=Object.prototype.hasOwnProperty.call(query,'--validate-only') || raw==='--validate-only';\nif(check&&validate_only)throw new Error('Choose one check mode');\nreturn [{json:{webhook,check,validate_only}}];"
+          "jsCode": "const item=$input.first();\nconst webhook=Object.prototype.hasOwnProperty.call(item.json,'headers');\nlet raw='';\nif(item.binary?.data) raw=(await this.helpers.getBinaryDataBuffer(0,'data')).toString('utf8').trim();\nelse if(typeof item.json.body==='string') raw=item.json.body.trim();\nif(!['','--check','--validate-only','--sources'].includes(raw)) throw new Error('Expected an empty body, --check, --validate-only or --sources');\nconst query=item.json.query??{};\nconst check=Object.prototype.hasOwnProperty.call(query,'--check') || raw==='--check';\nconst validate_only=Object.prototype.hasOwnProperty.call(query,'--validate-only') || raw==='--validate-only';\nconst sources=Object.prototype.hasOwnProperty.call(query,'--sources') || raw==='--sources';\nif([check,validate_only,sources].filter(Boolean).length>1)throw new Error('Choose one check mode');\nconst target=query.target||'fedora45-ai-safrano9999',source_ref=query.ref||'main';\nif(!/^fedora45-ai-[a-z0-9-]+$/.test(target))throw new Error('Invalid target image');\nif(!sources&&query.ref)throw new Error('The ref parameter belongs to --sources');\nreturn [{json:{webhook,check,validate_only,sources,target,source_ref}}];"
+        }
+      },
+      {
+        "id": "37ce2999-2f1b-56cb-8740-686bc249c5da",
+        "name": "Sources preview?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          -200,
+          -180
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "Sources preview?",
+                "leftValue": "={{ $json.sources }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "d16a23bb-39c7-5f26-9202-e00a080fb5ac",
+        "name": "Discover source repositories",
+        "type": "CUSTOM.fedora45Sources",
+        "typeVersion": 1,
+        "position": [
+          20,
+          -180
+        ],
+        "parameters": {
+          "operation": "inventory"
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "fedora45GitHubPreparation",
+            "name": "Fedora45 GitHub preparation"
+          }
+        }
+      },
+      {
+        "id": "d43b168d-ab7a-52ab-8d3a-05d5beb259d4",
+        "name": "Return source inventory",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          240,
+          -180
+        ],
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ $json }}",
+          "options": {
+            "responseCode": 200
+          }
         }
       },
       {
@@ -752,8 +822,29 @@
           0
         ],
         "parameters": {
-          "jsCode": "const binary=$input.first().binary??{};\nconst keys=Object.keys(binary).filter(k=>binary[k].fileName==='container-preparation.json');\nif(keys.length!==1)throw new Error('Missing preparation report');\nconst report=JSON.parse((await this.helpers.getBinaryDataBuffer(0,keys[0])).toString('utf8'));\nconst validation=$('Prepare request').first().json.validate_only===true;\nconst statuses=validation?['VALIDATED_ONLY']:['NO_UPDATE','READY_FOR_BUILD'];\nif(report.schema_version!==1||!statuses.includes(report.status)||report.validate_only!==validation)throw new Error('Preparation is not ready');\nif(report.build_started!==false||report.image_pulled!==false||report.container_restarted!==false)throw new Error('Preparation scope violated');\nif(report.status!=='NO_UPDATE'){\n if(!validation&&!/^[0-9a-f]{40}$/.test(report.build_commit??''))throw new Error('Missing build commit');\n for(const name of ['openclaw','hermes']){\n  const sha=report.ephemeral_commits?.[name];\n  if(!/^[0-9a-f]{40}$/.test(sha??'')||report.checks?.[name]?.status!=='PASS'||report.checks[name].generator_commit!==sha||report.build_inputs?.[name.toUpperCase()+'_EPHEMERAL_COMMIT']!==sha)throw new Error('Incomplete generator evidence: '+name);\n }\n if(report.checks?.hermes_patch?.status!=='PASS')throw new Error('Missing patch evidence');\n}\nreturn [{json:{...report,next:'User/Hermes controls build and pull through Safrano MCP; container tests are a separate routine after restart.'}}];"
+          "jsCode": "const binary=$input.first().binary??{};\nconst keys=Object.keys(binary).filter(k=>binary[k].fileName==='container-preparation.json');\nif(keys.length!==1)throw new Error('Missing preparation report');\nconst report=JSON.parse((await this.helpers.getBinaryDataBuffer(0,keys[0])).toString('utf8'));\nconst validation=$('Prepare request').first().json.validate_only===true;\nconst statuses=validation?['VALIDATED_ONLY']:['NO_UPDATE','READY_FOR_BUILD'];\nif(report.schema_version!==1||!statuses.includes(report.status)||report.validate_only!==validation)throw new Error('Preparation is not ready');\nif(report.build_started!==false||report.image_pulled!==false||report.container_restarted!==false)throw new Error('Preparation scope violated');\nif(report.status!=='NO_UPDATE'){\n if(!validation&&!/^[0-9a-f]{40}$/.test(report.build_commit??''))throw new Error('Missing build commit');\n for(const name of ['openclaw','hermes']){\n  const sha=report.ephemeral_commits?.[name];\n  if(!/^[0-9a-f]{40}$/.test(sha??'')||report.checks?.[name]?.status!=='PASS'||report.checks[name].generator_commit!==sha||report.build_inputs?.[name.toUpperCase()+'_EPHEMERAL_COMMIT']!==sha)throw new Error('Incomplete generator evidence: '+name);\n }\n if(report.checks?.hermes_patch?.status!=='PASS')throw new Error('Missing patch evidence');\n}\nreturn [{json:{...report,target:$('Read request').first().json.target,next:'User/Hermes controls build and pull through Safrano MCP; container tests are a separate routine after restart.'}}];"
         }
+      },
+      {
+        "id": "6bbfa20f-5dec-577a-8c3f-d916bb03af5b",
+        "name": "Sync sources for ready build",
+        "type": "CUSTOM.fedora45Sources",
+        "typeVersion": 1,
+        "position": [
+          4640,
+          0
+        ],
+        "parameters": {
+          "operation": "sync"
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "fedora45GitHubPreparation",
+            "name": "Fedora45 GitHub preparation"
+          }
+        },
+        "retryOnFail": false,
+        "notes": "Only READY_FOR_BUILD clones/updates depth-1 sources inside the existing n8n volume. No image build or repository scripts."
       }
     ],
     "connections": {
@@ -783,7 +874,7 @@
         "main": [
           [
             {
-              "node": "Published version pins",
+              "node": "Sources preview?",
               "type": "main",
               "index": 0
             }
@@ -1037,11 +1128,51 @@
             }
           ]
         ]
+      },
+      "Sources preview?": {
+        "main": [
+          [
+            {
+              "node": "Discover source repositories",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Published version pins",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Discover source repositories": {
+        "main": [
+          [
+            {
+              "node": "Return source inventory",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Handoff to Hermes": {
+        "main": [
+          [
+            {
+              "node": "Sync sources for ready build",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "settings": {
       "executionOrder": "v1",
-      "executionTimeout": 3900,
+      "executionTimeout": 3600,
       "availableInMCP": true,
       "saveDataErrorExecution": "all",
       "saveDataSuccessExecution": "all"

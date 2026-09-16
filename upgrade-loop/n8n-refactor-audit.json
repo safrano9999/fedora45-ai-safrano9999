@@ -1,9 +1,9 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "date": "2026-09-16",
   "scope": "container-preparation-only",
   "main_workflow": "fedora45LoopDraft",
-  "main_nodes": 27,
+  "main_nodes": 31,
   "host_access": false,
   "ssh_nodes": 0,
   "build_dispatch": false,
@@ -19,8 +19,14 @@
     "fedora45StepReport"
   ],
   "source_repairs_require_user_go": true,
-  "preparation_tests_passed": 9,
+  "preparation_tests_passed": 10,
   "http_mcp_tests_passed": 4,
   "evidence": "evidence/fedora45-preparation-20260916.json",
-  "workflow_sha256": "2e1777e9e5e210fa2503a929eabdec3d922f4ebdc82fc9536f86de303a46a82f"
+  "workflow_sha256": "454446e8589a6e084f79d01f0828345e81cd1b275839334345e8b025c8e2fdf7",
+  "source_tests_passed": 6,
+  "source_inventory": "Containerfile parent chain + build.conf and literal repository declarations",
+  "source_sync_gate": "READY_FOR_BUILD only",
+  "source_clone_depth": 1,
+  "source_volume": "/home/node/.n8n/fedora45-sources",
+  "source_evidence": "evidence/fedora45-source-inventory.json"
 }

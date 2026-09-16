@@ -24,9 +24,11 @@ container check is owned by the user and is not implemented by this workflow.
 5. After all checks pass, update both upstream pins and both tested Ephemeral
    pins in one Git commit. Publish without force-pushing. Concurrent repository
    changes block publication rather than mixing untested sources.
-6. Read the Action's evidence artifact. Return `READY_FOR_BUILD`, its exact
-   Git commit, both generator commits and check results to Hermes. A failing,
-   incomplete or missing result never becomes a successful handoff.
+6. Read and validate the Action's evidence artifact. Only `READY_FOR_BUILD`
+   opens the source-volume gate: discover the selected image's parent chain at
+   its exact build commit, then clone/update its Safrano source repositories in
+   the persistent n8n volume with depth 1. Return the preparation evidence and
+   source manifest to Hermes. Missing evidence or a failed sync stops the run.
 
 A version change in OpenClaw therefore also incorporates a new Hermes-Ephemeral
 commit, and vice versa. Both selected generator commits remain fixed throughout
@@ -41,6 +43,58 @@ exactly two version-status lines and ends without dispatching an Action.
 The explicit `?--validate-only` flag (or literal `--validate-only` body) tests
 both selected runtimes on Actions without publishing pins. It ends at
 `VALIDATED_ONLY`, never at `READY_FOR_BUILD`.
+
+`?--sources` (or literal body `--sources`) only lists source repositories; it
+does not dispatch an Action or create/update any checkout. Optional query
+parameters `target=fedora45-ai-safrano9999-full` and `ref=<commit>` select a
+different image chain/source revision for this preview. The default target is
+`fedora45-ai-safrano9999`, default ref `main`. Resolve the image commit once and
+read every declaration at that immutable commit.
+The `target` query parameter also selects the source chain for normal preparation;
+`ref` is preview-only. Successful preparation always syncs its published build commit.
+
+## Source inventory and persistent shallow checkouts
+
+The inventory follows `FROM` through the parent image variables in `build.conf`.
+It reads `EXTENSIONS`, `STANDALONE` (including `repo@branch`) and literal
+`*_REPOSITORY` declarations in the layer's build configuration/preparation helper.
+Configuration is parsed as data; no repository code or shell expressions run.
+Unknown/dynamic declarations, ambiguous parents and conflicting refs stop discovery.
+Only `safrano9999` sources enter the list. External Fedora, OpenClaw/Hermes
+upstream, RPM, npm and PyPI sources are excluded. `SCRIPTS` is build tooling,
+not an image component, so it is not added to the component clone list.
+
+The regular image currently selects 22 repositories including this image repo;
+`-full` adds `VikAI` for 23. This is derived, not a maintained repository allowlist.
+Release tags and both exact Ephemeral pins are honored; remaining branch/HEAD
+refs are resolved to commits before syncing. The manifest records their selection
+time. These snapshots do not pin an otherwise moving branch in a later GitHub
+build; the build's own source evidence remains authoritative for its actual inputs.
+
+Checkouts live at `/home/node/.n8n/fedora45-sources/<repository>` in the existing
+n8n named volume. First checkout uses `git clone --depth 1`; updates use
+`git fetch --depth 1` and detached checkout of the resolved commit. HEAD identity
+and one-commit ancestry are verified. A successful `manifest.json` records every
+checkout. Existing local edits, unexpected origins, symlinks and concurrent runs
+stop synchronization. Repositories removed from the selection are not updated
+or automatically deleted. A failed multi-repo sync can leave some clean checkouts
+updated; it never returns `sources_ready`, and rerunning safely converges.
+
+`--check`, `--sources`, `--validate-only`, `NO_UPDATE` and blocked preparation
+never clone/update repositories. The trigger is still a new upstream OC/Hermes
+version; Ephemeral-only commits cannot open this gate. Builds remain on GitHub.
+
+The narrow custom node `CUSTOM.fedora45Sources` uses the existing n8n GitHub
+credential. Git receives authentication only through child-process environment,
+not URLs, arguments, workflow data or `.git/config`. It runs only Git inside n8n;
+it does not execute checkout scripts, initialize submodules, use SSH, access a
+container socket or run a local image build. Execute Command remains disabled.
+
+Install/update the three files from [n8n-sources](n8n-sources) in
+`/home/node/.n8n/custom/fedora45-sources/`, then restart n8n when no execution is
+running. The custom node and checkouts persist in the existing volume. Install
+the node before publishing/importing the workflow; no AI-container restart,
+new host mount or additional container environment secret is needed.
 
 The baseline is the **published source pins**, not the version of the currently
 running container. n8n does not inspect that container. The separate Hermes
@@ -86,6 +140,7 @@ python3 upgrade-loop/generate-preparation-workflow.py
 python3 upgrade-loop/generate-workflows.py
 python3 upgrade-loop/generate-workflows.py --check
 python3 -m unittest discover -s upgrade-loop/tests -p test_preparation.py
+node --test upgrade-loop/tests/test_sources.cjs
 ```
 
 The separate Safrano MCP now supports authenticated HTTPS as well as stdio.
