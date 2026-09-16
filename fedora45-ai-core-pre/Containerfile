@@ -185,8 +185,7 @@ RUN test -n "${CLOUDFLARED_VERSION}" \
 
 COPY requirements.base.txt /requirements.base.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r /requirements.base.txt python-multipart playwright weasyprint pypdfium2 \
- && python3 -m playwright install chromium \
+    pip install -r /requirements.base.txt python-multipart weasyprint pypdfium2 \
  && python3 -c 'import dotenv, fastapi, jinja2, multipart, pymysql, psycopg, reportlab, sqlalchemy, uvicorn, yaml'
 
 RUN echo '{"hasCompletedOnboarding":true}' > /root/.claude.json

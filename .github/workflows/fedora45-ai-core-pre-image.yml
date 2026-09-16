@@ -199,9 +199,11 @@ jobs:
             grep -q "Fedora release 45" /etc/fedora-release
             for command in node npm python3 pip uv codex claude openclaw \
               hermes webhook cloudflared git gh jq tailscale cockpit-bridge \
-              nmap lnd lncli geth solana electrum persistainer; do
+              nmap lnd lncli geth solana electrum persistainer ffmpeg; do
               command -v "$command" >/dev/null
             done
+            python3 -c "import importlib.util; assert importlib.util.find_spec(\"playwright\") is None"
+            test ! -d /root/.cache/ms-playwright
             test -x /usr/local/libexec/fedora45-wait-ready
             /usr/local/libexec/fedora45-wait-ready --help >/dev/null
             env -i PATH=/usr/local/bin:/usr/bin:/bin persistainer
