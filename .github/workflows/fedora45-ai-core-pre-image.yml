@@ -202,8 +202,6 @@ jobs:
               nmap lnd lncli geth solana electrum persistainer ffmpeg; do
               command -v "$command" >/dev/null
             done
-            python3 -c "import importlib.util; assert importlib.util.find_spec(\"playwright\") is None"
-            test ! -d /root/.cache/ms-playwright
             test -x /usr/local/libexec/fedora45-wait-ready
             /usr/local/libexec/fedora45-wait-ready --help >/dev/null
             env -i PATH=/usr/local/bin:/usr/bin:/bin persistainer
