@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+"""Prepare build inputs on GitHub Actions; never build, pull or deploy an image."""
+
+import argparse
+import importlib.util
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+ROOT = Path(__file__).resolve().parent
+REPO = ROOT.parent
+COMPONENTS = {"openclaw": "openclaw/openclaw", "hermes": "NousResearch/hermes-agent"}
+
+
+def run(args, **kwargs):
+    return subprocess.run([str(a) for a in args], check=True, text=True, **kwargs)
+
+
+def github(path):
+    return json.loads(run(["gh", "api", path], capture_output=True).stdout)
+
+
+def version(value):
+    if not re.fullmatch(r"\d+\.\d+\.\d+", value):
+        raise ValueError("Expected a numeric stable release version")
+    return tuple(map(int, value.split(".")))
+
+
+def current_versions(text):
+    result = {}
+    for name in COMPONENTS:
+        matches = re.findall(r"^ARG " + name.upper() + r"_VERSION=(\S+)$", text, re.M)
+        if len(matches) != 1:
+            raise ValueError("Expected exactly one version pin for " + name)
+        version(matches[0])
+        result[name] = matches[0]
+    return result
+
+
+def release_version(name, release):
+    if release.get("draft") or release.get("prerelease"):
+        raise ValueError("Expected a published stable release")
+    if name == "hermes":
+        match = re.match(r"Hermes Agent v(\d+\.\d+\.\d+)(?:\s|$)", release["name"])
+        if not match:
+            raise ValueError("Unrecognized Hermes release name")
+        result = match[1]
+    else:
+        result = release["tag_name"].removeprefix("v")
+    version(result)
+    return result
+
+
+def select_versions(current, latest):
+    for name in COMPONENTS:
+        if version(latest[name]) < version(current[name]):
+            raise ValueError("Upstream release is older than the current pin")
+    return {name: {"current": current[name], "latest": latest[name]} for name in COMPONENTS}
+
+
+def has_update(versions):
+    return any(v["current"] != v["latest"] for v in versions.values())
+
+
+def exact_commit(value):
+    if not re.fullmatch(r"[0-9a-f]{40}", value):
+        raise ValueError("Expected an exact Git commit")
+    return value
+
+
+def replace_pin(text, key, value, prefix=""):
+    result, count = re.subn(r"^" + re.escape(prefix + key) + r"=.*$",
+                            prefix + key + "=" + value, text, flags=re.M)
+    if count != 1:
+        raise ValueError("Expected exactly one pin: " + key)
+    return result
+
+
+def patch_inputs(target, core, releases):
+    matches = [(r, a) for r in releases if not r["draft"] and not r["prerelease"]
+               for a in r["assets"] if a["name"] == f"openclaw-{target}-deterministic.tar.gz"]
+    if core.get("OPENCLAW_VERSION") == target:
+        matches = [(r, a) for r, a in matches if r["tag_name"] == core["OPENCLAW_DETERMINISTIC_TAG"]]
+    if not matches:
+        raise ValueError("APPROVAL_REQUIRED: no published deterministic artifact for target OpenClaw")
+    release, asset = matches[0]
+    digest = asset.get("digest", "")
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+        raise ValueError("Published patch artifact has no verified checksum")
+    if core.get("OPENCLAW_VERSION") == target and core.get("OPENCLAW_DETERMINISTIC_SHA256") != digest[7:]:
+        raise ValueError("Published deterministic artifact differs from the existing pin")
+    return {"OPENCLAW_VERSION": target, "OPENCLAW_DETERMINISTIC_TAG": release["tag_name"],
+            "OPENCLAW_DETERMINISTIC_SHA256": digest[7:]}
+
+
+def prepare(report, validate_only=False):
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        raise ValueError("Preparation must run on GitHub Actions")
+    foundation = REPO / "fedora45-ai-core-pre/Containerfile"
+    core_path = REPO / "fedora45-ai-core/build.conf"
+    before_foundation, before_core = foundation.read_text(), core_path.read_text()
+    current = current_versions(before_foundation)
+    latest = {name: release_version(name, github(f"repos/{repo}/releases/latest"))
+              for name, repo in COMPONENTS.items()}
+    versions = select_versions(current, latest)
+    report.update(versions=versions, update=has_update(versions), validate_only=validate_only)
+    # Generator commits alone never open the preparation/build gate.
+    if not report["update"] and not validate_only:
+        report["status"] = "NO_UPDATE"
+        return
+    commits = {name: exact_commit(github(f"repos/safrano9999/{name}-ephemeral/commits/main")["sha"])
+               for name in COMPONENTS}
+    report["ephemeral_commits"] = commits
+    core = dict(line.split("=", 1) for line in before_core.splitlines()
+                if re.match(r"^[A-Z_][A-Z0-9_]*=", line))
+    inputs = patch_inputs(latest["openclaw"], core,
+                          github("repos/safrano9999/openclaw-deterministic-latest/releases?per_page=100"))
+    inputs.update({name.upper() + "_EPHEMERAL_COMMIT": sha for name, sha in commits.items()})
+    report["build_inputs"] = inputs
+    spec = importlib.util.spec_from_file_location("prepare_runtime", ROOT / "prepare-runtime.py")
+    runtime = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runtime)
+    report["checks"] = {}
+    with tempfile.TemporaryDirectory(prefix="container-preparation-") as raw:
+        scratch = Path(raw)
+        targets = {name: runtime.prepare(name, latest[name], scratch / "runtimes") for name in COMPONENTS}
+        # Install the selected Hermes release's declared runtime dependencies on the runner.
+        run([sys.executable, "-m", "pip", "install", targets["hermes"]["source"]])
+        for name in COMPONENTS:
+            generator = scratch / (name + "-ephemeral")
+            run(["git", "init", "-q", generator])
+            run(["git", "-C", generator, "fetch", "--depth=1", "--no-tags",
+                 f"https://github.com/safrano9999/{name}-ephemeral.git", commits[name]])
+            run(["git", "-C", generator, "checkout", "--detach", "FETCH_HEAD"])
+            target = targets[name]
+            module = generator if name == "openclaw" else generator / "image/runtime/usr/local/lib/hermes-ephemeral"
+            env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", PYTHONPATH=os.pathsep.join([str(module), target["source"]]),
+                       UPGRADE_TARGET_SOURCE=target["source"], UPGRADE_TARGET_VERSION=latest[name])
+            if name == "openclaw":
+                env["UPGRADE_TARGET_PACKAGE"] = target["package"]
+            run([sys.executable, ROOT / f"probes/{name}_config.py"], env=env, timeout=300)
+            if run(["git", "-C", generator, "status", "--porcelain"], capture_output=True).stdout:
+                raise ValueError("Generator changed during compatibility check")
+            report["checks"][name] = {"status": "PASS", "version": latest[name],
+                                       "generator_commit": commits[name], "upstream_commit": target["upstream_commit"]}
+        run(["git", "apply", "--check", REPO / "fedora45-ai-core-pre/build/hermes-nous-api-key.patch"],
+            cwd=targets["hermes"]["source"])
+        report["checks"]["hermes_patch"] = {"status": "PASS"}
+    after_foundation, after_core = before_foundation, before_core
+    for name in COMPONENTS:
+        after_foundation = replace_pin(after_foundation, name.upper() + "_VERSION", latest[name], "ARG ")
+    for key, value in inputs.items():
+        after_core = replace_pin(after_core, key, value)
+    if validate_only:
+        report["status"] = "VALIDATED_ONLY"
+        return
+    if run(["git", "status", "--porcelain"], capture_output=True, cwd=REPO).stdout:
+        raise ValueError("Repository changed during preparation")
+    foundation.write_text(after_foundation)
+    core_path.write_text(after_core)
+    run(["git", "diff", "--check"], cwd=REPO)
+    run(["git", "add", "--", foundation, core_path], cwd=REPO)
+    run(["git", "-c", "user.name=Fedora45 preparation", "-c", "user.email=actions@users.noreply.github.com",
+         "commit", "-m", "Prepare Fedora45 versions and both tested Ephemeral commits"], cwd=REPO)
+    commit = exact_commit(run(["git", "rev-parse", "HEAD"], capture_output=True, cwd=REPO).stdout.strip())
+    # A concurrent main change fails the push. Never force-push or mix in untested inputs.
+    run(["git", "push", "origin", "HEAD:main"], cwd=REPO)
+    report.update(status="READY_FOR_BUILD", build_commit=commit)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--report", type=Path, required=True)
+    args = parser.parse_args()
+    report = {"schema_version": 1, "status": "BLOCKED", "scope": "container-preparation",
+              "build_started": False, "image_pulled": False, "container_restarted": False}
+    code = 0
+    try:
+        prepare(report, args.validate_only)
+    except Exception as error:
+        report.update(status="BLOCKED", reason=str(error))
+        code = 1
+    args.report.parent.mkdir(parents=True, exist_ok=True)
+    args.report.write_text(json.dumps(report, indent=2) + "\n")
+    if os.environ.get("GITHUB_STEP_SUMMARY"):
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+            summary.write("## Container preparation\n\n```json\n" + json.dumps(report, indent=2) + "\n```\n")
+    print(json.dumps(report))
+    return code
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

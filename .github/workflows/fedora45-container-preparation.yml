@@ -1,0 +1,60 @@
+# Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
+name: Fedora45 container preparation
+run-name: 'Fedora45 preparation [prepare:${{ inputs.run_id }}]'
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: n8n execution correlation ID
+        required: true
+        type: string
+      validate_only:
+        description: Test both current target runtimes without publishing pin changes
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: fedora45-container-preparation
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+      - name: Configure private repository access
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        run: gh auth setup-git
+      - name: Prepare and test exact build inputs
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+          VALIDATE_ONLY: ${{ inputs.validate_only }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          flags=()
+          if [ "$VALIDATE_ONLY" = true ]; then flags+=(--validate-only); fi
+          python3 upgrade-loop/prepare-container.py "${flags[@]}" \
+            --report "$RUNNER_TEMP/container-preparation.json"
+      - name: Preserve preparation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-preparation
+          path: ${{ runner.temp }}/container-preparation.json
+          if-no-files-found: error
