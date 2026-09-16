@@ -58,7 +58,7 @@ COPY build/hermes-nous-api-key.patch /tmp/hermes-nous-api-key.patch
 RUN set -euo pipefail; \
     HERMES_COMMIT="$(curl -fsSL --retry 3 "https://api.github.com/repos/NousResearch/hermes-agent/commits/$(curl -fsSL --compressed --retry 3 'https://api.github.com/repos/NousResearch/hermes-agent/releases?per_page=100' | jq -er --arg v "$HERMES_VERSION" 'map(select(.draft == false and (.name | startswith("Hermes Agent v" + $v + " ")))) | select(length == 1) | .[0].tag_name')" | jq -er '.sha | select(test("^[0-9a-f]{40}$"))')"; \
     curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_COMMIT}/scripts/install.sh" \
-      | bash -s -- --skip-setup --branch main --commit "${HERMES_COMMIT}" \
+      | bash -s -- --skip-setup --skip-browser --branch main --commit "${HERMES_COMMIT}" \
  && git -C /usr/local/lib/hermes-agent apply /tmp/hermes-nous-api-key.patch \
  && grep -q "__version__ = \"${HERMES_VERSION}\"" \
       /usr/local/lib/hermes-agent/hermes_cli/__init__.py \
