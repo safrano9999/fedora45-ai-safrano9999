@@ -129,7 +129,7 @@ def prepare(report, validate_only=False):
         scratch = Path(raw)
         targets = {name: runtime.prepare(name, latest[name], scratch / "runtimes") for name in COMPONENTS}
         # Install the selected Hermes release's declared runtime dependencies on the runner.
-        run([sys.executable, "-m", "pip", "install", targets["hermes"]["source"]])
+        run([sys.executable, "-m", "pip", "install", "-e", targets["hermes"]["source"]])
         for name in COMPONENTS:
             generator = scratch / (name + "-ephemeral")
             run(["git", "init", "-q", generator])
@@ -178,7 +178,8 @@ def main():
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
     report = {"schema_version": 1, "status": "BLOCKED", "scope": "container-preparation",
-              "build_started": False, "image_pulled": False, "container_restarted": False}
+              "build_started": False, "image_pulled": False, "container_restarted": False,
+              "actions_url": f"https://github.com/{os.environ.get('GITHUB_REPOSITORY', '')}/actions/runs/{os.environ.get('GITHUB_RUN_ID', '')}"}
     code = 0
     try:
         prepare(report, args.validate_only)
