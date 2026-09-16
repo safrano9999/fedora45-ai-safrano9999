@@ -670,7 +670,8 @@
             "response": {
               "response": {
                 "fullResponse": true,
-                "responseFormat": "text"
+                "responseFormat": "text",
+                "neverError": true
               }
             }
           }

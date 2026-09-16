@@ -1,35 +1,26 @@
 {
-  "main_before": 158,
-  "main_after": 87,
-  "report_calls_before": 81,
-  "report_calls_after": 23,
-  "report_call_reduction_percent": 71.6,
-  "repair_nodes": 16,
-  "integration_nodes": 14,
-  "reporter_nodes": 8,
-  "existing_if_conditions_unchanged": true,
-  "application_adapters": "Existing skeleton; not implemented by structural refactoring",
-  "reporter_live_test": {
-    "status": "PASS",
-    "model": "astra",
-    "endpoint": "http://litellm-database:4000/v1/chat/completions",
-    "intentional_failure_preserved": true,
-    "fallback_used": false
-  },
-  "boot_wait_minutes": 5,
-  "boot_wait_paths": [
-    "candidate",
-    "production",
-    "rollback",
-    "standalone integration"
+  "schema_version": 2,
+  "date": "2026-09-16",
+  "scope": "container-preparation-only",
+  "main_workflow": "fedora45LoopDraft",
+  "main_nodes": 27,
+  "host_access": false,
+  "ssh_nodes": 0,
+  "build_dispatch": false,
+  "image_pull": false,
+  "container_restart": false,
+  "runtime_tests": false,
+  "preparation_runtime": "GitHub Actions",
+  "build_gate": "new OpenClaw OR Hermes stable release; generator-only commits do not trigger preparation",
+  "ephemeral_inputs": "both exact latest main commits, captured and tested for every upstream-triggered preparation",
+  "retired_workflows": [
+    "fedora45Integration",
+    "fedora45Repair",
+    "fedora45StepReport"
   ],
-  "source_and_sot_changes_require_prior_user_go": true,
-  "report_nodes": 7,
-  "reporting_call_nodes_after": 1,
-  "live_volume_deployment": true,
-  "duplicate_integration_wait": false,
-  "automatic_test_retries": 0,
-  "llm_test_grading": false,
-  "final_summary_calls": 1,
-  "runtime_validation": "Deferred to the next actual upstream upgrade; no installation test run"
+  "source_repairs_require_user_go": true,
+  "preparation_tests_passed": 9,
+  "http_mcp_tests_passed": 4,
+  "evidence": "evidence/fedora45-preparation-20260916.json",
+  "workflow_sha256": "2e1777e9e5e210fa2503a929eabdec3d922f4ebdc82fc9536f86de303a46a82f"
 }

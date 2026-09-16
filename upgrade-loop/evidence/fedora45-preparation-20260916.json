@@ -1,0 +1,85 @@
+{
+  "date": "2026-09-16",
+  "scope": "container-preparation",
+  "github_actions": {
+    "schema_version": 1,
+    "status": "VALIDATED_ONLY",
+    "scope": "container-preparation",
+    "build_started": false,
+    "image_pulled": false,
+    "container_restarted": false,
+    "actions_url": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/35157863661",
+    "versions": {
+      "openclaw": {
+        "current": "2026.9.4",
+        "latest": "2026.9.4"
+      },
+      "hermes": {
+        "current": "0.21.2",
+        "latest": "0.21.3"
+      }
+    },
+    "update": true,
+    "validate_only": true,
+    "ephemeral_commits": {
+      "openclaw": "97c2cceaac5f339d39f00dee8c9a8a0fe59083f7",
+      "hermes": "735df306a60dd6a7ba04443baa049d7e4f467973"
+    },
+    "build_inputs": {
+      "OPENCLAW_VERSION": "2026.9.4",
+      "OPENCLAW_DETERMINISTIC_TAG": "2026.9.4-deterministic.2",
+      "OPENCLAW_DETERMINISTIC_SHA256": "93ead31d91db56564e58ac9313b9f73c8191ec1a2dc04fc841faa6b54f1b796c",
+      "OPENCLAW_EPHEMERAL_COMMIT": "97c2cceaac5f339d39f00dee8c9a8a0fe59083f7",
+      "HERMES_EPHEMERAL_COMMIT": "735df306a60dd6a7ba04443baa049d7e4f467973"
+    },
+    "checks": {
+      "openclaw": {
+        "status": "PASS",
+        "version": "2026.9.4",
+        "generator_commit": "97c2cceaac5f339d39f00dee8c9a8a0fe59083f7",
+        "upstream_commit": "3a9d69db306cd7f081e06254cb89c4bcc14a7107"
+      },
+      "hermes": {
+        "status": "PASS",
+        "version": "0.21.3",
+        "generator_commit": "735df306a60dd6a7ba04443baa049d7e4f467973",
+        "upstream_commit": "345cd2b057a452236de401d3534b8502a7465e8d"
+      },
+      "hermes_patch": {
+        "status": "PASS"
+      }
+    },
+    "next": "User/Hermes controls build and pull through Safrano MCP; container tests are a separate routine after restart."
+  },
+  "n8n": {
+    "check_execution": "44",
+    "check_status": "success",
+    "preparation_dispatch_execution": "47",
+    "artifact_handoff_execution": "48",
+    "artifact_handoff_status": "success"
+  },
+  "validation_method": "Real GitHub preparation and n8n artifact handoff verified in separate executions after fixing the download redirect. No new end-to-end execution after the final redirect fix.",
+  "earlier_failures": [
+    {
+      "execution": "43,45",
+      "cause": "Nested expression request serialization",
+      "resolution": "Serialize dispatch body in Code node"
+    },
+    {
+      "execution": "46",
+      "cause": "Credential forwarded to artifact storage",
+      "resolution": "Resolve redirect and download without GitHub credential"
+    },
+    {
+      "execution": "47",
+      "cause": "Expected 302 treated as HTTP error",
+      "resolution": "Pass response to explicit status/location validation; verified by execution 48"
+    }
+  ],
+  "mutations_during_validation": {
+    "published_version_pins": false,
+    "built_image": false,
+    "pulled_image": false,
+    "restarted_container": false
+  }
+}

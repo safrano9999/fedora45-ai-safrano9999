@@ -117,7 +117,7 @@ return [{json:{artifact_id:artifacts[0].id}}];
 """, 3320)
 http("Resolve evidence download", "={{ '"+base+"/actions/artifacts/'+$json.artifact_id+'/zip' }}", 3540,
      options={"timeout": 30000, "redirect": {"redirect": {"followRedirects": False}},
-              "response": {"response": {"fullResponse": True, "responseFormat": "text"}}})
+              "response": {"response": {"fullResponse": True, "responseFormat": "text", "neverError": True}}})
 code("Validate evidence URL", """
 const url=$json.headers?.location;
 if($json.statusCode!==302 || typeof url!=='string' || !/^https:\\/\\/productionresults[a-z0-9]+\\.blob\\.core\\.windows\\.net\\//.test(url))throw new Error('Unexpected GitHub artifact download location');
