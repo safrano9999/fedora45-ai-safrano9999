@@ -1,221 +1,25 @@
 {
   "id": "fedora45StepReport",
-  "name": "Fedora45 Checkpoint Summary and Final PDF",
+  "name": "Fedora45 Retired Host Step Report",
+  "active": false,
   "nodes": [
     {
-      "id": "4cec869f-5f1d-53a5-87fe-aa07b57010ef",
-      "name": "Receive checkpoint or final run",
-      "type": "n8n-nodes-base.executeWorkflowTrigger",
-      "typeVersion": 1,
-      "position": [
-        0,
-        0
-      ],
-      "parameters": {
-        "inputSource": "passthrough"
-      },
-      "disabled": false,
-      "notes": ""
-    },
-    {
-      "id": "39b9f9d0-2d1b-5c6e-83a8-e3a5e4fb4b64",
-      "name": "Prepare checkpoint and preserve payload",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        340,
-        0
-      ],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "// BEGIN GENERATED: report-redaction.js\n// Shared source for the generated n8n reporting helpers.\nfunction safe(value, key = \"\") {\n  if (/token|password|secret|authorization|api.?key/i.test(key)) return \"[REDACTED]\";\n  if (Array.isArray(value)) return value.map((item) => safe(item));\n  if (value && typeof value === \"object\") {\n    return Object.fromEntries(\n      Object.entries(value)\n        .filter(([field]) => field !== \"run\")\n        .map(([field, item]) => [field, safe(item, field)]),\n    );\n  }\n  return value;\n}\n// END GENERATED: report-redaction.js\nconst j=$input.first().json.stdout ? JSON.parse($input.first().json.stdout) : $input.first().json;\nj.summaryInput={status:j.status,events:(j.run?.events??[]).map(e=>({step:e.step,status:e.status,error:e.error})),versions:j.versions}; j.summaryInput=safe(j.summaryInput); return [{json:j}];"
-      },
-      "disabled": false,
-      "notes": ""
-    },
-    {
-      "id": "2ce9206d-4cb4-4552-a26c-d73e7551cb04",
-      "name": "Summarize checkpoint",
-      "type": "@n8n/n8n-nodes-langchain.chainLlm",
-      "typeVersion": 1.9,
-      "position": [
-        1020,
-        0
-      ],
-      "parameters": {
-        "promptType": "define",
-        "text": "=Summarize this completed Fedora45 upgrade run in English in at most 4 short sentences. Use only recorded facts. Do not infer a pass from missing results or propose source changes. Initial model catalog loading is normal. Data: {{ JSON.stringify($json.summaryInput) }}"
-      },
-      "disabled": false,
-      "notes": "One final Astra summary through LiteLLM. No LLM evaluation of test results. Render the complete PDF even if the summary call fails.",
-      "onError": "continueRegularOutput"
-    },
-    {
-      "id": "991775fd-fcb6-5818-8b57-3d25fe113c25",
-      "name": "Astra - LiteLLM (summary)",
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.3,
-      "position": [
-        1360,
-        0
-      ],
-      "parameters": {
-        "model": {
-          "__rl": true,
-          "value": "astra",
-          "mode": "id"
-        },
-        "responsesApiEnabled": false,
-        "options": {
-          "maxTokens": 500,
-          "timeout": 60000,
-          "maxRetries": 0
-        }
-      },
-      "credentials": {
-        "openAiApi": {
-          "id": "fedora44LiteLLM",
-          "name": "LiteLLM - Astra (core network)"
-        }
-      },
-      "disabled": false,
-      "notes": "Configured model: astra → chatgpt/gpt-6-astra. Direct internal endpoint http://litellm-database:4000/v1 on Podman network core. The credential is stored only in local n8n; its LiteLLM key is limited to astra. No proxy or external URL is involved."
-    },
-    {
-      "id": "4f4172f8-24d1-5a7b-b8e1-93c45bb5660c",
-      "name": "Return original payload with summary",
+      "id": "056064b7-17b5-5222-acc0-4babd9a62694",
+      "name": "Host workflow retired",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         0,
-        240
+        0
       ],
       "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "const j=JSON.parse(JSON.stringify($(\"Prepare checkpoint and preserve payload\").first().json));\nj.finalSummary=$json.text ?? $json.output ?? \"LLM summary unavailable; see the deterministic results.\"; j.finalSummaryEncoded=Buffer.from(j.finalSummary).toString(\"base64url\"); return [{json:j}];"
-      },
-      "disabled": false,
-      "notes": ""
-    },
-    {
-      "id": "b0af59a3-b685-5cc4-8539-d343ecb91d39",
-      "name": "Render complete run PDF",
-      "type": "n8n-nodes-base.ssh",
-      "typeVersion": 1,
-      "position": [
-        340,
-        240
-      ],
-      "parameters": {
-        "authentication": "privateKey",
-        "resource": "command",
-        "operation": "execute",
-        "cwd": "/var/tmp",
-        "command": "=/var/home/core/.local/bin/fedora45-loop report {{ (($json.stdout ? JSON.parse($json.stdout) : $json).run?.id ?? String($execution.id)) }} {{ $json.finalSummaryEncoded }}"
-      },
-      "disabled": false,
-      "credentials": {
-        "sshPrivateKey": {
-          "id": "fedora45HostRunner",
-          "name": "Fedora45 host runner"
-        }
-      },
-      "onError": "continueRegularOutput",
-      "retryOnFail": false,
-      "notes": "Execute deterministic host adapter: report. Store structured results in the run receipt. No LLM grading or automatic retry."
-    },
-    {
-      "id": "2c5dfd57-50e1-5056-884f-ec2b318d5ea3",
-      "name": "Return final report",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        680,
-        240
-      ],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "return [{json:$json.stdout ? JSON.parse($json.stdout) : $json}];"
-      },
-      "disabled": false,
-      "notes": ""
+        "jsCode": "throw new Error('Retired: n8n prepares container sources on GitHub Actions only. Build, pull and post-restart tests belong to the user/Hermes.');"
+      }
     }
   ],
-  "connections": {
-    "Receive checkpoint or final run": {
-      "main": [
-        [
-          {
-            "node": "Prepare checkpoint and preserve payload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare checkpoint and preserve payload": {
-      "main": [
-        [
-          {
-            "node": "Summarize checkpoint",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Summarize checkpoint": {
-      "main": [
-        [
-          {
-            "node": "Return original payload with summary",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Return original payload with summary": {
-      "main": [
-        [
-          {
-            "node": "Render complete run PDF",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Render complete run PDF": {
-      "main": [
-        [
-          {
-            "node": "Return final report",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Astra - LiteLLM (summary)": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Summarize checkpoint",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "active": false,
+  "connections": {},
   "settings": {
     "executionOrder": "v1",
-    "saveDataErrorExecution": "all",
-    "saveDataSuccessExecution": "all",
-    "executionTimeout": 18000,
-    "availableInMCP": true
-  },
-  "pinData": {}
+    "availableInMCP": false
+  }
 }

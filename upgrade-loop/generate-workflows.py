@@ -16,7 +16,7 @@ workflows, outputs = [], {}
 for suffix in ("step-report", "repair", "integration", "workflow"):
     path = ROOT / f"n8n-fedora45-{suffix}.json"
     workflow = json.loads(path.read_text())
-    workflow.setdefault("settings", {})["availableInMCP"] = True
+    workflow.setdefault("settings", {})["availableInMCP"] = suffix == "workflow"
     for node in workflow["nodes"]:
         parameters = node.get("parameters", {})
         code = parameters.get("jsCode", "")
