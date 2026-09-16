@@ -138,6 +138,7 @@ jobs:
             build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/environment.py
             build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/mcp.py
             build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/providers.py
+            build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/profiles.py
             build/vendor/hermes-ephemeral/image/runtime/etc/systemd/system/hermes-config.service
           )
           for file in "${vendor_files[@]}"; do
@@ -150,7 +151,7 @@ jobs:
             echo "Unexpected openclaw-ephemeral vendor file set" >&2
             exit 1
           }
-          [ "$(find build/vendor/hermes-ephemeral -type f | wc -l)" -eq 8 ] || {
+          [ "$(find build/vendor/hermes-ephemeral -type f | wc -l)" -eq 9 ] || {
             echo "Unexpected hermes-ephemeral vendor file set" >&2
             exit 1
           }
