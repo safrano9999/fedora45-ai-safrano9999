@@ -1914,7 +1914,7 @@
           "command": "=/var/home/core/.local/bin/fedora45-loop health {{ (($json.stdout ? JSON.parse($json.stdout) : $json).run?.id ?? String($execution.id)) }}"
         },
         "disabled": false,
-        "notes": "Execute deterministic host adapter: health. Store structured results in the run receipt. No LLM grading or automatic retry.",
+        "notes": "Check base services, then download the standalone checker from this Citadel instance over Tailscale and run it on the SSH host with --extensions tailscale cloudflare. Cloudflare Access login is sufficient; no login or scan. Store JSON and checker SHA256. Failure follows the existing rollback gate; no cached-script fallback or automatic retry.",
         "credentials": {
           "sshPrivateKey": {
             "id": "fedora45HostRunner",
