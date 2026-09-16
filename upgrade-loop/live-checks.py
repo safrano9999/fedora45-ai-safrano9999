@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import pwd
 import subprocess
+import sys
 import tarfile
 import time
 from urllib.parse import urlsplit, urlunsplit
@@ -117,6 +118,24 @@ print(json.dumps({'openclaw_agents':a,'hermes_mcp':sorted(k for k,v in h.get('mc
         return result
 
     def perform(self, name, remaining):
+        if name == "citadel-health":
+            # Discover only the instance's own Citadel URL. The downloaded checker
+            # owns all provider/index/reachability logic and runs on this host.
+            source = '''import json,os,pathlib
+p=pathlib.Path('/opt/safrano9999/CITADEL')
+port=os.environ.get('CITADEL_WEBUI_PORT','11000')
+r=json.loads((p/'extensions/enabled/tailscale/routes.json').read_text())
+print(r['services'][port]['url'])
+'''
+            url = self.inside("python3", "-c", source, timeout=min(10, remaining)).strip()
+            budget = min(90, self.ready())
+            done = subprocess.run([sys.executable, str(ROOT / "citadel-health.py"),
+                                   "--url", url, "--directory", str(self.directory),
+                                   "--timeout", str(budget)], capture_output=True, text=True, timeout=budget + 1)
+            result = json.loads(done.stdout)
+            if done.returncode:
+                result["status"] = "FAIL"
+            return result
         if name == "inventory":
             baseline = json.loads((self.directory / "baseline.json").read_text())
             inventory = self.inventory()

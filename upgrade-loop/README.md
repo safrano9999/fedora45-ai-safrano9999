@@ -297,3 +297,33 @@ Repair failures use one shared proposal/approval/verification workflow. No sourc
 | Explicit Quadlet transitions | Stable + reload without restart at initialization; latest + reload + recreation after tests; stable restored on rollback |
 | Centralized orchestration | The whole loop (all 3 nested loops) runs as a single n8n workflow |
 | Isolated build/pull layer | All build and pull operations go through `mcp-safrano9999`, not ad-hoc scripts |
+
+### Citadel health gate
+
+The existing **Post-deploy health check** now checks base services first, then
+runs Citadel's external checker on the workflow SSH host (core). The adapter reads
+only Citadel's own Tailscale URL from the target container's existing route index,
+fetches `/healthz/check.py` from that HTTPS URL, stores/updates it atomically in the
+run directory, and invokes it with **`--extensions tailscale cloudflare`**.
+It records the source URL, downloaded SHA256 and structured result in the receipt.
+There is no fallback to an older checker if downloading fails.
+
+Citadel owns the index evaluation and URL checks. Cloudflare passes when its
+Access login form appears; no password is submitted or backend tested. The loop
+never starts a Citadel scan. The gate runs before marking the image verified and
+feeds the existing health/rollback decision. Existing integration checks remain.
+Rollback recovery retains its base-service check so a stable image predating the
+new endpoint remains recoverable.
+
+The target Citadel must expose `/api/health` and `/healthz/check.py`. Until those
+files are included in a later image, they must be deployed to the candidate
+explicitly; otherwise this gate intentionally fails. This change does not update
+image pins or trigger a build.
+
+Standalone host verification without running the deployment workflow:
+
+```bash
+python3 upgrade-loop/citadel-health.py \
+  --url https://your-container.your-tailnet.ts.net:10002 \
+  --directory /var/tmp/citadel-loop-check
+```

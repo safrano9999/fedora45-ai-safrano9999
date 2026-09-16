@@ -482,6 +482,15 @@ for raw in sys.argv[2:]:
             if identity["image"] != expected: raise ValueError("Recreated instance has the wrong image")
             return {"status": "PASS", "identity": identity}
         if name == "wait": return self.checks.wait()
+        if name == "health":
+            result = dict(self.checks.stage("health"))
+            if result["status"] == "PASS":
+                citadel = self.checks.stage("citadel-health")
+                result["citadel"] = citadel
+                result["status"] = citadel["status"]
+            else:
+                result["citadel"] = {"status": "NOT_TESTED", "reason": "Base service health failed"}
+            return result
         if name in ("services", "inventory", "openclaw-mcp", "hermes-mcp", "openclaw-models", "hermes-models", "links", "tailscale", "health"):
             return self.checks.stage(name)
         if name == "rollback-health": return self.checks.stage("health")
