@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source_policy": "latest-resolved-once",
-  "source_commit": "676e16bb9f24359c3e71083eaca208795ef4d8b1",
+  "source_commit": "80ead36274ca482d074b562f3873c837095a97da",
   "target": "fedora45-ai-safrano9999",
   "chain": [
     "fedora45-ai-core-pre",
@@ -10,7 +10,7 @@
     "fedora45-ai-kachelmann",
     "fedora45-ai-safrano9999"
   ],
-  "resolved_at": "2026-09-17T22:55:13.616Z",
+  "resolved_at": "2026-09-17T23:07:50.738Z",
   "versions": {
     "openclaw": {
       "current": "2026.9.4",
@@ -339,7 +339,7 @@
         "repository": "safrano9999/fedora45-ai-safrano9999",
         "reason": "image-definition-changed",
         "before": "6d4c4f7d88985f3ce4c191e2ae8b920f0529b0f4",
-        "after": "676e16bb9f24359c3e71083eaca208795ef4d8b1"
+        "after": "80ead36274ca482d074b562f3873c837095a97da"
       },
       {
         "image": "fedora45-ai-core",
@@ -353,7 +353,7 @@
         "repository": "safrano9999/fedora45-ai-safrano9999",
         "reason": "image-definition-changed",
         "before": "47027df1aab9d28a8019b01067fbe92e081755fb",
-        "after": "676e16bb9f24359c3e71083eaca208795ef4d8b1"
+        "after": "80ead36274ca482d074b562f3873c837095a97da"
       },
       {
         "image": "fedora45-ai-base",
@@ -367,7 +367,7 @@
         "repository": "safrano9999/fedora45-ai-safrano9999",
         "reason": "image-definition-changed",
         "before": "47027df1aab9d28a8019b01067fbe92e081755fb",
-        "after": "676e16bb9f24359c3e71083eaca208795ef4d8b1"
+        "after": "80ead36274ca482d074b562f3873c837095a97da"
       },
       {
         "image": "fedora45-ai-kachelmann",
@@ -381,7 +381,7 @@
         "repository": "safrano9999/fedora45-ai-safrano9999",
         "reason": "image-definition-changed",
         "before": "47027df1aab9d28a8019b01067fbe92e081755fb",
-        "after": "676e16bb9f24359c3e71083eaca208795ef4d8b1"
+        "after": "80ead36274ca482d074b562f3873c837095a97da"
       },
       {
         "image": "fedora45-ai-safrano9999",
@@ -395,7 +395,7 @@
         "repository": "safrano9999/fedora45-ai-safrano9999",
         "reason": "image-definition-changed",
         "before": "47027df1aab9d28a8019b01067fbe92e081755fb",
-        "after": "676e16bb9f24359c3e71083eaca208795ef4d8b1"
+        "after": "80ead36274ca482d074b562f3873c837095a97da"
       }
     ]
   },
