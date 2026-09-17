@@ -28,6 +28,11 @@ on:
         required: false
         type: boolean
         default: false
+      cascade_target:
+        description: "Stop cascade at this image; selected from the prepared source snapshot"
+        required: false
+        default: ""
+        type: string
       monitor_id:
         description: "Optional event-monitor correlation id"
         required: false

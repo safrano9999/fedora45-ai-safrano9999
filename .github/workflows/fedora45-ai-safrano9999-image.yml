@@ -33,6 +33,11 @@ on:
         required: true
         type: boolean
         default: false
+      cascade_target:
+        description: "Stop cascade at this image; selected from the prepared source snapshot"
+        required: false
+        default: ""
+        type: string
       monitor_id:
         description: "Optional event-monitor correlation id"
         required: false
@@ -261,7 +266,7 @@ jobs:
             - < .github/scripts/check-fedora45-image.py
 
       - name: Trigger safrano9999-full layer
-        if: inputs.cascade
+        if: inputs.cascade && inputs.cascade_target != 'fedora45-ai-safrano9999'
         env:
           BUILD_COMMIT: ${{ steps.source.outputs.commit }}
           GH_TOKEN: ${{ github.token }}
@@ -280,4 +285,4 @@ jobs:
             -f "push_stable=$PUSH_STABLE" \
             -f "push_latest=$PUSH_LATEST" \
             -f "monitor_id=${{ inputs.monitor_id }}" \
-            -f "monitor_final=true"
+            -f "monitor_final=${{ inputs.cascade_target == 'fedora45-ai-safrano9999-full' || (inputs.cascade_target == '' && 'fedora45-ai-safrano9999-full' == 'fedora45-ai-safrano9999-full') }}"

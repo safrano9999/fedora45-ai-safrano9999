@@ -65,7 +65,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const item=$input.first();\nconst webhook=Object.prototype.hasOwnProperty.call(item.json,'headers');\nlet raw='';\nif(item.binary?.data) raw=(await this.helpers.getBinaryDataBuffer(0,'data')).toString('utf8').trim();\nelse if(typeof item.json.body==='string') raw=item.json.body.trim();\nif(!['','--check','--validate-only','--sources'].includes(raw)) throw new Error('Expected an empty body, --check, --validate-only or --sources');\nconst query=item.json.query??{};\nconst check=Object.prototype.hasOwnProperty.call(query,'--check') || raw==='--check';\nconst validate_only=Object.prototype.hasOwnProperty.call(query,'--validate-only') || raw==='--validate-only';\nconst sources=Object.prototype.hasOwnProperty.call(query,'--sources') || raw==='--sources';\nif([check,validate_only,sources].filter(Boolean).length>1)throw new Error('Choose one check mode');\nconst target=query.target||'fedora45-ai-safrano9999',source_ref=query.ref||'main';\nif(!/^fedora45-ai-[a-z0-9-]+$/.test(target))throw new Error('Invalid target image');\nif(!sources&&query.ref)throw new Error('The ref parameter belongs to --sources');\nreturn [{json:{webhook,check,validate_only,sources,target,source_ref}}];"
+        "jsCode": "const item=$input.first();\nconst webhook=Object.prototype.hasOwnProperty.call(item.json,'headers');\nlet raw='';\nif(item.binary?.data) raw=(await this.helpers.getBinaryDataBuffer(0,'data')).toString('utf8').trim();\nelse if(typeof item.json.body==='string') raw=item.json.body.trim();\nlet body=item.json.body&&typeof item.json.body==='object'?item.json.body:{};\nif(raw.startsWith('{')){body=JSON.parse(raw);raw='';}\nif(body.mode)raw=body.mode;\nif(!['','--check','--validate-only','--sources'].includes(raw)) throw new Error('Expected an empty body, --check, --validate-only or --sources');\nconst query={...(item.json.query??{}),...body};\nconst check=Object.prototype.hasOwnProperty.call(query,'--check') || raw==='--check';\nconst validate_only=Object.prototype.hasOwnProperty.call(query,'--validate-only') || raw==='--validate-only';\nconst sources=Object.prototype.hasOwnProperty.call(query,'--sources') || raw==='--sources';\nif([check,validate_only,sources].filter(Boolean).length>1)throw new Error('Choose one check mode');\nconst target=query.target||'fedora45-ai-safrano9999',source_ref=query.ref||'main';\nif(!/^fedora45-ai-[a-z0-9-]+$/.test(target))throw new Error('Invalid target image');\nif(!sources&&query.ref)throw new Error('The ref parameter belongs to --sources');\nreturn [{json:{webhook,check,validate_only,sources,target,source_ref}}];"
       }
     },
     {
@@ -790,6 +790,18 @@
       },
       "retryOnFail": false,
       "notes": "Only READY_FOR_BUILD clones/updates depth-1 sources inside the existing n8n volume. No image build or repository scripts."
+    },
+    {
+      "id": "a064f175-bd5c-57c5-93aa-76696e11b76a",
+      "name": "Register completion hook",
+      "type": "CUSTOM.fedora45Feedback",
+      "typeVersion": 1,
+      "position": [
+        -340,
+        300
+      ],
+      "parameters": {},
+      "notes": "Optional feedback=true with callback_url and callback_secret, or a persisted default. Inside n8n, watch execution completion (success/error/canceled/crashed). Send only {}. No host access; clients read details separately."
     }
   ],
   "connections": {
@@ -797,7 +809,7 @@
       "main": [
         [
           {
-            "node": "Read request",
+            "node": "Register completion hook",
             "type": "main",
             "index": 0
           }
@@ -808,7 +820,7 @@
       "main": [
         [
           {
-            "node": "Read request",
+            "node": "Register completion hook",
             "type": "main",
             "index": 0
           }
@@ -1119,6 +1131,17 @@
         [
           {
             "node": "Sync sources for ready build",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register completion hook": {
+      "main": [
+        [
+          {
+            "node": "Read request",
             "type": "main",
             "index": 0
           }

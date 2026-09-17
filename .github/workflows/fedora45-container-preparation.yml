@@ -13,6 +13,11 @@ on:
         description: n8n execution correlation ID
         required: true
         type: string
+      force_prepare:
+        description: "Explicit operator rebuild with refreshed dependencies; automatic n8n gate remains version-only"
+        required: false
+        type: boolean
+        default: false
       validate_only:
         description: Test both current target runtimes without publishing pin changes
         required: true
@@ -47,12 +52,14 @@ jobs:
       - name: Prepare and test exact build inputs
         env:
           GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+          FORCE_PREPARE: ${{ inputs.force_prepare }}
           VALIDATE_ONLY: ${{ inputs.validate_only }}
           SOURCE_SNAPSHOT_JSON: ${{ inputs.source_snapshot }}
         shell: bash
         run: |
           set -euo pipefail
           flags=()
+          if [ "$FORCE_PREPARE" = true ]; then flags+=(--force-prepare); fi
           if [ "$VALIDATE_ONLY" = true ]; then flags+=(--validate-only); fi
           python3 -c 'import os; from pathlib import Path; Path(os.environ["RUNNER_TEMP"], "source-snapshot.json").write_text(os.environ["SOURCE_SNAPSHOT_JSON"])'
           python3 upgrade-loop/prepare-container.py "${flags[@]}" \

@@ -131,7 +131,7 @@ def note_inputs(core, latest):
     return {"NOTE_RELEASE_TAG": latest["tag_name"], "NOTE_RELEASE_SHA256": digest}
 
 
-def prepare(report, validate_only=False, snapshot=None):
+def prepare(report, validate_only=False, snapshot=None, force_prepare=False):
     if os.environ.get("GITHUB_ACTIONS") != "true":
         raise ValueError("Preparation must run on GitHub Actions")
     foundation = REPO / "fedora45-ai-core-pre/Containerfile"
@@ -151,7 +151,7 @@ def prepare(report, validate_only=False, snapshot=None):
     versions = select_versions(current, latest)
     report.update(versions=versions, update=has_update(versions), validate_only=validate_only)
     # Generator commits alone never open the preparation/build gate.
-    if not report["update"] and not validate_only:
+    if not report["update"] and not validate_only and not force_prepare:
         report["status"] = "NO_UPDATE"
         return
     core = dict(line.split("=", 1) for line in before_core.splitlines()
@@ -229,6 +229,7 @@ def prepare(report, validate_only=False, snapshot=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--force-prepare", action="store_true", help="Explicit operator rebuild; never used by the automatic n8n version gate")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--source-snapshot", type=Path, required=True)
@@ -238,7 +239,7 @@ def main():
               "actions_url": f"https://github.com/{os.environ.get('GITHUB_REPOSITORY', '')}/actions/runs/{os.environ.get('GITHUB_RUN_ID', '')}"}
     code = 0
     try:
-        prepare(report, args.validate_only, json.loads(args.source_snapshot.read_text()))
+        prepare(report, args.validate_only, json.loads(args.source_snapshot.read_text()), args.force_prepare)
     except Exception as error:
         report.update(status="BLOCKED", reason=str(error))
         code = 1

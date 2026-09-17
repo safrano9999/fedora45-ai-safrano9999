@@ -188,3 +188,11 @@ The separate Safrano MCP now supports authenticated HTTPS as well as stdio.
 Its ucore entry is `safrano9999-mcp`, configured through the shared numbered
 MCP environment group. The service can build/pull when the user/Hermes requests
 it; adding the server to the environment does not start either operation.
+
+### Optional completion hook
+
+Through n8n MCP `execute_workflow`, use production mode and a JSON webhook body such as `{"feedback":true,"callback_url":"http://…/webhooks/ucore-mcp-finish.hook","callback_secret":"…"}`. Legacy `--check`, `--sources`, and `--validate-only` remain valid; JSON may specify `"mode":"--check"`. `feedback` defaults to false. A private `/home/node/.n8n/fedora45-feedback/default.json` containing `{"url":"…","secret":"…"}` allows subsequent calls to use only `feedback:true`.
+
+The custom completion node stores the optional destination in the existing n8n volume. Its worker runs inside n8n and reads n8n's own execution table using the existing database connection, with a read-only PostgreSQL session (or SQLite read-only mode). On `success`, `error`, `canceled`, or `crashed`, it sends exactly `{}` to the callback. No outcome details leave in the body; the client retrieves execution evidence separately. HMAC and a stable delivery ID support Hermes' native webhook adapter. Failed deliveries are retried and survive container restarts. The receiving hook should deduplicate delivery IDs. Client-provided secrets are sensitive request inputs; the generated graph does not propagate them after registration.
+
+Install all `n8n-sources/*.js` files together under `/home/node/.n8n/custom/fedora45-sources` and restart n8n after updating custom node definitions. This adds no host access, image build or deployment to the preparation loop. Automatic preparation still requires an upstream OpenClaw/Hermes version change. The GitHub preparation Action's `force_prepare` input is reserved for an explicitly requested operator rebuild.

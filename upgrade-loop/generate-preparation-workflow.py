@@ -52,8 +52,11 @@ const webhook=Object.prototype.hasOwnProperty.call(item.json,'headers');
 let raw='';
 if(item.binary?.data) raw=(await this.helpers.getBinaryDataBuffer(0,'data')).toString('utf8').trim();
 else if(typeof item.json.body==='string') raw=item.json.body.trim();
+let body=item.json.body&&typeof item.json.body==='object'?item.json.body:{};
+if(raw.startsWith('{')){body=JSON.parse(raw);raw='';}
+if(body.mode)raw=body.mode;
 if(!['','--check','--validate-only','--sources'].includes(raw)) throw new Error('Expected an empty body, --check, --validate-only or --sources');
-const query=item.json.query??{};
+const query={...(item.json.query??{}),...body};
 const check=Object.prototype.hasOwnProperty.call(query,'--check') || raw==='--check';
 const validate_only=Object.prototype.hasOwnProperty.call(query,'--validate-only') || raw==='--validate-only';
 const sources=Object.prototype.hasOwnProperty.call(query,'--sources') || raw==='--sources';
@@ -184,6 +187,13 @@ link("Sources preview?","Discover source repositories")
 link("Discover source repositories","Return source inventory")
 link("Sources preview?","Published version pins",1)
 link("Handoff to Hermes","Sync sources for ready build")
+
+callback=node("Register completion hook", "code", {}, -340, 300,
+              notes="Optional feedback=true with callback_url and callback_secret, or a persisted default. Inside n8n, watch execution completion (success/error/canceled/crashed). Send only {}. No host access; clients read details separately.")
+callback["type"]="CUSTOM.fedora45Feedback"
+for trigger in ["Manual preparation", "Webhook - preparation or --check"]:
+    connections[trigger]={"main":[[{"node":"Register completion hook","type":"main","index":0}]]}
+link("Register completion hook", "Read request")
 
 workflow={"id":"fedora45LoopDraft","name":"Fedora45 Container Preparation","active":True,"nodes":nodes,"connections":connections,
           "settings":{"executionOrder":"v1","executionTimeout":3600,"availableInMCP":True,"saveDataErrorExecution":"all","saveDataSuccessExecution":"all"}}
