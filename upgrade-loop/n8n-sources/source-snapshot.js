@@ -46,7 +46,7 @@ function makeSnapshot(manifest, versions) {
     source_commit: manifest.image_commit, target: manifest.target, chain: manifest.chain,
     resolved_at: manifest.resolved_at, versions,
     repositories: manifest.repositories.filter(e => e.repository !== IMAGE_REPO).map(e => ({
-      repository: e.repository, ref: e.ref, commit: e.commit,
+      repository: e.repository, ref: e.ref, commit: e.commit, sources: e.sources,
       ...(e.release ? { release: e.release } : {}),
       ...(e.runtime_assets ? { runtime_assets: e.runtime_assets } : {}),
     })) };
@@ -62,4 +62,4 @@ function cloneManifest(snapshot, buildCommit) {
     repositories: [{ repository: IMAGE_REPO, ref: buildCommit, commit: buildCommit }, ...snapshot.repositories] };
 }
 
-module.exports = { makeSnapshot, snapshotId, validateSnapshot, cloneManifest };
+module.exports = { canonical, makeSnapshot, snapshotId, validateSnapshot, cloneManifest };

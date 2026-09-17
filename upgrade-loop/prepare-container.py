@@ -131,7 +131,7 @@ def note_inputs(core, latest):
     return {"NOTE_RELEASE_TAG": latest["tag_name"], "NOTE_RELEASE_SHA256": digest}
 
 
-def prepare(report, validate_only=False, snapshot=None, force_prepare=False):
+def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upgrade_safrano9999=False):
     if os.environ.get("GITHUB_ACTIONS") != "true":
         raise ValueError("Preparation must run on GitHub Actions")
     foundation = REPO / "fedora45-ai-core-pre/Containerfile"
@@ -150,8 +150,13 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False):
                   for name, repo in COMPONENTS.items()}
     versions = select_versions(current, latest)
     report.update(versions=versions, update=has_update(versions), validate_only=validate_only)
-    # Generator commits alone never open the preparation/build gate.
-    if not report["update"] and not validate_only and not force_prepare:
+    if upgrade_safrano9999 != bool((snapshot or {}).get("upgrade_safrano9999")):
+        raise ValueError("Explicit upgrade-safrano9999 option and snapshot must agree")
+    source_update = upgrade_safrano9999 and snapshot["build_plan"]["required"]
+    if upgrade_safrano9999:
+        report.update(upgrade_safrano9999=True, build_plan=snapshot["build_plan"])
+    # Source commits open the gate only with the explicit Safrano option.
+    if not report["update"] and not source_update and not validate_only and not force_prepare:
         report["status"] = "NO_UPDATE"
         return
     core = dict(line.split("=", 1) for line in before_core.splitlines()
@@ -230,6 +235,7 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--force-prepare", action="store_true", help="Explicit operator rebuild; never used by the automatic n8n version gate")
+    parser.add_argument("--upgrade-safrano9999", action="store_true", help="Prepare changed Safrano inputs from the earliest affected published image")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--source-snapshot", type=Path, required=True)
@@ -239,7 +245,7 @@ def main():
               "actions_url": f"https://github.com/{os.environ.get('GITHUB_REPOSITORY', '')}/actions/runs/{os.environ.get('GITHUB_RUN_ID', '')}"}
     code = 0
     try:
-        prepare(report, args.validate_only, json.loads(args.source_snapshot.read_text()), args.force_prepare)
+        prepare(report, args.validate_only, json.loads(args.source_snapshot.read_text()), args.force_prepare, args.upgrade_safrano9999)
     except Exception as error:
         report.update(status="BLOCKED", reason=str(error))
         code = 1

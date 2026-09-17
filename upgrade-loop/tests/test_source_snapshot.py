@@ -86,13 +86,41 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(report['build_inputs']['OPENCLAW_EPHEMERAL_COMMIT'],'a'*40)
         self.assertEqual(report['build_inputs']['HERMES_EPHEMERAL_COMMIT'],'b'*40)
 
+    def test_explicit_source_upgrade_gate_and_earliest_stage_validation(self):
+        spec = importlib.util.spec_from_file_location('source_upgrade_prep', ROOT/'prepare-container.py')
+        prep = importlib.util.module_from_spec(spec); spec.loader.exec_module(prep)
+        selected = json.loads((ROOT/'prepared-sources.json').read_text())
+        selected['source_commit'] = 'c' * 40
+        pins = prep.current_versions((ROOT.parent/'fedora45-ai-core-pre/Containerfile').read_text())
+        selected['versions'] = {n: {'current':v, 'latest':v} for n,v in pins.items()}
+        selected['upgrade_safrano9999'] = True
+        selected['build_plan'] = {'schema_version':1,'required':True,'start_image':'fedora45-ai-core',
+            'start_key':'fedora45_core','cascade':True,'target':selected['target'],
+            'baseline':'published-latest-images','baseline_images':[
+                {'image':i,'revision':'a'*40,'digest':'sha256:'+'b'*64} for i in selected['chain']],
+            'changes':[{'image':'fedora45-ai-core','reason':'source-changed'}]}
+        validate_snapshot(selected)
+        with patch.dict(os.environ, {'GITHUB_ACTIONS':'true'}), patch.object(prep,'github',side_effect=AssertionError('No second resolution')), patch.object(prep,'run',return_value=subprocess.CompletedProcess([],0,'c'*40+'\n')), patch.object(prep.importlib.util,'spec_from_file_location',side_effect=RuntimeError('compatibility tests reached')):
+            with self.assertRaisesRegex(ValueError,'option and snapshot'): prep.prepare({},snapshot=selected)
+            report={}
+            with self.assertRaisesRegex(RuntimeError,'compatibility tests reached'):
+                prep.prepare(report,snapshot=selected,upgrade_safrano9999=True)
+            self.assertEqual(report['build_plan']['start_key'],'fedora45_core')
+            selected['build_plan'].update(required=False,start_image=None,start_key=None,cascade=False,changes=[])
+            report={};prep.prepare(report,snapshot=selected,upgrade_safrano9999=True)
+            self.assertEqual(report['status'],'NO_UPDATE')
+        selected['build_plan'].update(required=True,start_image='fedora45-ai-base',start_key='fedora45_base',changes=[{'image':'fedora45-ai-core'}])
+        with self.assertRaisesRegex(ValueError,'earliest'): validate_snapshot(selected)
+
     def test_no_update_gate_precedes_snapshot_resolution(self):
         workflow=json.loads((ROOT/'n8n-fedora45-workflow.json').read_text())
         edges=workflow['connections']
         self.assertEqual(edges['Upstream update available?']['main'][1][0]['node'],'No update')
         self.assertEqual(edges['Upstream update available?']['main'][0][0]['node'],'Prepare request')
         self.assertEqual(edges['Prepare request']['main'][0][0]['node'],'Resolve latest sources once')
-        self.assertEqual(edges['Resolve latest sources once']['main'][0][0]['node'],'Dispatch preparation Action')
+        self.assertEqual(edges['Resolve latest sources once']['main'][0][0]['node'],'Sources require preparation?')
+        self.assertEqual(edges['Sources require preparation?']['main'][0][0]['node'],'Dispatch preparation Action')
+        self.assertEqual(edges['Sources require preparation?']['main'][1][0]['node'],'No update')
         script="const {Fedora45Sources}=require(process.argv[1]);(async()=>{try{await Fedora45Sources.prototype.execute.call({getInputData:()=>[{json:{update:false}}],getNodeParameter:()=> 'resolve',getCredentials:()=>{throw Error('credential access')}});process.exit(1)}catch(e){if(!e.message.includes('upstream update'))throw e}})();"
         subprocess.run(['node','-e',script,str(ROOT/'n8n-sources/Fedora45Sources.node.js')],check=True,capture_output=True)
 

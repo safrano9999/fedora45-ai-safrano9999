@@ -1,6 +1,7 @@
 'use strict';
 
 const { inventory, resolveCommits, DEFAULT_TARGET, SHA } = require('./source-inventory');
+const { upgradePlan, publishedImage } = require('./source-upgrade');
 const { syncSources } = require('./source-sync');
 const { makeSnapshot, snapshotId, validateSnapshot, cloneManifest } = require('./source-snapshot');
 
@@ -23,8 +24,8 @@ class Fedora45Sources {
       throw new Error('Source sync requires a validated READY_FOR_BUILD result');
     }
     if (!['inventory', 'resolve', 'sync'].includes(operation)) throw new Error('Invalid source operation');
-    if (operation === 'resolve' && request.update !== true && request.validate_only !== true) {
-      throw new Error('Source resolution requires an upstream update or explicit validation');
+    if (operation === 'resolve' && request.update !== true && request.validate_only !== true && request.upgrade_safrano9999 !== true) {
+      throw new Error('Source resolution requires an upstream update, upgrade-safrano9999 or explicit validation');
     }
     const credentials = await this.getCredentials('httpHeaderAuth');
     if (String(credentials.name).toLowerCase() !== 'authorization' || !/^Bearer [^\r\n]+$/.test(credentials.value)) {
@@ -52,10 +53,19 @@ class Fedora45Sources {
     const resolved = await resolveCommits(get, manifest);
     if (operation === 'inventory') return [[{ json: { ...resolved, status: 'SOURCES_LISTED', cloned: false } }]];
     const snapshot = makeSnapshot(resolved, request.versions);
+    if (request.upgrade_safrano9999 === true) {
+      snapshot.upgrade_safrano9999 = true;
+      snapshot.build_plan = await upgradePlan(get, resolved, request.versions,
+        layer => publishedImage(layer, credentials.value));
+      if (!snapshot.build_plan.required && request.validate_only !== true) {
+        return [[{ json: { ...request, status: 'NO_UPDATE', build_required: false,
+          build_plan: snapshot.build_plan, build_started: false, image_pulled: false, container_restarted: false } }]];
+      }
+    }
     const dispatch_body = JSON.stringify({ ref: 'main', inputs: { run_id: request.run_id,
-      validate_only: request.validate_only === true, source_snapshot: JSON.stringify(snapshot) } });
+      validate_only: request.validate_only === true, upgrade_safrano9999: request.upgrade_safrano9999 === true, source_snapshot: JSON.stringify(snapshot) } });
     if (Buffer.byteLength(dispatch_body) > 60000) throw new Error('Source snapshot exceeds dispatch limit');
-    return [[{ json: { ...request, source_snapshot: snapshot, source_snapshot_id: snapshotId(snapshot), dispatch_body } }]];
+    return [[{ json: { ...request, build_required: true, source_snapshot: snapshot, source_snapshot_id: snapshotId(snapshot), dispatch_body } }]];
   }
 }
 

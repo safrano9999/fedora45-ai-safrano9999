@@ -12,8 +12,9 @@ container check is owned by the user and is not implemented by this workflow.
 
 1. Read the published OpenClaw/Hermes pins from GitHub `main` and compare them
    with the latest stable upstream releases. Reject malformed data and downgrades.
-2. Only a newer OpenClaw **or** Hermes release starts preparation. Ephemeral-only
-   commits never trigger preparation or an image build.
+2. By default, only a newer OpenClaw **or** Hermes release starts preparation.
+   Explicit `upgrade-safrano9999` additionally opens the gate for changed consumed
+   Safrano sources, starting at the earliest affected published image.
 3. After the update gate, `Resolve latest sources once` resolves the latest
    Safrano sources inside n8n. It records all selected commits and release
    checksums in one source snapshot and dispatches `fedora45-container-preparation.yml`
@@ -44,13 +45,15 @@ deterministic patch when only Hermes changed, and refreshes NOTE on either
 upstream update. A matching fixed release tag may represent the exact bytes
 of a rolling `latest` asset; its SHA256 is recorded and verified. The resulting
 pins are a snapshot for that preparation/build, not a policy to stay on an old
-release. NOTE, patch and generator updates alone still do not open the build gate.
+release. NOTE, patch and generator updates alone open the gate only with explicit
+`upgrade-safrano9999`. The default remains the upstream release gate.
 
 ## Commit-bound build handoff
 
 Only `READY_FOR_BUILD` includes `safrano_build_inputs: {"build_commit": "<40-hex SHA>"}`.
-The user/Hermes passes that object as `inputs` to Safrano MCP `build_images`, with
-the selected Fedora45 chain key. `action="plan"` validates the proposed dispatch
+The handoff also includes `safrano_build_key` and the complete
+`safrano_build_request` (`action:run`, `section:chains`, `key`, `cascade`,
+`inputs`). The user/Hermes passes that request to Safrano MCP `build_images`. `action="plan"` validates the proposed dispatch
 using read calls only. `action="run"` requires the explicit prepared commit,
 creates/reuses the exact lightweight tag `build-<SHA>`, and dispatches its workflow
 at that tag. An existing tag pointing elsewhere is rejected, never moved.
@@ -90,6 +93,37 @@ different image chain/source revision for this preview. The default target is
 read every declaration at that immutable commit.
 The `target` query parameter also selects the source chain for normal preparation;
 `ref` is preview-only. Successful preparation always syncs its published build commit.
+
+## Explicit Safrano source upgrades
+
+Send `{"mode":"upgrade-safrano9999","feedback":true}` through the same webhook
+or n8n MCP webhook input. Literal `upgrade-safrano9999`,
+`--upgrade-safrano9999` and boolean `upgrade-safrano9999:true` are also accepted.
+The flag cannot be combined with `--check` or `--sources`.
+
+After resolving sources once, n8n reads each selected GHCR image's `:latest`
+manifest and configuration, verifies their digests and reads
+`org.opencontainers.image.revision`. Its GitHub checkout supplies the source
+snapshot actually published in that image. Preparation commits on `main` alone
+are never treated as proof of a completed build. These are metadata GETs, no
+image pulls; private packages require the GitHub credential to have read access.
+Missing or inconsistent evidence stops preparation instead of guessing.
+
+Compare consumed repository commits, release payload checksums, inherited source
+versions and image-definition files. The parent rootfs layers also detect an
+image built on an older parent. Each stage is compared separately, so a partially
+completed cascade resumes at its first outdated descendant. Select the earliest
+changed stage across all reasons: Hermes-Ephemeral alone means `fedora45_core`;
+an OpenClaw/Hermes runtime release means `fedora45_core_pre`. A Base-only source
+change starts at `fedora45_base`. Runtime Containerfiles, build configuration,
+build helpers and image overlays count at their consuming stages; changes to
+n8n orchestration or repository documentation do not force an image rebuild.
+
+No changes returns `NO_UPDATE` before Action dispatch and before volume sync.
+Changes follow the existing compatibility checks and commit publication, then
+return the exact start key in `safrano_build_request`. The selected target still
+limits the cascade; when the start is already the target, `cascade` is false. n8n prepares and hands off; Safrano MCP performs the build.
+Completion feedback remains one empty webhook notification on any final outcome.
 
 ## Source inventory and persistent shallow checkouts
 

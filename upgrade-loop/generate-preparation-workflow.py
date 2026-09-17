@@ -42,9 +42,9 @@ def http(name, url, x, y=0, **parameters):
 
 
 base = "https://api.github.com/repos/safrano9999/fedora45-ai-safrano9999"
-client_description = "GitHub-only preparation. MCP: webhook POST body with callback_url (+ callback_secret) or feedback:true for saved hook; feedback:false disables it. After start, end turn; do not poll. Webhook feedback only; no Herdr/host access."
-node("MCP start and completion feedback", "stickyNote", {"content": "## MCP client instructions\nBefore execute_workflow, read this workflow's details. Use executionMode=production and inputs.type=webhook, webhookData.method=POST. For feedback, set webhookData.body.callback_url (plus callback_secret when required), or body.feedback=true for the saved Hermes hook. Set feedback=false to disable.\nAfter the tool returns its execution ID, END THIS TURN and return control to the user. Do not poll, sleep or wait for completion. The hook receives only {} after success, failure or cancellation; fetch status/evidence then or when the user explicitly asks.\nOnly webhook feedback is supported here. Do not pass herdr_target: this container has no host/Herdr access. Delivery uses mcp-rendezvous from npm.", "width": 800, "height": 440}, -900, 420)
-node("Scope", "stickyNote", {"content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nA new OpenClaw OR Hermes release opens the gate. Resolve latest Safrano sources ONCE after this gate. Share the same snapshot with preparation, depth-1 clones and builds. Test BOTH selected Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.", "width": 1600, "height": 260}, 0, -430)
+client_description = "GitHub-only preparation. mode=upgrade-safrano9999 selects earliest changed Safrano stage. callback_url (+ callback_secret) or feedback:true enables completion webhook. End turn after start; do not poll. No host access or image build."
+node("MCP start and completion feedback", "stickyNote", {"content": "## MCP client instructions\nBefore execute_workflow, read this workflow's details. Optional body.mode=upgrade-safrano9999 checks consumed Safrano sources against published latest images and returns the earliest build start key. Without this option the release gate is unchanged. Use executionMode=production and inputs.type=webhook, webhookData.method=POST. For feedback, set webhookData.body.callback_url (plus callback_secret when required), or body.feedback=true for the saved Hermes hook. Set feedback=false to disable.\nAfter the tool returns its execution ID, END THIS TURN and return control to the user. Do not poll, sleep or wait for completion. The hook receives only {} after success, failure or cancellation; fetch status/evidence then or when the user explicitly asks.\nOnly webhook feedback is supported here. Do not pass herdr_target: this container has no host/Herdr access. Delivery uses mcp-rendezvous from npm.", "width": 800, "height": 440}, -900, 420)
+node("Scope", "stickyNote", {"content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nA new OpenClaw OR Hermes release opens the default gate. Explicit mode upgrade-safrano9999 also checks consumed Safrano sources against published :latest image revisions and selects the earliest affected stage. Without changes, no preparation or clones. Resolve latest Safrano sources ONCE after this gate. Share the same snapshot with preparation, depth-1 clones and builds. Test BOTH selected Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.", "width": 1600, "height": 260}, 0, -430)
 node("Manual preparation", "manualTrigger", {}, -440, -120)
 node("Webhook - preparation or --check", "webhook", {"httpMethod": "POST", "path": "fedora45-update-loop", "authentication": "headerAuth", "responseMode": "responseNode", "options": {"rawBody": True}}, -440, 120, 2,
      webhookId="851b669a-1ae5-4167-bac0-59e3d2e6555a", credentials={"httpHeaderAuth": {"id": "fedora45WebhookBearer", "name": "Fedora45 webhook bearer"}})
@@ -57,16 +57,20 @@ else if(typeof item.json.body==='string') raw=item.json.body.trim();
 let body=item.json.body&&typeof item.json.body==='object'?item.json.body:{};
 if(raw.startsWith('{')){body=JSON.parse(raw);raw='';}
 if(body.mode)raw=body.mode;
-if(!['','--check','--validate-only','--sources'].includes(raw)) throw new Error('Expected an empty body, --check, --validate-only or --sources');
+if(!['','--check','--validate-only','--sources','upgrade-safrano9999','--upgrade-safrano9999'].includes(raw)) throw new Error('Expected an empty body, --check, --validate-only, --sources or upgrade-safrano9999');
 const query={...(item.json.query??{}),...body};
+const opt=query['upgrade-safrano9999']??query['--upgrade-safrano9999'];
+if(opt!==undefined&&![true,false,'true','false',''].includes(opt))throw new Error('upgrade-safrano9999 must be boolean');
+const upgrade_safrano9999=['upgrade-safrano9999','--upgrade-safrano9999'].includes(raw)||[true,'true',''].includes(opt);
 const check=Object.prototype.hasOwnProperty.call(query,'--check') || raw==='--check';
 const validate_only=Object.prototype.hasOwnProperty.call(query,'--validate-only') || raw==='--validate-only';
 const sources=Object.prototype.hasOwnProperty.call(query,'--sources') || raw==='--sources';
 if([check,validate_only,sources].filter(Boolean).length>1)throw new Error('Choose one check mode');
+if(upgrade_safrano9999&&(check||sources))throw new Error('upgrade-safrano9999 cannot be combined with --check or --sources');
 const target=query.target||'fedora45-ai-safrano9999',source_ref=query.ref||'main';
 if(!/^fedora45-ai-[a-z0-9-]+$/.test(target))throw new Error('Invalid target image');
 if(!sources&&query.ref)throw new Error('The ref parameter belongs to --sources');
-return [{json:{webhook,check,validate_only,sources,target,source_ref,completion_feedback:item.json.completion_feedback}}];
+return [{json:{webhook,check,validate_only,sources,upgrade_safrano9999,target,source_ref,completion_feedback:item.json.completion_feedback}}];
 """, -200)
 branch("Sources preview?", "={{ $json.sources }}", -200, -180)
 source_credentials={"httpHeaderAuth": {"id": "fedora45GitHubPreparation", "name": "Fedora45 GitHub preparation"}}
@@ -101,7 +105,7 @@ branch("Check only?", "={{ $json.check }}", 900)
 node("Return two version lines", "respondToWebhook", {"respondWith": "text", "responseBody": "={{ $json.stdout }}", "options": {"responseCode": 200, "responseHeaders": {"entries": [{"name": "Content-Type", "value": "text/plain; charset=utf-8"}]}}}, 1120, -160, 1.4)
 branch("Webhook request?", "={{ $json.webhook }}", 1120, 100)
 node("Accept preparation", "respondToWebhook", {"respondWith": "json", "responseBody": "={{ {status:'ACCEPTED',execution_id:$execution.id,feedback_enabled:$json.completion_feedback?.enabled === true,feedback_id:$json.completion_feedback?.feedback_id ?? null,next:$json.completion_feedback?.next ?? 'End this turn immediately. Do not poll. No completion notification was requested.'} }}", "options": {"responseCode": 202}}, 1340, 0, 1.4)
-branch("Upstream update available?", "={{ $json.update || $json.validate_only }}", 1560, 120)
+branch("Upstream update available?", "={{ $json.update || $json.validate_only || $json.upgrade_safrano9999 }}", 1560, 120)
 code("No update", "return [{json:{...$json,status:'NO_UPDATE',build_started:false,image_pulled:false,container_restarted:false}}];", 1780, 300)
 code("Prepare request", """
 const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+3600000};
@@ -109,7 +113,7 @@ return [{json:request}];
 """, 1780)
 resolve=node("Resolve latest sources once", "code", {"operation":"resolve"}, 1900, -180,
              credentials=source_credentials, retryOnFail=False,
-             notes="After the upstream update gate, resolve latest once. The same source snapshot binds preparation, depth-1 clones and image builds.")
+             notes="After the release or explicit Safrano gate, resolve latest once and compare published images when requested. The same source snapshot binds preparation, depth-1 clones and image builds.")
 resolve["type"]="CUSTOM.fedora45Sources"
 http("Dispatch preparation Action", base + "/actions/workflows/fedora45-container-preparation.yml/dispatches", 2000,
      method="POST", sendBody=True, specifyBody="json", jsonBody="={{ $json.dispatch_body }}")
@@ -172,8 +176,12 @@ if(report.status!=='NO_UPDATE'){
  }
  if(report.checks?.hermes_patch?.status!=='PASS')throw new Error('Missing patch evidence');
 }
-const dispatch=report.status==='READY_FOR_BUILD'?{safrano_build_inputs:{build_commit:report.build_commit}}:{};
-return [{json:{...report,...dispatch,target:$('Read request').first().json.target,next:'User/Hermes controls build and pull through Safrano MCP. Pass safrano_build_inputs as build_images inputs; workflow and all cascade sources stay on this build_commit. Container tests are a separate routine after restart.'}}];
+const plan=report.source_snapshot?.build_plan;
+if(plan&&JSON.stringify(report.build_plan)!==JSON.stringify(plan))throw new Error('Preparation changed the build start plan');
+const key=plan?.start_key??'fedora45_core_pre';
+if(plan?.required!==undefined&&report.status==='READY_FOR_BUILD'&&!plan.required)throw new Error('No source update to build');
+const dispatch=report.status==='READY_FOR_BUILD'?{safrano_build_inputs:{build_commit:report.build_commit},safrano_build_key:key,safrano_build_request:{action:'run',section:'chains',key,cascade:plan?.cascade??($('Read request').first().json.target!=='fedora45-ai-core-pre'),inputs:{build_commit:report.build_commit}}}:{};
+return [{json:{...report,...dispatch,target:$('Read request').first().json.target,next:'User/Hermes controls build and pull through Safrano MCP. Pass safrano_build_request to build_images. Its key is the earliest affected stage; cascade stops at target. The workflow and all cascade sources stay on this build_commit. Container tests are a separate routine after restart.'}}];
 """, 4420)
 sync=node("Sync sources for ready build", "code", {"operation":"sync"}, 4640,
           credentials=source_credentials, retryOnFail=False,
@@ -184,7 +192,10 @@ for source,target in [("Manual preparation","Read request"),("Webhook - preparat
 for source,target in [("Check only?","Webhook request?"),("Webhook request?","Upstream update available?"),("Upstream update available?","No update"),("Preparation finished?","Wait for preparation")]:link(source,target,1)
 connections["Read request"]={"main":[[{"node":"Sources preview?","type":"main","index":0}]]}
 connections["Prepare request"]={"main":[[{"node":"Resolve latest sources once","type":"main","index":0}]]}
-link("Resolve latest sources once","Dispatch preparation Action")
+branch("Sources require preparation?", "={{ $json.build_required }}", 2000, -180)
+link("Resolve latest sources once","Sources require preparation?")
+link("Sources require preparation?","Dispatch preparation Action")
+link("Sources require preparation?","No update",1)
 link("Sources preview?","Discover source repositories")
 link("Discover source repositories","Return source inventory")
 link("Sources preview?","Published version pins",1)

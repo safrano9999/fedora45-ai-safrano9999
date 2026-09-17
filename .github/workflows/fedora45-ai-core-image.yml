@@ -185,8 +185,11 @@ jobs:
             build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/profiles.py
             build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/webhooks.py
             build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/model_defaults.py
+            build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/feedback_defaults.py
             build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-model-defaults/__init__.py
             build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-model-defaults/plugin.yaml
+            build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-mcp-feedback/plugin.yaml
+            build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-mcp-feedback/__init__.py
             build/vendor/hermes-ephemeral/image/runtime/etc/systemd/system/hermes-config.service
           )
           for file in "${vendor_files[@]}"; do
@@ -199,7 +202,7 @@ jobs:
             echo "Unexpected openclaw-ephemeral vendor file set" >&2
             exit 1
           }
-          [ "$(find build/vendor/hermes-ephemeral -type f | wc -l)" -eq 13 ] || {
+          [ "$(find build/vendor/hermes-ephemeral -type f | wc -l)" -eq 16 ] || {
             echo "Unexpected hermes-ephemeral vendor file set" >&2
             exit 1
           }

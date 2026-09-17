@@ -42,6 +42,28 @@ def validate_snapshot(snapshot):
         version = snapshot.get("versions", {}).get(name, {})
         if any(not re.fullmatch(r"\d+\.\d+\.\d+", version.get(k, "")) for k in ("current", "latest")):
             raise ValueError("Missing snapshot versions")
+    if snapshot.get("upgrade_safrano9999"):
+        plan = snapshot.get("build_plan", {})
+        chain = snapshot.get("chain", [])
+        keys = {"fedora45-ai-core-pre": "fedora45_core_pre", "fedora45-ai-core": "fedora45_core",
+                "fedora45-ai-base": "fedora45_base", "fedora45-ai-kachelmann": "fedora45_kachelmann",
+                "fedora45-ai-safrano9999": "fedora45_safrano", "fedora45-ai-safrano9999-full": "fedora45_safrano_full"}
+        if (plan.get("schema_version") != 1 or type(plan.get("required")) is not bool
+                or not chain or any(layer not in keys for layer in chain)
+                or plan.get("target") != snapshot["target"] or type(plan.get("cascade")) is not bool
+                or plan.get("baseline") != "published-latest-images"):
+            raise ValueError("Invalid Safrano upgrade plan")
+        changed = [layer for layer in chain if any(c.get("image") == layer for c in plan.get("changes", []))]
+        start = changed[0] if changed else None
+        if (plan["required"] != bool(start) or plan.get("start_image") != start
+                or plan.get("start_key") != keys.get(start)
+                or plan["cascade"] != bool(start and start != snapshot["target"])):
+            raise ValueError("Upgrade must start at the earliest changed image")
+        baseline = plan.get("baseline_images", [])
+        if ([b.get("image") for b in baseline] != chain or any(
+                not re.fullmatch(r"[0-9a-f]{40}", b.get("revision", "")) or
+                not re.fullmatch(r"sha256:[0-9a-f]{64}", b.get("digest", "")) for b in baseline)):
+            raise ValueError("Missing published image baseline")
     return entries
 
 

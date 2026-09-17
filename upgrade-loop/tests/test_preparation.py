@@ -181,6 +181,8 @@ async function check(report,validation=false){
  const ready=(await check(good))[0].json;
  assert.equal(ready.status,'READY_FOR_BUILD');
  assert.deepEqual(ready.safrano_build_inputs,{build_commit:good.build_commit});
+ assert.equal(ready.safrano_build_request.key,'fedora45_core_pre');
+ assert.equal(ready.safrano_build_request.cascade,true);
  for(const mutate of [r=>delete r.checks.hermes,r=>r.build_inputs.HERMES_EPHEMERAL_COMMIT='f'.repeat(40),r=>r.checks.hermes_patch.status='NOT_TESTED',r=>r.container_restarted=true,r=>r.build_commit='',r=>r.status='BLOCKED',r=>r.source_snapshot_id='0'.repeat(64),r=>r.source_snapshot.repositories[0].commit='0'.repeat(40),r=>r.build_inputs.NOTE_RELEASE_SHA256='0'.repeat(64)]){
   const bad=structuredClone(good);mutate(bad);await assert.rejects(check(bad));
  }
@@ -189,6 +191,10 @@ async function check(report,validation=false){
  assert.equal(validation.status,'VALIDATED_ONLY');
  assert.equal(validation.safrano_build_inputs,undefined);
  await assert.rejects(check(validated));await assert.rejects(check(good,true));
+ good.source_snapshot.build_plan={required:true,start_key:'fedora45_core'};
+ good.build_plan=structuredClone(good.source_snapshot.build_plan);
+ assert.equal((await check(good))[0].json.safrano_build_request.key,'fedora45_core');
+ const wrong=structuredClone(good);wrong.build_plan.start_key='fedora45_base';await assert.rejects(check(wrong));
 })().catch(e=>{console.error(e);process.exit(1)});
 '''
         subprocess.run(['node', '-e', script], check=True, capture_output=True, text=True)
