@@ -140,7 +140,7 @@ class PreparationTests(unittest.TestCase):
                 self.assertNotIn(node['type'], forbidden)
                 self.assertNotIn('fedora45HostRunner', json.dumps(node))
                 if node['type'] == 'CUSTOM.fedora45Sources':
-                    self.assertIn(node['parameters']['operation'], ['inventory', 'sync'])
+                    self.assertIn(node['parameters']['operation'], ['inventory', 'resolve', 'sync'])
                     self.assertEqual(node['credentials']['httpHeaderAuth']['id'], 'fedora45GitHubPreparation')
                 if node['type'] == 'n8n-nodes-base.httpRequest':
                     if node['name'] == 'Download preparation evidence':
@@ -169,16 +169,19 @@ class PreparationTests(unittest.TestCase):
         script = 'const code=' + json.dumps(code) + r''';
 const assert=require('node:assert/strict');
 const good={schema_version:1,status:'READY_FOR_BUILD',validate_only:false,build_started:false,image_pulled:false,container_restarted:false,build_commit:'c'.repeat(40),ephemeral_commits:{openclaw:'a'.repeat(40),hermes:'b'.repeat(40)},build_inputs:{OPENCLAW_EPHEMERAL_COMMIT:'a'.repeat(40),HERMES_EPHEMERAL_COMMIT:'b'.repeat(40)},checks:{openclaw:{status:'PASS',generator_commit:'a'.repeat(40)},hermes:{status:'PASS',generator_commit:'b'.repeat(40)},hermes_patch:{status:'PASS'}}};
+good.source_snapshot_id='d'.repeat(64);
+good.source_snapshot={repositories:[{repository:'safrano9999/openclaw-ephemeral',commit:'a'.repeat(40)},{repository:'safrano9999/hermes-ephemeral',commit:'b'.repeat(40)},{repository:'safrano9999/openclaw-deterministic-latest',release:{ref:'patch-release',sha256:'e'.repeat(64)}},{repository:'safrano9999/NOTE',release:{ref:'note-release',sha256:'f'.repeat(64)}}]};
+Object.assign(good.build_inputs,{OPENCLAW_DETERMINISTIC_TAG:'patch-release',OPENCLAW_DETERMINISTIC_SHA256:'e'.repeat(64),NOTE_RELEASE_TAG:'note-release',NOTE_RELEASE_SHA256:'f'.repeat(64)});
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
 async function check(report,validation=false){
  const f=new AsyncFunction('$','$input',code);
- return f.call({helpers:{getBinaryDataBuffer:async()=>Buffer.from(JSON.stringify(report))}},()=>({first:()=>({json:{validate_only:validation}})}),{first:()=>({binary:{data:{fileName:'container-preparation.json'}}})});
+ return f.call({helpers:{getBinaryDataBuffer:async()=>Buffer.from(JSON.stringify(report))}},name=>({first:()=>({json:name==='Resolve latest sources once'?good:{validate_only:validation}})}),{first:()=>({binary:{data:{fileName:'container-preparation.json'}}})});
 }
 (async()=>{
  const ready=(await check(good))[0].json;
  assert.equal(ready.status,'READY_FOR_BUILD');
  assert.deepEqual(ready.safrano_build_inputs,{build_commit:good.build_commit});
- for(const mutate of [r=>delete r.checks.hermes,r=>r.build_inputs.HERMES_EPHEMERAL_COMMIT='f'.repeat(40),r=>r.checks.hermes_patch.status='NOT_TESTED',r=>r.container_restarted=true,r=>r.build_commit='',r=>r.status='BLOCKED']){
+ for(const mutate of [r=>delete r.checks.hermes,r=>r.build_inputs.HERMES_EPHEMERAL_COMMIT='f'.repeat(40),r=>r.checks.hermes_patch.status='NOT_TESTED',r=>r.container_restarted=true,r=>r.build_commit='',r=>r.status='BLOCKED',r=>r.source_snapshot_id='0'.repeat(64),r=>r.source_snapshot.repositories[0].commit='0'.repeat(40),r=>r.build_inputs.NOTE_RELEASE_SHA256='0'.repeat(64)]){
   const bad=structuredClone(good);mutate(bad);await assert.rejects(check(bad));
  }
  const validated={...good,status:'VALIDATED_ONLY',validate_only:true};delete validated.build_commit;

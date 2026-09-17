@@ -212,6 +212,11 @@ sync_repository() {
     branch="$(repository_branch "$specification")"
     path="$SOURCE_DIR/$repository"
     expected_origin="https://github.com/safrano9999/$repository"
+    local locked_commit=""
+    if [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ]; then
+        locked_commit="$(python3 "${SAFRANO_SOURCE_MANIFEST%/*}/source_snapshot.py" \
+            --manifest "$SAFRANO_SOURCE_MANIFEST" --repository "safrano9999/$repository")"
+    fi
 
     if $OFFLINE; then
         [ -d "$path" ] && [ ! -L "$path" ] &&
@@ -235,6 +240,14 @@ sync_repository() {
             echo "Offline Git checkout has the wrong origin: $repository" >&2
             return 1
         }
+        if [ -n "$locked_commit" ]; then
+            [ "$(git -C "$path" rev-parse HEAD)" = "$locked_commit" ] &&
+                [ -z "$(git -C "$path" status --porcelain=v1 --untracked-files=all --ignored=matching)" ] || {
+                echo "Offline source differs from prepared snapshot: $repository" >&2
+                return 1
+            }
+            return 0
+        fi
         current_branch="$(git -C "$path" symbolic-ref --quiet --short HEAD)" || {
             echo "Offline Git checkout is detached: $repository" >&2
             return 1
@@ -294,6 +307,18 @@ sync_repository() {
         printf '  [%s] cloned\n' "$repository"
     fi
 
+    if [ -n "$locked_commit" ]; then
+        git -C "$path" -c core.hooksPath=/dev/null reset --hard --quiet
+        git -C "$path" -c core.hooksPath=/dev/null clean -ffdx --quiet
+        git -C "$path" fetch --quiet --depth 1 --no-tags origin "$locked_commit"
+        git -C "$path" -c core.hooksPath=/dev/null checkout --quiet -f --detach "$locked_commit"
+        [ "$(git -C "$path" rev-parse HEAD)" = "$locked_commit" ] || {
+            echo "Source differs from prepared snapshot: $repository" >&2
+            return 1
+        }
+        printf '  [%s] staged prepared commit %s\n' "$repository" "$locked_commit"
+        return 0
+    fi
     remote_default="$(
         git -C "$path" ls-remote --symref origin HEAD |
             awk '$1 == "ref:" && $3 == "HEAD" {sub(/^refs\/heads\//, "", $2); print $2; exit}'
@@ -1029,7 +1054,11 @@ stage_runtime_assets() {
     metadata="$RUNTIME_TEMPORARY/release.json"
     metadata_error="$RUNTIME_TEMPORARY/release.error"
     api_path="repos/safrano9999/$repository/releases/tags/latest"
-    if ! gh api "$api_path" > "$metadata" 2> "$metadata_error"; then
+    if [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ]; then
+        python3 "${SAFRANO_SOURCE_MANIFEST%/*}/source_snapshot.py" \
+            --manifest "$SAFRANO_SOURCE_MANIFEST" --repository "safrano9999/$repository" \
+            --runtime-assets > "$metadata"
+    elif ! gh api "$api_path" > "$metadata" 2> "$metadata_error"; then
         sed 's/^/  /' "$metadata_error" >&2
         echo "Cannot query NEXTCLOUD runtime release" >&2
         return 1
@@ -1058,6 +1087,16 @@ stage_runtime_assets() {
         echo "NEXTCLOUD runtime release checksum mismatch" >&2
         return 1
     }
+    if [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ]; then
+        local prepared_hash
+        prepared_hash="$(python3 "${SAFRANO_SOURCE_MANIFEST%/*}/source_snapshot.py" \
+            --manifest "$SAFRANO_SOURCE_MANIFEST" --repository "safrano9999/$repository" \
+            --runtime-asset-hash "$asset")"
+        [ "$actual" = "$prepared_hash" ] || {
+            echo "NEXTCLOUD runtime asset differs from prepared source snapshot" >&2
+            return 1
+        }
+    fi
     validate_nextcloud_runtime_archive "$archive"
     printf '%s  %s\n' "$expected" "$asset" > "$checksum"
     printf '%s\t%s\t%s\tcomplete\n' "$repository" "$asset" "$expected" \

@@ -55,6 +55,7 @@ test('latest preview refreshes every Git source and both release inputs instead 
   const patch = { tag_name: '2026.9.4-deterministic.99', assets: [{ name: 'openclaw-2026.9.4-deterministic.tar.gz', digest: 'sha256:' + 'c'.repeat(64) }] };
   const note = { tag_name: '2026.9.99', assets: [{ name: 'note-latest.zip', digest: 'sha256:' + 'd'.repeat(64) }] };
   const get = async url => {
+    if (url.endsWith('/NEXTCLOUD/releases/tags/latest')) return {assets:['nextcloud-fedora64-plugin-latest.zip','nextcloud-fedora64-plugin-latest.zip.sha256'].map((name,i)=>({name,id:i+1,digest:'sha256:'+'a'.repeat(64)}))};
     if (url.endsWith('/openclaw-deterministic-latest/releases/latest')) return { ...patch, tag_name: 'latest' };
     if (url.endsWith('/openclaw-deterministic-latest/releases?per_page=100')) return [patch];
     if (url.endsWith('/NOTE/releases/latest')) return note;

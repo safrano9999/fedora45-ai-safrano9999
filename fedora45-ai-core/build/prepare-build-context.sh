@@ -16,6 +16,11 @@ OPENCLAW_DETERMINISTIC_ASSET="openclaw-${OPENCLAW_VERSION}-deterministic.tar.gz"
 OPENCLAW_EPHEMERAL_REPOSITORY=safrano9999/openclaw-ephemeral
 HERMES_EPHEMERAL_REPOSITORY=safrano9999/hermes-ephemeral
 
+if [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ]; then
+    python3 "${SAFRANO_SOURCE_MANIFEST%/*}/source_snapshot.py" \
+        --manifest "$SAFRANO_SOURCE_MANIFEST" --verify-core "$CONTEXT/build.conf"
+fi
+
 for command in curl git python3 sha256sum; do
     command -v "$command" >/dev/null 2>&1 || {
         echo "Missing build preparation dependency: $command" >&2

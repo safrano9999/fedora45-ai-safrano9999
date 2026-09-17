@@ -42,7 +42,7 @@ def http(name, url, x, y=0, **parameters):
 
 
 base = "https://api.github.com/repos/safrano9999/fedora45-ai-safrano9999"
-node("Scope", "stickyNote", {"content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nA new OpenClaw OR Hermes release opens the gate. Always capture and test BOTH latest Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.", "width": 1600, "height": 260}, 0, -430)
+node("Scope", "stickyNote", {"content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nA new OpenClaw OR Hermes release opens the gate. Resolve latest Safrano sources ONCE after this gate. Share the same snapshot with preparation, depth-1 clones and builds. Test BOTH selected Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.", "width": 1600, "height": 260}, 0, -430)
 node("Manual preparation", "manualTrigger", {}, -440, -120)
 node("Webhook - preparation or --check", "webhook", {"httpMethod": "POST", "path": "fedora45-update-loop", "authentication": "headerAuth", "responseMode": "responseNode", "options": {"rawBody": True}}, -440, 120, 2,
      webhookId="851b669a-1ae5-4167-bac0-59e3d2e6555a", credentials={"httpHeaderAuth": {"id": "fedora45WebhookBearer", "name": "Fedora45 webhook bearer"}})
@@ -100,9 +100,12 @@ branch("Upstream update available?", "={{ $json.update || $json.validate_only }}
 code("No update", "return [{json:{...$json,status:'NO_UPDATE',build_started:false,image_pulled:false,container_restarted:false}}];", 1780, 300)
 code("Prepare request", """
 const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+3600000};
-request.dispatch_body=JSON.stringify({ref:'main',inputs:{run_id:request.run_id,validate_only:request.validate_only===true}});
 return [{json:request}];
 """, 1780)
+resolve=node("Resolve latest sources once", "code", {"operation":"resolve"}, 1900, -180,
+             credentials=source_credentials, retryOnFail=False,
+             notes="After the upstream update gate, resolve latest once. The same source snapshot binds preparation, depth-1 clones and image builds.")
+resolve["type"]="CUSTOM.fedora45Sources"
 http("Dispatch preparation Action", base + "/actions/workflows/fedora45-container-preparation.yml/dispatches", 2000,
      method="POST", sendBody=True, specifyBody="json", jsonBody="={{ $json.dispatch_body }}")
 node("Wait for preparation", "wait", {"resume": "timeInterval", "amount": 30, "unit": "seconds"}, 2220, 0, 1.1,
@@ -148,10 +151,19 @@ const statuses=validation?['VALIDATED_ONLY']:['NO_UPDATE','READY_FOR_BUILD'];
 if(report.schema_version!==1||!statuses.includes(report.status)||report.validate_only!==validation)throw new Error('Preparation is not ready');
 if(report.build_started!==false||report.image_pulled!==false||report.container_restarted!==false)throw new Error('Preparation scope violated');
 if(report.status!=='NO_UPDATE'){
+ const expected=$('Resolve latest sources once').first().json;
+ const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
+ if(!/^[0-9a-f]{64}$/.test(report.source_snapshot_id??'')||report.source_snapshot_id!==expected.source_snapshot_id||JSON.stringify(canonical(report.source_snapshot))!==JSON.stringify(canonical(expected.source_snapshot)))throw new Error('Preparation changed the shared source snapshot');
+ const entries=Object.fromEntries(report.source_snapshot.repositories.map(e=>[e.repository,e]));
  if(!validation&&!/^[0-9a-f]{40}$/.test(report.build_commit??''))throw new Error('Missing build commit');
  for(const name of ['openclaw','hermes']){
   const sha=report.ephemeral_commits?.[name];
   if(!/^[0-9a-f]{40}$/.test(sha??'')||report.checks?.[name]?.status!=='PASS'||report.checks[name].generator_commit!==sha||report.build_inputs?.[name.toUpperCase()+'_EPHEMERAL_COMMIT']!==sha)throw new Error('Incomplete generator evidence: '+name);
+  if(entries['safrano9999/'+name+'-ephemeral']?.commit!==sha)throw new Error('Generator differs from n8n snapshot');
+ }
+ for(const [repo,prefix] of [['openclaw-deterministic-latest','OPENCLAW_DETERMINISTIC'],['NOTE','NOTE_RELEASE']]){
+  const release=entries['safrano9999/'+repo]?.release;
+  if(!release||report.build_inputs?.[prefix+'_TAG']!==release.ref||report.build_inputs?.[prefix+'_SHA256']!==release.sha256)throw new Error('Release differs from n8n snapshot');
  }
  if(report.checks?.hermes_patch?.status!=='PASS')throw new Error('Missing patch evidence');
 }
@@ -166,6 +178,8 @@ sync["type"]="CUSTOM.fedora45Sources"
 for source,target in [("Manual preparation","Read request"),("Webhook - preparation or --check","Read request"),("Read request","Published version pins"),("Published version pins","Latest OpenClaw release"),("Latest OpenClaw release","Latest Hermes release"),("Latest Hermes release","Validate versions"),("Validate versions","Check only?"),("Check only?","Return two version lines"),("Webhook request?","Accept preparation"),("Accept preparation","Upstream update available?"),("Upstream update available?","Prepare request"),("Prepare request","Dispatch preparation Action"),("Dispatch preparation Action","Wait for preparation"),("Wait for preparation","Read preparation runs"),("Read preparation runs","Match exact preparation run"),("Match exact preparation run","Preparation finished?"),("Preparation finished?","Read preparation artifacts"),("Read preparation artifacts","Select evidence artifact"),("Select evidence artifact","Resolve evidence download"),("Resolve evidence download","Validate evidence URL"),("Validate evidence URL","Download preparation evidence"),("Download preparation evidence","Unpack evidence"),("Unpack evidence","Handoff to Hermes")]:link(source,target)
 for source,target in [("Check only?","Webhook request?"),("Webhook request?","Upstream update available?"),("Upstream update available?","No update"),("Preparation finished?","Wait for preparation")]:link(source,target,1)
 connections["Read request"]={"main":[[{"node":"Sources preview?","type":"main","index":0}]]}
+connections["Prepare request"]={"main":[[{"node":"Resolve latest sources once","type":"main","index":0}]]}
+link("Resolve latest sources once","Dispatch preparation Action")
 link("Sources preview?","Discover source repositories")
 link("Discover source repositories","Return source inventory")
 link("Sources preview?","Published version pins",1)

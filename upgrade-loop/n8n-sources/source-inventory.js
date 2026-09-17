@@ -46,7 +46,7 @@ async function latestRelease(get, repository, assetName) {
   return { ref: validRef(release.tag_name), ...(assetName ? { asset: assetName, sha256: digest.slice(7) } : {}) };
 }
 
-async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = false } = {}) {
+async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = false, openclawVersion } = {}) {
   if (!/^fedora45-ai-[a-z0-9-]+$/.test(target)) throw new Error('Invalid image target');
   const commit = (await get('/repos/' + IMAGE_REPO + '/commits/' + encodeURIComponent(validRef(ref)))).sha;
   if (!SHA.test(commit || '')) throw new Error('Missing image source commit');
@@ -59,7 +59,7 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
     if (result.encoding !== 'base64' || result.size > 1000000) throw new Error('Invalid build input: ' + path);
     return Buffer.from(result.content, 'base64').toString('utf8');
   }
-  const repos = new Map(), chain = [];
+  const repos = new Map(), chain = [], runtimeAssets = new Map();
   function add(repo, sourceRef, layer, file, kind, selection = { type: 'default-branch' }) {
     if (!repo.startsWith(OWNER + '/')) return;
     if (!/^safrano9999\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(repo)) throw new Error('Invalid Safrano repository');
@@ -79,7 +79,12 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
     const cf = await file(cfPath), conf = await file(confPath);
     const helperPath = layer + '/build/prepare-build-context.sh';
     const declarations = [[confPath, conf]];
-    if (paths.has(helperPath)) declarations.push([helperPath, await file(helperPath)]);
+    if (paths.has(helperPath)) {
+      const helper = await file(helperPath);
+      declarations.push([helperPath, helper]);
+      const runtime = helper.match(/stage_runtime_assets\(\)\s*\{\s*local repository=([A-Za-z0-9._-]+)\s+local asset=([A-Za-z0-9._-]+)/);
+      if (runtime) runtimeAssets.set(OWNER + '/' + runtime[1], [runtime[2], runtime[2] + '.sha256']);
+    }
     for (const [path, text] of declarations) {
       for (const match of text.matchAll(/^([A-Z][A-Z0-9_]*_REPOSITORY)=/gm)) {
         const key = match[1], prefix = key.slice(0, -'_REPOSITORY'.length);
@@ -91,7 +96,7 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
           if (sourceRef !== null) {
             if (suffix === '_RELEASE_TAG' || suffix === '_TAG') {
               const asset = prefix === 'OPENCLAW_DETERMINISTIC'
-                ? 'openclaw-' + literal(conf, 'OPENCLAW_VERSION') + '-deterministic.tar.gz'
+                ? 'openclaw-' + (openclawVersion || literal(conf, 'OPENCLAW_VERSION')) + '-deterministic.tar.gz'
                 : literal(conf, prefix + '_RELEASE_ASSET', false);
               selection = { type: 'latest-release', ...(asset ? { asset } : {}) };
             }
@@ -134,6 +139,16 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
         entry.ref = selected.ref;
         entry.release = selected;
       } else entry.ref = 'HEAD';
+      if (runtimeAssets.has(entry.repository)) {
+        const release = await get('/repos/' + entry.repository + '/releases/tags/latest');
+        if (release.draft || release.prerelease) throw new Error('Invalid runtime asset release');
+        entry.runtime_assets = runtimeAssets.get(entry.repository).map(name => {
+          const matches = (release.assets || []).filter(a => a.name === name);
+          if (matches.length !== 1 || !Number.isSafeInteger(matches[0].id) || matches[0].id <= 0 ||
+              !/^sha256:[0-9a-f]{64}$/.test(matches[0].digest || '')) throw new Error('Invalid runtime asset: ' + name);
+          return { name, id: matches[0].id, sha256: matches[0].digest.slice(7) };
+        });
+      }
     }
   }
   return { schema_version: 1, target, image_repository: IMAGE_REPO, image_commit: commit,

@@ -21,7 +21,12 @@ stage_persistainer() {
     local repository="${PERSISTAINER_REPOSITORY:-}"
     local ref="${PERSISTAINER_REF:-}"
     local target="$BUILD/vendor/persistainer"
-    local stage checkout runtime unexpected commit
+    local stage checkout runtime unexpected commit fetch_ref="refs/heads/${ref}"
+
+    if [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ]; then
+        fetch_ref="$(python3 "${SAFRANO_SOURCE_MANIFEST%/*}/source_snapshot.py" \
+            --manifest "$SAFRANO_SOURCE_MANIFEST" --repository "$repository")"
+    fi
 
     [[ "$repository" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || {
         echo "Invalid PERSISTAINER_REPOSITORY: $repository" >&2
@@ -45,9 +50,13 @@ stage_persistainer() {
     git init -q "$checkout"
     git -C "$checkout" remote add origin "https://github.com/${repository}.git"
     GIT_TERMINAL_PROMPT=0 git -C "$checkout" fetch -q --no-tags --depth=1 \
-        origin "refs/heads/${ref}"
+        origin "$fetch_ref"
     git -C "$checkout" checkout -q --detach FETCH_HEAD
     commit="$(git -C "$checkout" rev-parse --verify HEAD)"
+    if [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ] && [ "$commit" != "$fetch_ref" ]; then
+        echo "persistainer differs from prepared source snapshot" >&2
+        return 1
+    fi
     runtime="$checkout/image/runtime"
 
     [ -d "$runtime" ] && [ ! -L "$runtime" ] || {

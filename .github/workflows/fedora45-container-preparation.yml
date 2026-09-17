@@ -5,6 +5,10 @@ run-name: 'Fedora45 preparation [prepare:${{ inputs.run_id }}]'
 on:
   workflow_dispatch:
     inputs:
+      source_snapshot:
+        description: Exact latest-source snapshot resolved once by n8n after the upstream update gate
+        required: true
+        type: string
       run_id:
         description: n8n execution correlation ID
         required: true
@@ -28,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ fromJSON(inputs.source_snapshot).source_commit }}
           token: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
       - uses: actions/setup-python@v5
         with:
@@ -44,12 +48,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
           VALIDATE_ONLY: ${{ inputs.validate_only }}
+          SOURCE_SNAPSHOT_JSON: ${{ inputs.source_snapshot }}
         shell: bash
         run: |
           set -euo pipefail
           flags=()
           if [ "$VALIDATE_ONLY" = true ]; then flags+=(--validate-only); fi
+          python3 -c 'import os; from pathlib import Path; Path(os.environ["RUNNER_TEMP"], "source-snapshot.json").write_text(os.environ["SOURCE_SNAPSHOT_JSON"])'
           python3 upgrade-loop/prepare-container.py "${flags[@]}" \
+            --source-snapshot "$RUNNER_TEMP/source-snapshot.json" \
             --report "$RUNNER_TEMP/container-preparation.json"
       - name: Preserve preparation evidence
         if: always()

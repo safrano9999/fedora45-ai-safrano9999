@@ -14,30 +14,30 @@ container check is owned by the user and is not implemented by this workflow.
    with the latest stable upstream releases. Reject malformed data and downgrades.
 2. Only a newer OpenClaw **or** Hermes release starts preparation. Ephemeral-only
    commits never trigger preparation or an image build.
-3. Dispatch `fedora45-container-preparation.yml` on GitHub Actions and follow
-   the exact execution ID through a unique correlation ID. No image-build Action
-   is dispatched. Wait at most one hour; failures stop the workflow.
-4. On the GitHub runner, capture the current default-branch commit of **both** Ephemeral
-   repositories. Test each generator against its selected upstream release,
-   including the component whose upstream version did not change. Validate the
-   latest compatible OpenClaw deterministic artifact/checksum and Hermes patch applicability.
-   Resolve NOTE's latest published stable release and its asset checksum as well.
-5. After all checks pass, update both upstream pins and both tested Ephemeral
-   pins together with the selected deterministic and NOTE releases/checksums in
-   one Git commit. Publish without force-pushing. Concurrent repository
-   changes block publication rather than mixing untested sources.
-6. Read and validate the Action's evidence artifact. Only `READY_FOR_BUILD`
-   opens the source-volume gate: discover the selected image's parent chain at
-   its exact build commit, then clone/update its Safrano source repositories in
-   the persistent n8n volume with depth 1. Return the preparation evidence and
-   source manifest to Hermes. Missing evidence or a failed sync stops the run.
+3. After the update gate, `Resolve latest sources once` resolves the latest
+   Safrano sources inside n8n. It records all selected commits and release
+   checksums in one source snapshot and dispatches `fedora45-container-preparation.yml`
+   with that snapshot. Follow the exact execution through its correlation ID;
+   no image-build Action is dispatched.
+4. The GitHub runner consumes the snapshot without resolving latest again.
+   Test both selected Ephemeral generators against their selected upstream
+   releases, including the component whose upstream version did not change.
+   Check Hermes patch applicability; use the selected OpenClaw/NOTE assets.
+5. After checks pass, publish the upstream, generator and release inputs together
+   with `upgrade-loop/prepared-sources.json` in one Git commit. Concurrent main
+   changes block the push; never force-push or mix different source snapshots.
+6. Verify that the returned snapshot matches the one selected by n8n. Only
+   `READY_FOR_BUILD` opens the source-volume gate: clone/update exactly those
+   dependency commits with depth 1. The Fedora45 repository itself uses the new
+   prepared build commit, which contains the snapshot. Return evidence and the
+   clone manifest to Hermes. A missing snapshot or failed sync stops the run.
 
 A version change in OpenClaw therefore also incorporates a new Hermes-Ephemeral
 commit, and vice versa. Both selected generator commits remain fixed throughout
 preparation and become explicit inputs for the subsequent image build.
 
-All Safrano components select their latest applicable source afresh for each
-preparation: images use `:latest`, Git sources use the current default branch,
+All Safrano components select their latest applicable source once inside n8n,
+after the upstream-update gate: images use `:latest`, Git sources use the current default branch,
 and release payloads use the latest published stable release. The OpenClaw
 payload must match the target OpenClaw version. This also refreshes the
 deterministic patch when only Hermes changed, and refreshes NOTE on either
@@ -66,8 +66,10 @@ their immutable dispatch-event SHA once and carry it through their cascade.
 
 n8n still does not dispatch a build or move a repository/image tag. The build
 handoff pins this Fedora45 repository, including both tested Ephemeral commit
-declarations; independently moving component branch refs retain the behavior
-described in the source inventory section below.
+declarations and the shared dependency snapshot. All six image Actions load
+that snapshot. Persistainer and the component helpers fetch exactly the selected
+commits; Core verifies its generator/release inputs against it. The separate
+NEXTCLOUD runtime archive is bound to its selected asset ID and SHA256 as well.
 
 ## Entry points and credentials
 
@@ -76,7 +78,7 @@ its authenticated POST endpoint `/webhook/fedora45-update-loop`. An empty body
 starts preparation. The `?--check` query flag or literal body `--check` returns
 exactly two version-status lines and ends without dispatching an Action.
 The explicit `?--validate-only` flag (or literal `--validate-only` body) tests
-both selected runtimes on Actions without publishing pins. It ends at
+both selected runtimes on Actions with an explicitly requested snapshot, without publishing pins. It ends at
 `VALIDATED_ONLY`, never at `READY_FOR_BUILD`.
 
 `?--sources` (or literal body `--sources`) freshly resolves the latest source
@@ -105,12 +107,10 @@ The regular image currently selects 22 repositories including this image repo;
 The preview reports `source_policy: latest-resolved-for-preview`, the previous
 `declared_ref`, the currently selected `ref` and its exact `commit`; release
 assets also record their SHA256. It does not alter published build inputs.
-For a ready build, release tags and both Ephemeral pins from that preparation
-are honored rather than resolving different payloads after compatibility checks;
-remaining branch/HEAD
-refs are resolved to commits before syncing. The manifest records their selection
-time. These snapshots do not pin an otherwise moving branch in a later GitHub
-build; the build's own source evidence remains authoritative for its actual inputs.
+For a ready build, every dependency uses the same snapshot selected before the
+preparation Action. Clone/sync does not re-query GitHub for newer refs. Image
+build helpers read the identical snapshot from the prepared build commit, so a
+branch or release advancing after selection cannot silently change the build.
 
 Checkouts live at `/home/node/.n8n/fedora45-sources/<repository>` in the existing
 n8n named volume. First checkout uses `git clone --depth 1`; updates use
@@ -131,7 +131,7 @@ not URLs, arguments, workflow data or `.git/config`. It runs only Git inside n8n
 it does not execute checkout scripts, initialize submodules, use SSH, access a
 container socket or run a local image build. Execute Command remains disabled.
 
-Install/update the three files from [n8n-sources](n8n-sources) in
+Install/update all four JavaScript files from [n8n-sources](n8n-sources) in
 `/home/node/.n8n/custom/fedora45-sources/`, then restart n8n when no execution is
 running. The custom node and checkouts persist in the existing volume. Install
 the node before publishing/importing the workflow; no AI-container restart,
@@ -144,7 +144,7 @@ routine can later compare the prepared, built and running identities.
 The main workflow uses the existing webhook bearer and a GitHub API credential
 `fedora45GitHubPreparation`. Secrets are stored in n8n credentials, never in
 workflow exports. Actions uses `GH_RELEASE_TOKEN` for private generator access
-and publishing the two version-pin files. It has no host credential.
+and publishing the version-pin files and shared source snapshot. It has no host credential.
 Artifact redirects are resolved separately; the signed storage download receives
 no GitHub credential and must use GitHub's HTTPS artifact-storage domain.
 

@@ -13,6 +13,8 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parent
+sys.path.insert(0, str(ROOT))
+from source_snapshot import build_inputs as snapshot_build_inputs, snapshot_id, validate_snapshot
 COMPONENTS = {"openclaw": "openclaw/openclaw", "hermes": "NousResearch/hermes-agent"}
 
 
@@ -129,33 +131,46 @@ def note_inputs(core, latest):
     return {"NOTE_RELEASE_TAG": latest["tag_name"], "NOTE_RELEASE_SHA256": digest}
 
 
-def prepare(report, validate_only=False):
+def prepare(report, validate_only=False, snapshot=None):
     if os.environ.get("GITHUB_ACTIONS") != "true":
         raise ValueError("Preparation must run on GitHub Actions")
     foundation = REPO / "fedora45-ai-core-pre/Containerfile"
     core_path = REPO / "fedora45-ai-core/build.conf"
     before_foundation, before_core = foundation.read_text(), core_path.read_text()
     current = current_versions(before_foundation)
-    latest = {name: release_version(name, github(f"repos/{repo}/releases/latest"))
-              for name, repo in COMPONENTS.items()}
+    if snapshot is not None:
+        validate_snapshot(snapshot)
+        actual = run(["git", "rev-parse", "HEAD"], cwd=REPO, capture_output=True).stdout.strip()
+        if actual != snapshot["source_commit"] or current != {n: snapshot["versions"][n]["current"] for n in COMPONENTS}:
+            raise ValueError("Checkout/version baseline differs from the n8n snapshot")
+        latest = {n: snapshot["versions"][n]["latest"] for n in COMPONENTS}
+        report.update(source_snapshot=snapshot, source_snapshot_id=snapshot_id(snapshot))
+    else:
+        latest = {name: release_version(name, github(f"repos/{repo}/releases/latest"))
+                  for name, repo in COMPONENTS.items()}
     versions = select_versions(current, latest)
     report.update(versions=versions, update=has_update(versions), validate_only=validate_only)
     # Generator commits alone never open the preparation/build gate.
     if not report["update"] and not validate_only:
         report["status"] = "NO_UPDATE"
         return
-    commits = {name: exact_commit(github(f"repos/safrano9999/{name}-ephemeral/commits/HEAD")["sha"])
-               for name in COMPONENTS}
-    report["ephemeral_commits"] = commits
     core = dict(line.split("=", 1) for line in before_core.splitlines()
                 if re.match(r"^[A-Z_][A-Z0-9_]*=", line))
-    inputs = patch_inputs(latest["openclaw"], core,
-                          github("repos/safrano9999/openclaw-deterministic-latest/releases?per_page=100"),
-                          github("repos/safrano9999/openclaw-deterministic-latest/releases/latest"))
-    inputs.update(note_inputs(core, github(f"repos/{core['NOTE_REPOSITORY']}/releases/latest")))
-    inputs.update({name.upper() + "_EPHEMERAL_COMMIT": sha for name, sha in commits.items()})
+    if snapshot is not None:
+        inputs = snapshot_build_inputs(snapshot, core)
+        commits = {name: inputs[name.upper() + "_EPHEMERAL_COMMIT"] for name in COMPONENTS}
+    else:
+        commits = {name: exact_commit(github(f"repos/safrano9999/{name}-ephemeral/commits/HEAD")["sha"])
+                   for name in COMPONENTS}
+        report["ephemeral_commits"] = commits
+        inputs = patch_inputs(latest["openclaw"], core,
+                              github("repos/safrano9999/openclaw-deterministic-latest/releases?per_page=100"),
+                              github("repos/safrano9999/openclaw-deterministic-latest/releases/latest"))
+        inputs.update(note_inputs(core, github(f"repos/{core['NOTE_REPOSITORY']}/releases/latest")))
+        inputs.update({name.upper() + "_EPHEMERAL_COMMIT": sha for name, sha in commits.items()})
+    report["ephemeral_commits"] = commits
     report["build_inputs"] = inputs
-    report["source_policy"] = "latest-resolved-per-preparation"
+    report["source_policy"] = "latest-resolved-once" if snapshot is not None else "latest-resolved-per-preparation"
     spec = importlib.util.spec_from_file_location("prepare_runtime", ROOT / "prepare-runtime.py")
     runtime = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(runtime)
@@ -197,8 +212,13 @@ def prepare(report, validate_only=False):
         raise ValueError("Repository changed during preparation")
     foundation.write_text(after_foundation)
     core_path.write_text(after_core)
+    changed = [foundation, core_path]
+    if snapshot is not None:
+        snapshot_path = ROOT / "prepared-sources.json"
+        snapshot_path.write_text(json.dumps(snapshot, indent=2) + "\n")
+        changed.append(snapshot_path)
     run(["git", "diff", "--check"], cwd=REPO)
-    run(["git", "add", "--", foundation, core_path], cwd=REPO)
+    run(["git", "add", "--", *changed], cwd=REPO)
     run(["git", "-c", "user.name=Fedora45 preparation", "-c", "user.email=actions@users.noreply.github.com",
          "commit", "-m", "Prepare Fedora45 versions and both tested Ephemeral commits"], cwd=REPO)
     commit = exact_commit(run(["git", "rev-parse", "HEAD"], capture_output=True, cwd=REPO).stdout.strip())
@@ -211,13 +231,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument("--source-snapshot", type=Path, required=True)
     args = parser.parse_args()
     report = {"schema_version": 1, "status": "BLOCKED", "scope": "container-preparation",
               "build_started": False, "image_pulled": False, "container_restarted": False,
               "actions_url": f"https://github.com/{os.environ.get('GITHUB_REPOSITORY', '')}/actions/runs/{os.environ.get('GITHUB_RUN_ID', '')}"}
     code = 0
     try:
-        prepare(report, args.validate_only)
+        prepare(report, args.validate_only, json.loads(args.source_snapshot.read_text()))
     except Exception as error:
         report.update(status="BLOCKED", reason=str(error))
         code = 1

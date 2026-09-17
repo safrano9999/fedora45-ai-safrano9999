@@ -13,7 +13,10 @@ Checks, previews, validation-only and no-update runs do not mutate the volume.
 Build/pull are controlled separately by the user/Hermes through Safrano MCP.
 Safrano source selection always starts from latest: current default branches,
 latest stable NOTE, and the latest deterministic payload matching OpenClaw.
-The exact selected commits/releases/checksums are then held for that run.
+The exact selected commits/releases/checksums are resolved once inside n8n,
+after the upstream-update gate, and shared unchanged by preparation, clone and
+build. `prepared-sources.json` in the prepared commit is the build-side input;
+clone/sync verifies the returned snapshot and never resolves latest again.
 `--sources` resolves latest afresh without changing pins or cloning repositories.
 The user owns the deterministic test routine after the next container restart.
 

@@ -85,6 +85,10 @@ jobs:
             exit 1
           }
           printf 'Source commit: %s\n' "$actual" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f upgrade-loop/prepared-sources.json ]; then
+            python3 upgrade-loop/source_snapshot.py --manifest upgrade-loop/prepared-sources.json
+            printf 'SAFRANO_SOURCE_MANIFEST=%s/upgrade-loop/prepared-sources.json\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          fi
 
       - name: Free runner disk space
         run: .github/scripts/free-runner-disk-space.sh

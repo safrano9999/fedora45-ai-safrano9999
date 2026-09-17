@@ -2,6 +2,7 @@
 
 const { inventory, resolveCommits, DEFAULT_TARGET, SHA } = require('./source-inventory');
 const { syncSources } = require('./source-sync');
+const { makeSnapshot, snapshotId, validateSnapshot, cloneManifest } = require('./source-snapshot');
 
 class Fedora45Sources {
   description = {
@@ -10,7 +11,7 @@ class Fedora45Sources {
     defaults: { name: 'Fedora45 Sources' }, inputs: ['main'], outputs: ['main'],
     credentials: [{ name: 'httpHeaderAuth', required: true }],
     properties: [{ displayName: 'Operation', name: 'operation', type: 'options', default: 'inventory',
-      options: [{ name: 'Inventory Only', value: 'inventory' }, { name: 'Sync Ready Build', value: 'sync' }] }],
+      options: [{ name: 'Inventory Only', value: 'inventory' }, { name: 'Resolve Shared Build Sources', value: 'resolve' }, { name: 'Sync Ready Build', value: 'sync' }] }],
   };
   async execute() {
     const input = this.getInputData();
@@ -21,10 +22,19 @@ class Fedora45Sources {
         request.build_started !== false || request.image_pulled !== false || request.container_restarted !== false)) {
       throw new Error('Source sync requires a validated READY_FOR_BUILD result');
     }
-    if (!['inventory', 'sync'].includes(operation)) throw new Error('Invalid source operation');
+    if (!['inventory', 'resolve', 'sync'].includes(operation)) throw new Error('Invalid source operation');
+    if (operation === 'resolve' && request.update !== true && request.validate_only !== true) {
+      throw new Error('Source resolution requires an upstream update or explicit validation');
+    }
     const credentials = await this.getCredentials('httpHeaderAuth');
     if (String(credentials.name).toLowerCase() !== 'authorization' || !/^Bearer [^\r\n]+$/.test(credentials.value)) {
       throw new Error('Expected GitHub bearer credential');
+    }
+    if (operation === 'sync') {
+      const snapshot = validateSnapshot(request.source_snapshot, request.source_snapshot_id);
+      if (snapshot.target !== request.target) throw new Error('Snapshot target differs from handoff');
+      const synced = await syncSources(cloneManifest(snapshot, request.build_commit), credentials.value);
+      return [[{ json: { ...request, sources: synced, sources_ready: true } }]];
     }
     const get = async endpoint => {
       if (!endpoint.startsWith('/repos/safrano9999/')) throw new Error('Repository outside Safrano scope');
@@ -37,12 +47,15 @@ class Fedora45Sources {
       } catch { throw new Error('GitHub source lookup failed: ' + endpoint); }
     };
     const manifest = await inventory(get, { target: request.target || DEFAULT_TARGET,
-      ref: operation === 'sync' ? request.build_commit : request.source_ref || 'main',
-      latest: operation === 'inventory' });
+      ref: request.source_ref || 'main', latest: true,
+      openclawVersion: operation === 'resolve' ? request.versions?.openclaw?.latest : undefined });
     const resolved = await resolveCommits(get, manifest);
     if (operation === 'inventory') return [[{ json: { ...resolved, status: 'SOURCES_LISTED', cloned: false } }]];
-    const synced = await syncSources(resolved, credentials.value);
-    return [[{ json: { ...request, sources: synced, sources_ready: true } }]];
+    const snapshot = makeSnapshot(resolved, request.versions);
+    const dispatch_body = JSON.stringify({ ref: 'main', inputs: { run_id: request.run_id,
+      validate_only: request.validate_only === true, source_snapshot: JSON.stringify(snapshot) } });
+    if (Buffer.byteLength(dispatch_body) > 60000) throw new Error('Source snapshot exceeds dispatch limit');
+    return [[{ json: { ...request, source_snapshot: snapshot, source_snapshot_id: snapshotId(snapshot), dispatch_body } }]];
   }
 }
 
