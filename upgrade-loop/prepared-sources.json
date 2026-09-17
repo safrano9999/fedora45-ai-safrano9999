@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source_policy": "latest-resolved-once",
-  "source_commit": "e36afba24bb28409ef57fad3d2db22d01006e5a1",
+  "source_commit": "f760690882ba6a97c8b1bc5627a2d65e1f708a54",
   "target": "fedora45-ai-safrano9999",
   "chain": [
     "fedora45-ai-core-pre",
@@ -10,14 +10,14 @@
     "fedora45-ai-kachelmann",
     "fedora45-ai-safrano9999"
   ],
-  "resolved_at": "2026-09-17T01:39:43.306Z",
+  "resolved_at": "2026-09-17T02:52:26.963Z",
   "versions": {
     "openclaw": {
       "current": "2026.9.4",
       "latest": "2026.9.4"
     },
     "hermes": {
-      "current": "0.21.2",
+      "current": "0.21.3",
       "latest": "0.21.3"
     }
   },
@@ -142,7 +142,7 @@
     {
       "repository": "safrano9999/hermes-ephemeral",
       "ref": "HEAD",
-      "commit": "735df306a60dd6a7ba04443baa049d7e4f467973"
+      "commit": "42421654e58f920b79b06a5364c7cf9096d14727"
     },
     {
       "repository": "safrano9999/persistainer",
