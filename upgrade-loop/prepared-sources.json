@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source_policy": "latest-resolved-once",
-  "source_commit": "f760690882ba6a97c8b1bc5627a2d65e1f708a54",
+  "source_commit": "9ac1eb579a8639efcd3244873cfbc65547d675de",
   "target": "fedora45-ai-safrano9999",
   "chain": [
     "fedora45-ai-core-pre",
@@ -10,7 +10,7 @@
     "fedora45-ai-kachelmann",
     "fedora45-ai-safrano9999"
   ],
-  "resolved_at": "2026-09-17T02:52:26.963Z",
+  "resolved_at": "2026-09-17T03:19:34.003Z",
   "versions": {
     "openclaw": {
       "current": "2026.9.4",
