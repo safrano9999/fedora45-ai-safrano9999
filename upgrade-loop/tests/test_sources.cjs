@@ -6,7 +6,7 @@ const path = require('node:path');
 const os = require('node:os');
 const { promisify } = require('node:util');
 const execFile = promisify(require('node:child_process').execFile);
-const { inventory, resolveCommits, IMAGE_REPO } = require('../n8n-sources/source-inventory');
+const { inventory, resolveCommits, latestRelease, IMAGE_REPO } = require('../n8n-sources/source-inventory');
 const { syncSources } = require('../n8n-sources/source-sync');
 const { Fedora45Sources } = require('../n8n-sources/Fedora45Sources.node');
 const repoRoot = path.resolve(__dirname, '../..');
@@ -46,8 +46,46 @@ test('derive only selected parent chain, provenance, release refs and both gener
   assert.ok(full.repositories.some(r => r.repository.endsWith('/VikAI')));
   assert.ok(!full.repositories.some(r => r.repository === 'safrano9999/SCRIPTS'));
   for (const name of ['openclaw', 'hermes']) assert.match(regular.repositories.find(r => r.repository.endsWith('/' + name + '-ephemeral')).ref, /^[a-f0-9]{40}$/);
-  assert.equal(regular.repositories.find(r => r.repository.endsWith('/NOTE')).ref, '2026.7.36');
+  assert.equal(regular.repositories.find(r => r.repository.endsWith('/NOTE')).ref, '2026.8.4');
   assert.equal(regular.repositories.find(r => r.repository.endsWith('/openclaw-deterministic-latest')).ref, '2026.9.4-deterministic.2');
+});
+
+test('latest preview refreshes every Git source and both release inputs instead of reusing old pins', async () => {
+  const files = await fixture();
+  const patch = { tag_name: '2026.9.4-deterministic.99', assets: [{ name: 'openclaw-2026.9.4-deterministic.tar.gz', digest: 'sha256:' + 'c'.repeat(64) }] };
+  const note = { tag_name: '2026.9.99', assets: [{ name: 'note-latest.zip', digest: 'sha256:' + 'd'.repeat(64) }] };
+  const get = async url => {
+    if (url.endsWith('/openclaw-deterministic-latest/releases/latest')) return { ...patch, tag_name: 'latest' };
+    if (url.endsWith('/openclaw-deterministic-latest/releases?per_page=100')) return [patch];
+    if (url.endsWith('/NOTE/releases/latest')) return note;
+    return files(url);
+  };
+  const preview = await inventory(get, { latest: true, target: 'fedora45-ai-safrano9999-full' });
+  assert.equal(preview.repositories.length, 23);
+  assert.equal(preview.source_policy, 'latest-resolved-for-preview');
+  for (const entry of preview.repositories) {
+    if (entry.repository === IMAGE_REPO) assert.equal(entry.ref, imageCommit);
+    else if (entry.repository.endsWith('/NOTE')) {
+      assert.equal(entry.ref, note.tag_name);
+      assert.equal(entry.release.sha256, 'd'.repeat(64));
+    } else if (entry.repository.endsWith('/openclaw-deterministic-latest')) {
+      assert.equal(entry.ref, patch.tag_name);
+      assert.equal(entry.release.sha256, 'c'.repeat(64));
+    } else assert.equal(entry.ref, 'HEAD', entry.repository);
+  }
+  assert.match(preview.repositories.find(r => r.repository.endsWith('/hermes-ephemeral')).declared_ref, /^[a-f0-9]{40}$/);
+  const resolved = await resolveCommits(async url => ({ sha: url.endsWith('/' + imageCommit) ? imageCommit : 'b'.repeat(40) }), preview);
+  assert.ok(resolved.repositories.every(r => /^[a-f0-9]{40}$/.test(r.commit)));
+});
+
+test('latest release selection checks compatible assets and fails on invalid release evidence', async () => {
+  const asset = 'openclaw-2026.9.4-deterministic.tar.gz';
+  const release = { tag_name: '2026.9.4-deterministic.2', assets: [{ name: asset, digest: 'sha256:' + 'a'.repeat(64) }] };
+  const fallback = await latestRelease(async url => url.endsWith('/latest') ? { tag_name: '2026.9.5', assets: [] } : [release], 'safrano9999/FIXTURE', asset);
+  assert.equal(fallback.ref, release.tag_name);
+  for (const change of [{ draft: true }, { prerelease: true }, { tag_name: '../bad' }, { assets: [{ name: asset }] }]) {
+    await assert.rejects(latestRelease(async () => ({ ...release, ...change }), 'safrano9999/FIXTURE', asset));
+  }
 });
 
 test('repository CSV changes, @branch and deduplication are derived, never a hard-coded list', async () => {

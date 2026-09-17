@@ -17,12 +17,14 @@ container check is owned by the user and is not implemented by this workflow.
 3. Dispatch `fedora45-container-preparation.yml` on GitHub Actions and follow
    the exact execution ID through a unique correlation ID. No image-build Action
    is dispatched. Wait at most one hour; failures stop the workflow.
-4. On the GitHub runner, capture the current `main` commit of **both** Ephemeral
+4. On the GitHub runner, capture the current default-branch commit of **both** Ephemeral
    repositories. Test each generator against its selected upstream release,
    including the component whose upstream version did not change. Validate the
-   published OpenClaw deterministic artifact/checksum and Hermes patch applicability.
+   latest compatible OpenClaw deterministic artifact/checksum and Hermes patch applicability.
+   Resolve NOTE's latest published stable release and its asset checksum as well.
 5. After all checks pass, update both upstream pins and both tested Ephemeral
-   pins in one Git commit. Publish without force-pushing. Concurrent repository
+   pins together with the selected deterministic and NOTE releases/checksums in
+   one Git commit. Publish without force-pushing. Concurrent repository
    changes block publication rather than mixing untested sources.
 6. Read and validate the Action's evidence artifact. Only `READY_FOR_BUILD`
    opens the source-volume gate: discover the selected image's parent chain at
@@ -33,6 +35,16 @@ container check is owned by the user and is not implemented by this workflow.
 A version change in OpenClaw therefore also incorporates a new Hermes-Ephemeral
 commit, and vice versa. Both selected generator commits remain fixed throughout
 preparation and become explicit inputs for the subsequent image build.
+
+All Safrano components select their latest applicable source afresh for each
+preparation: images use `:latest`, Git sources use the current default branch,
+and release payloads use the latest published stable release. The OpenClaw
+payload must match the target OpenClaw version. This also refreshes the
+deterministic patch when only Hermes changed, and refreshes NOTE on either
+upstream update. A matching fixed release tag may represent the exact bytes
+of a rolling `latest` asset; its SHA256 is recorded and verified. The resulting
+pins are a snapshot for that preparation/build, not a policy to stay on an old
+release. NOTE, patch and generator updates alone still do not open the build gate.
 
 ## Commit-bound build handoff
 
@@ -67,7 +79,8 @@ The explicit `?--validate-only` flag (or literal `--validate-only` body) tests
 both selected runtimes on Actions without publishing pins. It ends at
 `VALIDATED_ONLY`, never at `READY_FOR_BUILD`.
 
-`?--sources` (or literal body `--sources`) only lists source repositories; it
+`?--sources` (or literal body `--sources`) freshly resolves the latest source
+repositories/releases and their exact commits; it
 does not dispatch an Action or create/update any checkout. Optional query
 parameters `target=fedora45-ai-safrano9999-full` and `ref=<commit>` select a
 different image chain/source revision for this preview. The default target is
@@ -89,7 +102,12 @@ not an image component, so it is not added to the component clone list.
 
 The regular image currently selects 22 repositories including this image repo;
 `-full` adds `VikAI` for 23. This is derived, not a maintained repository allowlist.
-Release tags and both exact Ephemeral pins are honored; remaining branch/HEAD
+The preview reports `source_policy: latest-resolved-for-preview`, the previous
+`declared_ref`, the currently selected `ref` and its exact `commit`; release
+assets also record their SHA256. It does not alter published build inputs.
+For a ready build, release tags and both Ephemeral pins from that preparation
+are honored rather than resolving different payloads after compatibility checks;
+remaining branch/HEAD
 refs are resolved to commits before syncing. The manifest records their selection
 time. These snapshots do not pin an otherwise moving branch in a later GitHub
 build; the build's own source evidence remains authoritative for its actual inputs.

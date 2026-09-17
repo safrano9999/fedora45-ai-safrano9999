@@ -1,4 +1,5 @@
 import importlib.util
+import copy
 import json
 import subprocess
 import unittest
@@ -48,6 +49,43 @@ class PreparationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             prep.patch_inputs("2026.9.4", core, [release])
 
+    def test_new_patch_is_selected_even_when_openclaw_version_is_unchanged(self):
+        core = {"OPENCLAW_VERSION": "2026.9.4", "OPENCLAW_DETERMINISTIC_TAG": "2026.9.4-deterministic.1", "OPENCLAW_DETERMINISTIC_SHA256": "a" * 64}
+        newer = {"tag_name": "2026.9.4-deterministic.2", "draft": False, "prerelease": False,
+                 "assets": [{"name": "openclaw-2026.9.4-deterministic.tar.gz", "digest": "sha256:" + "b" * 64}]}
+        rolling = {**newer, "tag_name": "latest"}
+        result = prep.patch_inputs("2026.9.4", core, [newer, rolling], rolling)
+        self.assertEqual(result["OPENCLAW_DETERMINISTIC_TAG"], newer["tag_name"])
+        self.assertEqual(result["OPENCLAW_DETERMINISTIC_SHA256"], "b" * 64)
+
+    def test_rolling_latest_payload_wins_over_an_older_fixed_release(self):
+        core = {"OPENCLAW_VERSION": "2026.9.4", "OPENCLAW_DETERMINISTIC_TAG": "2026.9.4-deterministic.1", "OPENCLAW_DETERMINISTIC_SHA256": "a" * 64}
+        old = {"tag_name": core["OPENCLAW_DETERMINISTIC_TAG"], "draft": False, "prerelease": False,
+               "assets": [{"name": "openclaw-2026.9.4-deterministic.tar.gz", "digest": "sha256:" + "a" * 64}]}
+        rolling = copy.deepcopy(old)
+        rolling["tag_name"] = "latest"
+        rolling["assets"][0]["digest"] = "sha256:" + "b" * 64
+        result = prep.patch_inputs("2026.9.4", core, [old, rolling], rolling)
+        self.assertEqual(result["OPENCLAW_DETERMINISTIC_TAG"], "latest")
+        self.assertEqual(result["OPENCLAW_DETERMINISTIC_SHA256"], "b" * 64)
+
+    def test_latest_release_for_different_openclaw_falls_back_to_latest_compatible(self):
+        compatible = {"tag_name": "2026.9.4-deterministic.2", "draft": False, "prerelease": False,
+                      "assets": [{"name": "openclaw-2026.9.4-deterministic.tar.gz", "digest": "sha256:" + "b" * 64}]}
+        unrelated = {"tag_name": "2026.9.5-deterministic.1", "draft": False, "prerelease": False, "assets": []}
+        self.assertEqual(prep.patch_inputs("2026.9.4", {}, [unrelated, compatible], unrelated)["OPENCLAW_DETERMINISTIC_TAG"], compatible["tag_name"])
+
+    def test_latest_note_updates_and_requires_verified_stable_asset(self):
+        core = {"NOTE_RELEASE_TAG": "2026.7.36", "NOTE_RELEASE_ASSET": "note-latest.zip", "NOTE_RELEASE_SHA256": "a" * 64}
+        latest = {"tag_name": "2026.8.4", "draft": False, "prerelease": False,
+                  "assets": [{"name": "note-latest.zip", "digest": "sha256:" + "b" * 64}]}
+        self.assertEqual(prep.note_inputs(core, latest), {"NOTE_RELEASE_TAG": "2026.8.4", "NOTE_RELEASE_SHA256": "b" * 64})
+        for change in ({"assets": []}, {"draft": True}, {"prerelease": True},
+                       {"tag_name": "bad;command"}, {"assets": [{"name": "note-latest.zip"}]},
+                       {"tag_name": core["NOTE_RELEASE_TAG"]}):
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                prep.note_inputs(core, {**latest, **change})
+
     def test_replace_pins_requires_exact_single_match(self):
         with self.assertRaises(ValueError):
             prep.replace_pin("OTHER=1\n", "OPENCLAW_EPHEMERAL_COMMIT", "a" * 40)
@@ -62,12 +100,36 @@ class PreparationTests(unittest.TestCase):
             numbers[-1] += 1
             latest[changed] = '.'.join(map(str, numbers))
             replies = [{"tag_name": "v" + latest["openclaw"]}, {"name": "Hermes Agent v" + latest["hermes"] + " release"},
-                       {"sha": "a" * 40}, {"sha": "b" * 40}, []]
+                       {"sha": "a" * 40}, {"sha": "b" * 40}, [], {}]
             report = {}
             with self.subTest(changed=changed), patch.dict(prep.os.environ, {"GITHUB_ACTIONS": "true"}), patch.object(prep, "github", side_effect=replies), patch.object(prep, "patch_inputs", side_effect=RuntimeError('snapshot captured')):
                 with self.assertRaisesRegex(RuntimeError, 'snapshot captured'):
                     prep.prepare(report)
             self.assertEqual(report['ephemeral_commits'], {'openclaw': 'a' * 40, 'hermes': 'b' * 40})
+
+    def test_preparation_refreshes_all_four_inputs_before_runtime_checks(self):
+        pins = prep.current_versions((prep.REPO / "fedora45-ai-core-pre/Containerfile").read_text())
+        for changed in ("openclaw", "hermes"):
+            latest = dict(pins)
+            numbers = list(prep.version(latest[changed]))
+            numbers[-1] += 1
+            latest[changed] = '.'.join(map(str, numbers))
+            patch_release = {"tag_name": latest["openclaw"] + "-deterministic.99", "draft": False, "prerelease": False,
+                             "assets": [{"name": f"openclaw-{latest['openclaw']}-deterministic.tar.gz", "digest": "sha256:" + "c" * 64}]}
+            note_release = {"tag_name": "2026.9.99", "draft": False, "prerelease": False,
+                            "assets": [{"name": "note-latest.zip", "digest": "sha256:" + "d" * 64}]}
+            replies = [{"tag_name": "v" + latest["openclaw"]}, {"name": "Hermes Agent v" + latest["hermes"]},
+                       {"sha": "a" * 40}, {"sha": "b" * 40}, [patch_release], patch_release, note_release]
+            report = {}
+            with self.subTest(changed=changed), patch.dict(prep.os.environ, {"GITHUB_ACTIONS": "true"}), patch.object(prep, "github", side_effect=replies) as gh, patch.object(prep.importlib.util, "spec_from_file_location", side_effect=RuntimeError('before runtime checks')):
+                with self.assertRaisesRegex(RuntimeError, 'before runtime checks'):
+                    prep.prepare(report)
+            self.assertEqual(report['build_inputs']['OPENCLAW_EPHEMERAL_COMMIT'], 'a' * 40)
+            self.assertEqual(report['build_inputs']['HERMES_EPHEMERAL_COMMIT'], 'b' * 40)
+            self.assertEqual(report['build_inputs']['OPENCLAW_DETERMINISTIC_TAG'], patch_release['tag_name'])
+            self.assertEqual(report['build_inputs']['NOTE_RELEASE_TAG'], note_release['tag_name'])
+            self.assertEqual(report['source_policy'], 'latest-resolved-per-preparation')
+            self.assertIn('repos/safrano9999/openclaw-ephemeral/commits/HEAD', [c.args[0] for c in gh.call_args_list])
 
     def test_export_boundary_has_no_host_or_build_operations(self):
         bundle = json.loads((prep.ROOT / 'n8n-fedora45-all.json').read_text())

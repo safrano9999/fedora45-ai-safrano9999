@@ -11,6 +11,10 @@ cloning/updating the Safrano repositories derived from the selected image's
 Containerfile/build.conf chain, always depth 1 and at resolved commits.
 Checks, previews, validation-only and no-update runs do not mutate the volume.
 Build/pull are controlled separately by the user/Hermes through Safrano MCP.
+Safrano source selection always starts from latest: current default branches,
+latest stable NOTE, and the latest deterministic payload matching OpenClaw.
+The exact selected commits/releases/checksums are then held for that run.
+`--sources` resolves latest afresh without changing pins or cloning repositories.
 The user owns the deterministic test routine after the next container restart.
 
 The former three host sub-workflows are inactive retirement notices. The old

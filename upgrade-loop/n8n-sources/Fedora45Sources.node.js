@@ -6,7 +6,7 @@ const { syncSources } = require('./source-sync');
 class Fedora45Sources {
   description = {
     displayName: 'Fedora45 Sources', name: 'fedora45Sources', group: ['transform'], version: 1,
-    description: 'Discover Safrano build sources; shallow sync inside n8n only after READY_FOR_BUILD',
+    description: 'Resolve latest Safrano sources for previews; shallow sync prepared inputs only after READY_FOR_BUILD',
     defaults: { name: 'Fedora45 Sources' }, inputs: ['main'], outputs: ['main'],
     credentials: [{ name: 'httpHeaderAuth', required: true }],
     properties: [{ displayName: 'Operation', name: 'operation', type: 'options', default: 'inventory',
@@ -37,9 +37,10 @@ class Fedora45Sources {
       } catch { throw new Error('GitHub source lookup failed: ' + endpoint); }
     };
     const manifest = await inventory(get, { target: request.target || DEFAULT_TARGET,
-      ref: operation === 'sync' ? request.build_commit : request.source_ref || 'main' });
-    if (operation === 'inventory') return [[{ json: { ...manifest, status: 'SOURCES_LISTED', cloned: false } }]];
+      ref: operation === 'sync' ? request.build_commit : request.source_ref || 'main',
+      latest: operation === 'inventory' });
     const resolved = await resolveCommits(get, manifest);
+    if (operation === 'inventory') return [[{ json: { ...resolved, status: 'SOURCES_LISTED', cloned: false } }]];
     const synced = await syncSources(resolved, credentials.value);
     return [[{ json: { ...request, sources: synced, sources_ready: true } }]];
   }

@@ -25,7 +25,28 @@ function validRef(ref) {
   return ref;
 }
 
-async function inventory(get, { target = DEFAULT_TARGET, ref = 'main' } = {}) {
+async function latestRelease(get, repository, assetName) {
+  const base = '/repos/' + repository + '/releases';
+  let release = await get(base + '/latest'), releases;
+  const stable = r => !r.draft && !r.prerelease;
+  const asset = r => (r.assets || []).find(a => a.name === assetName);
+  async function compatible() {
+    releases = releases || await get(base + '?per_page=100');
+    return releases.filter(r => stable(r) && asset(r)).sort((a, b) =>
+      String(asset(b).updated_at || b.published_at || '').localeCompare(String(asset(a).updated_at || a.published_at || '')));
+  }
+  if (!stable(release)) throw new Error('Expected a stable release: ' + repository);
+  if (assetName && !asset(release)) release = (await compatible())[0];
+  if (!release) throw new Error('No compatible latest release: ' + repository);
+  const digest = assetName ? asset(release).digest : null;
+  if (assetName && !/^sha256:[0-9a-f]{64}$/.test(digest || '')) throw new Error('Missing asset checksum: ' + repository);
+  if (assetName && release.tag_name === 'latest') {
+    release = (await compatible()).find(r => r.tag_name !== 'latest' && asset(r).digest === digest) || release;
+  }
+  return { ref: validRef(release.tag_name), ...(assetName ? { asset: assetName, sha256: digest.slice(7) } : {}) };
+}
+
+async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = false } = {}) {
   if (!/^fedora45-ai-[a-z0-9-]+$/.test(target)) throw new Error('Invalid image target');
   const commit = (await get('/repos/' + IMAGE_REPO + '/commits/' + encodeURIComponent(validRef(ref)))).sha;
   if (!SHA.test(commit || '')) throw new Error('Missing image source commit');
@@ -39,13 +60,13 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main' } = {}) {
     return Buffer.from(result.content, 'base64').toString('utf8');
   }
   const repos = new Map(), chain = [];
-  function add(repo, sourceRef, layer, file, kind) {
+  function add(repo, sourceRef, layer, file, kind, selection = { type: 'default-branch' }) {
     if (!repo.startsWith(OWNER + '/')) return;
     if (!/^safrano9999\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(repo)) throw new Error('Invalid Safrano repository');
     validRef(sourceRef);
     const key = repo.toLowerCase(), old = repos.get(key);
     if (old && old.ref !== sourceRef) throw new Error('Conflicting source refs: ' + repo);
-    const entry = old || { repository: repo, ref: sourceRef, sources: [] };
+    const entry = old || { repository: repo, ref: sourceRef, selection, sources: [] };
     entry.sources.push({ layer, file, kind });
     repos.set(key, entry);
   }
@@ -64,12 +85,20 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main' } = {}) {
         const key = match[1], prefix = key.slice(0, -'_REPOSITORY'.length);
         const repo = literal(text, key);
         if (!repo.startsWith(OWNER + '/')) continue;
-        let sourceRef = null;
+        let sourceRef = null, selection = { type: 'default-branch' };
         for (const suffix of ['_COMMIT', '_REF', '_RELEASE_TAG', '_TAG']) {
           sourceRef = literal(conf, prefix + suffix, false);
-          if (sourceRef !== null) break;
+          if (sourceRef !== null) {
+            if (suffix === '_RELEASE_TAG' || suffix === '_TAG') {
+              const asset = prefix === 'OPENCLAW_DETERMINISTIC'
+                ? 'openclaw-' + literal(conf, 'OPENCLAW_VERSION') + '-deterministic.tar.gz'
+                : literal(conf, prefix + '_RELEASE_ASSET', false);
+              selection = { type: 'latest-release', ...(asset ? { asset } : {}) };
+            }
+            break;
+          }
         }
-        add(repo, sourceRef || 'HEAD', layer, path, 'declared-repository');
+        add(repo, sourceRef || 'HEAD', layer, path, 'declared-repository', selection);
       }
     }
     for (const key of ['EXTENSIONS', 'STANDALONE']) {
@@ -96,8 +125,20 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main' } = {}) {
       layer = null;
     }
   }
+  if (latest) {
+    for (const entry of repos.values()) {
+      if (entry.repository === IMAGE_REPO) continue;
+      entry.declared_ref = entry.ref;
+      if (entry.selection.type === 'latest-release') {
+        const selected = await latestRelease(get, entry.repository, entry.selection.asset);
+        entry.ref = selected.ref;
+        entry.release = selected;
+      } else entry.ref = 'HEAD';
+    }
+  }
   return { schema_version: 1, target, image_repository: IMAGE_REPO, image_commit: commit,
     chain: chain.reverse(), external_base: externalBase, repositories: [...repos.values()],
+    source_policy: latest ? 'latest-resolved-for-preview' : 'prepared-pins-and-current-branches',
     clone_depth: 1, clone_gate: 'READY_FOR_BUILD', local_build: false };
 }
 
@@ -113,4 +154,4 @@ async function resolveCommits(get, manifest) {
   return { ...manifest, resolved_at: new Date().toISOString(), repositories };
 }
 
-module.exports = { inventory, resolveCommits, DEFAULT_TARGET, IMAGE_REPO, SHA, literal, validRef };
+module.exports = { inventory, resolveCommits, latestRelease, DEFAULT_TARGET, IMAGE_REPO, SHA, literal, validRef };

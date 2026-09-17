@@ -80,21 +80,53 @@ def replace_pin(text, key, value, prefix=""):
     return result
 
 
-def patch_inputs(target, core, releases):
-    matches = [(r, a) for r in releases if not r["draft"] and not r["prerelease"]
-               for a in r["assets"] if a["name"] == f"openclaw-{target}-deterministic.tar.gz"]
-    if core.get("OPENCLAW_VERSION") == target:
-        matches = [(r, a) for r, a in matches if r["tag_name"] == core["OPENCLAW_DETERMINISTIC_TAG"]]
-    if not matches:
-        raise ValueError("APPROVAL_REQUIRED: no published deterministic artifact for target OpenClaw")
-    release, asset = matches[0]
-    digest = asset.get("digest", "")
+def release_asset(release, name):
+    if release.get("draft") or release.get("prerelease"):
+        raise ValueError("Expected a published stable Safrano release")
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", release.get("tag_name", "")):
+        raise ValueError("Invalid Safrano release tag")
+    assets = [a for a in release.get("assets", []) if a["name"] == name]
+    if len(assets) != 1:
+        raise ValueError("Missing or ambiguous release asset: " + name)
+    digest = assets[0].get("digest", "")
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
-        raise ValueError("Published patch artifact has no verified checksum")
-    if core.get("OPENCLAW_VERSION") == target and core.get("OPENCLAW_DETERMINISTIC_SHA256") != digest[7:]:
+        raise ValueError("Published asset has no verified checksum")
+    return digest[7:]
+
+
+def patch_inputs(target, core, releases, latest=None):
+    asset_name = f"openclaw-{target}-deterministic.tar.gz"
+    matches = [(r, a) for r in releases if not r["draft"] and not r["prerelease"]
+               for a in r["assets"] if a["name"] == asset_name]
+    # A rolling latest release may contain artifacts for several OpenClaw versions.
+    # Prefer its current compatible payload; otherwise use the newest compatible release.
+    matches.sort(key=lambda pair: pair[1].get("updated_at", pair[0].get("published_at", "")), reverse=True)
+    if latest and any(a["name"] == asset_name for a in latest.get("assets", [])):
+        release = latest
+    elif matches:
+        release = matches[0][0]
+    else:
+        release = None
+    if release is None:
+        raise ValueError("APPROVAL_REQUIRED: no published deterministic artifact for target OpenClaw")
+    digest = release_asset(release, asset_name)
+    if release["tag_name"] == "latest":
+        # Keep a fixed release alias for this run when it contains exactly latest's bytes.
+        release = next((r for r, a in matches if r["tag_name"] != "latest"
+                        and a.get("digest") == "sha256:" + digest), release)
+    if (release["tag_name"] == core.get("OPENCLAW_DETERMINISTIC_TAG") != "latest"
+            and core.get("OPENCLAW_DETERMINISTIC_SHA256") != digest):
         raise ValueError("Published deterministic artifact differs from the existing pin")
     return {"OPENCLAW_VERSION": target, "OPENCLAW_DETERMINISTIC_TAG": release["tag_name"],
-            "OPENCLAW_DETERMINISTIC_SHA256": digest[7:]}
+            "OPENCLAW_DETERMINISTIC_SHA256": digest}
+
+
+def note_inputs(core, latest):
+    digest = release_asset(latest, core["NOTE_RELEASE_ASSET"])
+    if (latest["tag_name"] == core.get("NOTE_RELEASE_TAG") != "latest"
+            and core.get("NOTE_RELEASE_SHA256") != digest):
+        raise ValueError("Published NOTE artifact differs from the existing pin")
+    return {"NOTE_RELEASE_TAG": latest["tag_name"], "NOTE_RELEASE_SHA256": digest}
 
 
 def prepare(report, validate_only=False):
@@ -112,15 +144,18 @@ def prepare(report, validate_only=False):
     if not report["update"] and not validate_only:
         report["status"] = "NO_UPDATE"
         return
-    commits = {name: exact_commit(github(f"repos/safrano9999/{name}-ephemeral/commits/main")["sha"])
+    commits = {name: exact_commit(github(f"repos/safrano9999/{name}-ephemeral/commits/HEAD")["sha"])
                for name in COMPONENTS}
     report["ephemeral_commits"] = commits
     core = dict(line.split("=", 1) for line in before_core.splitlines()
                 if re.match(r"^[A-Z_][A-Z0-9_]*=", line))
     inputs = patch_inputs(latest["openclaw"], core,
-                          github("repos/safrano9999/openclaw-deterministic-latest/releases?per_page=100"))
+                          github("repos/safrano9999/openclaw-deterministic-latest/releases?per_page=100"),
+                          github("repos/safrano9999/openclaw-deterministic-latest/releases/latest"))
+    inputs.update(note_inputs(core, github(f"repos/{core['NOTE_REPOSITORY']}/releases/latest")))
     inputs.update({name.upper() + "_EPHEMERAL_COMMIT": sha for name, sha in commits.items()})
     report["build_inputs"] = inputs
+    report["source_policy"] = "latest-resolved-per-preparation"
     spec = importlib.util.spec_from_file_location("prepare_runtime", ROOT / "prepare-runtime.py")
     runtime = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(runtime)
