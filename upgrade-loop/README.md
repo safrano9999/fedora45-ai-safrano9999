@@ -316,3 +316,20 @@ GitHub image builds, automatic Smart1 pulls and the existing whitelist image
 upgrade with nonblocking service starts. n8n only prepares and returns the Safrano
 request; the client passes that request to Safrano MCP under the supplied auto
 instruction. Webhook completion and the no-poll instruction apply to both phases.
+
+### Maximal shortcut
+
+Tell the MCP client **“Feuer den maximalen Loop”**. The workflow's MCP description
+maps this command to `webhookData.body.mode="maximal"`. It is the preset for
+`upgrade-safrano9999 + upgrade-build-deps + auto-upgrade`, including saved webhook
+feedback. Raw `maximal`, `--maximal`, JSON `{"mode":"maximal"}` and
+`{"maximal":true}` are accepted. Explicit `feedback:false` still disables feedback;
+contradictory flags disabling an upgrade step are rejected instead of silently
+turning a maximal request into a partial update.
+
+After preparation, the client passes the returned `safrano_build_request` or
+`safrano_upgrade_request` unchanged to Safrano MCP. The preset does not execute
+host/build/pull operations inside n8n and does not alter the Fedora base digest.
+It also does not change Hermes ingress: a `deliver_only=true` hook only posts the
+Telegram message. Until session wake-up is connected, say **“weiter”** to Hermes
+after that notification so it continues the completed run; do not rerun preparation.

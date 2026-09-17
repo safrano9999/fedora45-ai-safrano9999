@@ -235,3 +235,31 @@ test('build dependency option composes with source upgrades and automatic modes'
   for(const mode of ['upgrade-build-deps + nightly','upgrade-build-deps + auto + auto-upgrade','upgrade-build-deps + upgrade-build-deps'])
     await assert.rejects(normalize({first:()=>({json:{body:{mode},headers:{}}})}));
 });
+
+test('maximal shortcut selects every upgrade step with saved feedback and rejects partial overrides', async()=>{
+  const workflow=JSON.parse(fs.readFileSync(path.join(__dirname,'../n8n-fedora45-workflow.json')));
+  const nodes=Object.fromEntries(workflow.nodes.map(n=>[n.name,n]));
+  const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+  const normalize=new AsyncFunction('$input',nodes['Normalize auto mode'].parameters.jsCode);
+  const read=new AsyncFunction('$input',nodes['Read request'].parameters.jsCode);
+  for(const body of ['maximal','--maximal',' MAXIMAL ',{mode:'maximal'},{maximal:true},{maximal:'true'},
+    {mode:'maximal',feedback:false},{mode:'maximal',feedback:'false'}]) {
+    const normalized=(await normalize({first:()=>({json:{body,headers:{}}})}))[0];
+    const request=(await read({first:()=>normalized}))[0].json;
+    for(const key of ['maximal','upgrade_safrano9999','upgrade_build_deps','auto','auto_upgrade'])assert.equal(request[key],true);
+    const notify=!(body.feedback===false||body.feedback==='false');
+    assert.equal(request.build_feedback,notify);
+    assert.equal(normalized.json.body.feedback,notify?true:body.feedback);
+  }
+  const binary={json:{headers:{}},binary:{data:{id:'fixture'}}};
+  const raw=(await normalize.call({helpers:{getBinaryDataBuffer:async()=>Buffer.from('maximal')}},{first:()=>binary}))[0];
+  assert.equal(raw.json.body.maximal,true);assert.equal(raw.binary,undefined);
+  const query=(await normalize({first:()=>({json:{headers:{},query:{mode:'maximal'}}})}))[0];
+  assert.equal(query.json.body.auto_upgrade,true);
+  for(const body of [{mode:'maximal',auto:false},{mode:'maximal',auto_upgrade:false},
+    {mode:'maximal',upgrade_build_deps:false},{mode:'--check',maximal:true},{maximal:'yes'},
+    {mode:'maximal','--sources':true}])await assert.rejects(normalize({first:()=>({json:{body}})}));
+  assert.match(workflow.description,/Feuer den maximalen Loop/);
+  assert.ok(workflow.description.length<=255);
+  assert.match(nodes['MCP start and completion feedback'].parameters.content,/does not wake an agent turn/);
+});
