@@ -34,6 +34,29 @@ A version change in OpenClaw therefore also incorporates a new Hermes-Ephemeral
 commit, and vice versa. Both selected generator commits remain fixed throughout
 preparation and become explicit inputs for the subsequent image build.
 
+## Commit-bound build handoff
+
+Only `READY_FOR_BUILD` includes `safrano_build_inputs: {"build_commit": "<40-hex SHA>"}`.
+The user/Hermes passes that object as `inputs` to Safrano MCP `build_images`, with
+the selected Fedora45 chain key. `action="plan"` validates the proposed dispatch
+using read calls only. `action="run"` requires the explicit prepared commit,
+creates/reuses the exact lightweight tag `build-<SHA>`, and dispatches its workflow
+at that tag. An existing tag pointing elsewhere is rejected, never moved.
+`run_workflow` enforces the same rule for Fedora45 image workflows.
+
+All six image Actions accept `build_commit`, check out that SHA with depth 1,
+verify `git rev-parse HEAD`, and pass the same SHA and workflow ref to each cascade
+stage. The job summary and `org.opencontainers.image.revision` label record it.
+Both workflow definitions and source checkouts therefore stay on the prepared
+commit when `main` advances. Setting the movable repository tag `stable` is not
+required for this handoff. Direct manual Actions without `build_commit` select
+their immutable dispatch-event SHA once and carry it through their cascade.
+
+n8n still does not dispatch a build or move a repository/image tag. The build
+handoff pins this Fedora45 repository, including both tested Ephemeral commit
+declarations; independently moving component branch refs retain the behavior
+described in the source inventory section below.
+
 ## Entry points and credentials
 
 [Main workflow](n8n-fedora45-workflow.json) retains the ID `fedora45LoopDraft` and

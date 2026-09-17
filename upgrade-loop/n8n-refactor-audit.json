@@ -1,6 +1,6 @@
 {
-  "schema_version": 3,
-  "date": "2026-09-16",
+  "schema_version": 4,
+  "date": "2026-09-17",
   "scope": "container-preparation-only",
   "main_workflow": "fedora45LoopDraft",
   "main_nodes": 31,
@@ -22,11 +22,17 @@
   "preparation_tests_passed": 10,
   "http_mcp_tests_passed": 4,
   "evidence": "evidence/fedora45-preparation-20260916.json",
-  "workflow_sha256": "454446e8589a6e084f79d01f0828345e81cd1b275839334345e8b025c8e2fdf7",
+  "workflow_sha256": "82ed02e9f3bc114319ce5df0bb6b8e629bacdf488df8be644288b0822246cdb5",
   "source_tests_passed": 6,
   "source_inventory": "Containerfile parent chain + build.conf and literal repository declarations",
   "source_sync_gate": "READY_FOR_BUILD only",
   "source_clone_depth": 1,
   "source_volume": "/home/node/.n8n/fedora45-sources",
-  "source_evidence": "evidence/fedora45-source-inventory.json"
+  "source_evidence": "evidence/fedora45-source-inventory.json",
+  "build_handoff": "safrano_build_inputs.build_commit from validated READY_FOR_BUILD",
+  "build_workflow_ref": "immutable build-<commit> tag; never moved",
+  "build_source_pin": "same build_commit verified and propagated through all six Fedora45 stages",
+  "build_commit_tests_passed": 11,
+  "cascade_commit_tests_passed": 3,
+  "image_tag_regression_tests_passed": 14
 }

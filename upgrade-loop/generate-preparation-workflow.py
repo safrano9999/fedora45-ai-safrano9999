@@ -155,7 +155,8 @@ if(report.status!=='NO_UPDATE'){
  }
  if(report.checks?.hermes_patch?.status!=='PASS')throw new Error('Missing patch evidence');
 }
-return [{json:{...report,target:$('Read request').first().json.target,next:'User/Hermes controls build and pull through Safrano MCP; container tests are a separate routine after restart.'}}];
+const dispatch=report.status==='READY_FOR_BUILD'?{safrano_build_inputs:{build_commit:report.build_commit}}:{};
+return [{json:{...report,...dispatch,target:$('Read request').first().json.target,next:'User/Hermes controls build and pull through Safrano MCP. Pass safrano_build_inputs as build_images inputs; workflow and all cascade sources stay on this build_commit. Container tests are a separate routine after restart.'}}];
 """, 4420)
 sync=node("Sync sources for ready build", "code", {"operation":"sync"}, 4640,
           credentials=source_credentials, retryOnFail=False,

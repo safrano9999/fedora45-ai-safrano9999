@@ -113,12 +113,16 @@ async function check(report,validation=false){
  return f.call({helpers:{getBinaryDataBuffer:async()=>Buffer.from(JSON.stringify(report))}},()=>({first:()=>({json:{validate_only:validation}})}),{first:()=>({binary:{data:{fileName:'container-preparation.json'}}})});
 }
 (async()=>{
- assert.equal((await check(good))[0].json.status,'READY_FOR_BUILD');
+ const ready=(await check(good))[0].json;
+ assert.equal(ready.status,'READY_FOR_BUILD');
+ assert.deepEqual(ready.safrano_build_inputs,{build_commit:good.build_commit});
  for(const mutate of [r=>delete r.checks.hermes,r=>r.build_inputs.HERMES_EPHEMERAL_COMMIT='f'.repeat(40),r=>r.checks.hermes_patch.status='NOT_TESTED',r=>r.container_restarted=true,r=>r.build_commit='',r=>r.status='BLOCKED']){
   const bad=structuredClone(good);mutate(bad);await assert.rejects(check(bad));
  }
  const validated={...good,status:'VALIDATED_ONLY',validate_only:true};delete validated.build_commit;
- assert.equal((await check(validated,true))[0].json.status,'VALIDATED_ONLY');
+ const validation=(await check(validated,true))[0].json;
+ assert.equal(validation.status,'VALIDATED_ONLY');
+ assert.equal(validation.safrano_build_inputs,undefined);
  await assert.rejects(check(validated));await assert.rejects(check(good,true));
 })().catch(e=>{console.error(e);process.exit(1)});
 '''

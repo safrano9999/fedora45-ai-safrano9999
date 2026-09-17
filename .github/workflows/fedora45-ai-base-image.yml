@@ -5,6 +5,11 @@ run-name: ${{ inputs.monitor_id != '' && format('{0} [monitor:{1}:{2}]', github.
 on:
   workflow_dispatch:
     inputs:
+      build_commit:
+        description: "Exact prepared source commit (40 hex). Empty selects this dispatch's immutable event SHA."
+        required: false
+        default: ""
+        type: string
       image_tag:
         description: "Fixed YYYY.M.N version. Empty selects the next monthly number."
         required: false
@@ -54,8 +59,38 @@ jobs:
       DOCKER_BUILD_RECORD_UPLOAD: "false"
 
     steps:
+      - name: Select exact source commit
+        id: source
+        shell: bash
+        env:
+          REQUESTED_BUILD_COMMIT: ${{ inputs.build_commit }}
+        run: |
+          set -euo pipefail
+          commit="${REQUESTED_BUILD_COMMIT:-$GITHUB_SHA}"
+          [[ "$commit" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "build_commit must be a full lowercase Git SHA" >&2
+            exit 1
+          }
+          printf 'commit=%s\n' "$commit" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.source.outputs.commit }}
+          fetch-depth: 1
+
+      - name: Verify source checkout
+        shell: bash
+        env:
+          EXPECTED_BUILD_COMMIT: ${{ steps.source.outputs.commit }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          [ "$actual" = "$EXPECTED_BUILD_COMMIT" ] || {
+            echo "Source checkout differs from the selected build commit" >&2
+            exit 1
+          }
+          printf 'Source commit: %s\n' "$actual" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Free runner disk space
         run: .github/scripts/free-runner-disk-space.sh
@@ -133,6 +168,8 @@ jobs:
       - name: Build and push Base
         uses: docker/build-push-action@v6
         with:
+          labels: |
+            org.opencontainers.image.revision=${{ steps.source.outputs.commit }}
           context: ./fedora45-ai-base
           file: ./fedora45-ai-base/Containerfile
           target: ai-base
@@ -209,6 +246,7 @@ jobs:
       - name: Trigger kachelmann layer
         if: inputs.cascade
         env:
+          BUILD_COMMIT: ${{ steps.source.outputs.commit }}
           GH_TOKEN: ${{ github.token }}
           IMAGE_TAG: ${{ steps.refs.outputs.version }}
           PUSH_STABLE: ${{ inputs.push_stable }}
@@ -219,6 +257,7 @@ jobs:
           gh workflow run fedora45-ai-kachelmann-image.yml \
             --repo "$GITHUB_REPOSITORY" \
             --ref "$GITHUB_REF_NAME" \
+            -f "build_commit=$BUILD_COMMIT" \
             -f "image_tag=$IMAGE_TAG" \
             -f "base_tag=$IMAGE_TAG" \
             -f "push_stable=$PUSH_STABLE" \
