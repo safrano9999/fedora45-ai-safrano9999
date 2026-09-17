@@ -173,9 +173,9 @@ good.source_snapshot_id='d'.repeat(64);
 good.source_snapshot={repositories:[{repository:'safrano9999/openclaw-ephemeral',commit:'a'.repeat(40)},{repository:'safrano9999/hermes-ephemeral',commit:'b'.repeat(40)},{repository:'safrano9999/openclaw-deterministic-latest',release:{ref:'patch-release',sha256:'e'.repeat(64)}},{repository:'safrano9999/NOTE',release:{ref:'note-release',sha256:'f'.repeat(64)}}]};
 Object.assign(good.build_inputs,{OPENCLAW_DETERMINISTIC_TAG:'patch-release',OPENCLAW_DETERMINISTIC_SHA256:'e'.repeat(64),NOTE_RELEASE_TAG:'note-release',NOTE_RELEASE_SHA256:'f'.repeat(64)});
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
-async function check(report,validation=false){
+async function check(report,validation=false,request={}){
  const f=new AsyncFunction('$','$input',code);
- return f.call({helpers:{getBinaryDataBuffer:async()=>Buffer.from(JSON.stringify(report))}},name=>({first:()=>({json:name==='Resolve latest sources once'?good:{validate_only:validation}})}),{first:()=>({binary:{data:{fileName:'container-preparation.json'}}})});
+ return f.call({helpers:{getBinaryDataBuffer:async()=>Buffer.from(JSON.stringify(report))}},name=>({first:()=>({json:name==='Resolve latest sources once'?good:name==='Read request'?request:{validate_only:validation}})}),{first:()=>({binary:{data:{fileName:'container-preparation.json'}}})});
 }
 (async()=>{
  const ready=(await check(good))[0].json;
@@ -183,6 +183,21 @@ async function check(report,validation=false){
  assert.deepEqual(ready.safrano_build_inputs,{build_commit:good.build_commit});
  assert.equal(ready.safrano_build_request.key,'fedora45_core_pre');
  assert.equal(ready.safrano_build_request.cascade,true);
+ assert.equal(ready.safrano_build_request.auto_pull,undefined);
+ const auto=(await check(good,false,{auto:true,build_feedback:true}))[0].json;
+ assert.equal(auto.safrano_build_request.auto_pull,true);
+ assert.equal(auto.safrano_build_request.feedback,true);
+ assert.deepEqual(auto.safrano_build_request.inputs,ready.safrano_build_inputs);
+ assert.match(auto.next,/unchanged/);
+ assert.equal((await check(good,false,{auto:true,build_feedback:false}))[0].json.safrano_build_request.feedback,false);
+ const maximum=(await check(good,false,{auto:true,auto_upgrade:true,build_feedback:true}))[0].json.safrano_build_request;
+ assert.equal(maximum.auto_pull,true);assert.equal(maximum.auto_upgrade,true);assert.equal(maximum.feedback,true);
+ assert.equal(auto.safrano_build_request.auto_upgrade,undefined);
+
+ const unchanged={schema_version:1,status:'NO_UPDATE',validate_only:false,build_started:false,image_pulled:false,container_restarted:false};
+ assert.equal((await check(unchanged,false,{auto:true}))[0].json.safrano_build_request,undefined);
+ assert.deepEqual((await check(unchanged,false,{auto:true,auto_upgrade:true,build_feedback:false}))[0].json.safrano_upgrade_request,{action:'auto-update',feedback:false});
+
  for(const mutate of [r=>delete r.checks.hermes,r=>r.build_inputs.HERMES_EPHEMERAL_COMMIT='f'.repeat(40),r=>r.checks.hermes_patch.status='NOT_TESTED',r=>r.container_restarted=true,r=>r.build_commit='',r=>r.status='BLOCKED',r=>r.source_snapshot_id='0'.repeat(64),r=>r.source_snapshot.repositories[0].commit='0'.repeat(40),r=>r.build_inputs.NOTE_RELEASE_SHA256='0'.repeat(64)]){
   const bad=structuredClone(good);mutate(bad);await assert.rejects(check(bad));
  }
@@ -195,6 +210,14 @@ async function check(report,validation=false){
  good.build_plan=structuredClone(good.source_snapshot.build_plan);
  assert.equal((await check(good))[0].json.safrano_build_request.key,'fedora45_core');
  const wrong=structuredClone(good);wrong.build_plan.start_key='fedora45_base';await assert.rejects(check(wrong));
+ const depRequest={upgrade_build_deps:true,target:'fedora45-ai-safrano9999',auto:true};
+ await assert.rejects(check(good,false,depRequest));
+ const deps={...good,upgrade_build_deps:true,build_dependencies:{schema_version:1,status:'PASS',image:'fedora45-ai-core-pre',required:true}};
+ const depBuild=(await check(deps,false,depRequest))[0].json.safrano_build_request;
+ assert.equal(depBuild.key,'fedora45_core_pre');assert.equal(depBuild.cascade,true);
+ assert.equal((await check({...deps,build_dependencies:{...deps.build_dependencies,required:false}},false,depRequest))[0].json.safrano_build_request.key,'fedora45_core');
+ await assert.rejects(check(deps));
+
 })().catch(e=>{console.error(e);process.exit(1)});
 '''
         subprocess.run(['node', '-e', script], check=True, capture_output=True, text=True)

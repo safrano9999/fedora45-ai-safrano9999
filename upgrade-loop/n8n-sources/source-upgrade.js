@@ -126,4 +126,18 @@ async function upgradePlan(get, manifest, versions, readImage) {
     cascade: Boolean(start && start !== manifest.target), target: manifest.target, baseline: 'published-latest-images', baseline_images: baseline, changes };
 }
 
-module.exports = { upgradePlan, publishedImage, runtimeIdentity, KEYS };
+async function dependencyBaseline(get, image) {
+  if (!SHA.test(image.revision || '') || !DIGEST.test(image.digest || '')) throw new Error('Invalid dependency image baseline');
+  let policyHash = null;
+  try {
+    const content = await get('/repos/' + IMAGE_REPO + '/contents/upgrade-loop/build-dependencies-whitelist.json?ref=' + image.revision);
+    if (content.encoding !== 'base64' || content.size > 100000) throw new Error('Invalid published dependency policy');
+    const bytes = Buffer.from(content.content, 'base64');
+    if (bytes.length > 100000) throw new Error('Invalid published dependency policy');
+    JSON.parse(bytes.toString('utf8'));
+    policyHash = createHash('sha256').update(bytes).digest('hex');
+  } catch (error) { if (error.status !== 404) throw error; }
+  return { revision: image.revision, digest: image.digest, policy_sha256: policyHash };
+}
+
+module.exports = { upgradePlan, publishedImage, dependencyBaseline, runtimeIdentity, KEYS };

@@ -101,6 +101,34 @@ or n8n MCP webhook input. Literal `upgrade-safrano9999`,
 `--upgrade-safrano9999` and boolean `upgrade-safrano9999:true` are also accepted.
 The flag cannot be combined with `--check` or `--sources`.
 
+For the complete agent-controlled sequence, use `upgrade-safrano9999 + auto`
+(literal body or JSON `{"mode":"upgrade-safrano9999+auto"}`). Equivalently, add
+`"auto":true` to `{"mode":"upgrade-safrano9999"}`. This selects saved completion
+feedback for preparation and includes `auto_pull:true` and `feedback:true` in
+`safrano_build_request`. Explicit `feedback:false` disables both notifications.
+The client passes the returned request unchanged to Safrano MCP `build_images`
+on `READY_FOR_BUILD`; it need not assemble any extra flags or inputs. That MCP
+builds the selected cascade and queues Smart1 pulls as stages succeed. Feedback
+arrives after all builds/pulls succeed or immediately on failure. There is no
+container restart in this mode. `NO_UPDATE` stops without a build or pull.
+`auto:false` preserves preparation-only behavior; auto cannot be combined with
+check-only modes. The two servers use their existing saved callback settings;
+no callback secret is placed in the build handoff or published source snapshot.
+
+The maximum form is `upgrade-safrano9999 + auto-upgrade` (or JSON
+`{"mode":"upgrade-safrano9999+auto-upgrade"}`). It also sets `auto_upgrade:true`
+in the build request. Safrano MCP then owns build → pull → whitelist auto-update
+as one persisted operation, with one final notification after that whole operation,
+or immediately on failure. The last step updates whitelisted digests and requests
+restarts of affected previously active services; it does not wait for readiness.
+No build/pull failure can start that whitelist upgrade.
+
+If there is no source update, maximum mode still returns
+`safrano_upgrade_request:{"action":"auto-update","feedback":true}` for the client
+to pass to `podman_smart1`. This is the only extra follow-up in the no-build case;
+plain `+ auto` still stops on `NO_UPDATE`. Explicit `feedback:false` is respected.
+The n8n preparation callback remains separate from the Safrano operation callback.
+
 After resolving sources once, n8n reads each selected GHCR image's `:latest`
 manifest and configuration, verifies their digests and reads
 `org.opencontainers.image.revision`. Its GitHub checkout supplies the source
@@ -239,3 +267,52 @@ The workflow description and the "MCP start and completion feedback" note instru
 Before upgrading the old worker, let any pending legacy notifications finish. Already delivered numeric job files remain as history and are never resent; new jobs use the library's UUID format with the n8n execution ID recorded as metadata. The existing private `default.json` is reused. Repeated registration for the same execution recovers its existing job. A fresh worker heartbeat is required before a feedback-enabled request continues.
 
 Install the custom files and their locked npm dependencies as described above, then restart n8n after updating custom node definitions. This adds no host access, image build or deployment to the preparation loop. Automatic preparation still requires an upstream OpenClaw/Hermes version change. The GitHub preparation Action's `force_prepare` input is reserved for an explicitly requested operator rebuild.
+
+### Stable third-party build upgrades
+
+Use `upgrade-build-deps` to resolve every separately installed third-party tool
+in Core-pre from the explicit [build whitelist](build-dependencies-whitelist.json).
+The [Python resolver](build_dependencies.py) runs on the GitHub preparation runner.
+The initial whitelist covers Solana/Agave, Electrum, LND, Geth, BIP39, uv,
+cloudflared, webhook, Fugu, Codex CLI, Claude Code, Vditor and npm.
+
+Each entry specifies a release line and stores its exact version and SHA-256
+(or Git commit for Fugu and Electrum signing keys). Stable is the default.
+Solana follows Anza's stable channel, even if another GitHub release is newer.
+LND's regular `-beta` releases are allowed; RCs, alpha and nightly releases are
+rejected. Fugu uses its published regular release and checks that the files
+required by the image are present. No fallback to an untested development branch.
+Changed bytes under the same version, missing assets, downgrades, duplicate
+entries or divergent build.conf pins fail preparation before any pins are written.
+
+The resolver updates the whitelist and `fedora45-ai-core-pre/build.conf` in the
+same tested preparation commit. Containerfile downloads verify the saved hashes;
+the image build never reselects a newer version for these pins. n8n compares against
+the policy in the actually published Core-pre image, so prepared but unbuilt pins
+still require a build. Changes select `fedora45_core_pre`, even when the simultaneous
+Safrano source upgrade could otherwise start later. No change means NO_UPDATE and
+no source clone or image build. A requested dependency check itself runs as a
+GitHub preparation Action. Read-only local inspection is `python3 upgrade-loop/build_dependencies.py`; `--emit` validates saved pins without network
+access. `--apply` is reserved for the GitHub runner; normal publication belongs to
+prepare-container.py's shared commit.
+
+The Fedora beta **base image digest is excluded**. OpenClaw and Hermes keep their
+existing release and compatibility checks. Safrano repositories keep their own
+source-upgrade path. RPM/Python packages use the existing repository/requirements
+constraints on image build; this routine does not rewrite requirements in other
+repositories or enable `--pre`. Their transitive dependencies are not a new lockfile.
+
+Combine the options in `body.mode`, for example:
+
+```text
+upgrade-build-deps
+upgrade-build-deps + auto
+upgrade-safrano9999 + upgrade-build-deps + auto-upgrade
+```
+
+Equivalent JSON: `{"mode":"upgrade-safrano9999","upgrade_build_deps":true,
+"auto_upgrade":true}`. The last form includes source checks, stable build pins,
+GitHub image builds, automatic Smart1 pulls and the existing whitelist image
+upgrade with nonblocking service starts. n8n only prepares and returns the Safrano
+request; the client passes that request to Safrano MCP under the supplied auto
+instruction. Webhook completion and the no-poll instruction apply to both phases.

@@ -1,7 +1,7 @@
 {
   "id": "fedora45LoopDraft",
   "name": "Fedora45 Container Preparation",
-  "description": "GitHub-only preparation. mode=upgrade-safrano9999 selects earliest changed Safrano stage. callback_url (+ callback_secret) or feedback:true enables completion webhook. End turn after start; do not poll. No host access or image build.",
+  "description": "GitHub prep: upgrade-safrano9999 and/or upgrade-build-deps; + auto builds/pulls; + auto-upgrade also updates whitelist images/services. Pass returned requests to Safrano MCP. Saved webhook feedback; end turn after dispatch, do not poll. No host access.",
   "active": true,
   "nodes": [
     {
@@ -14,7 +14,7 @@
         420
       ],
       "parameters": {
-        "content": "## MCP client instructions\nBefore execute_workflow, read this workflow's details. Optional body.mode=upgrade-safrano9999 checks consumed Safrano sources against published latest images and returns the earliest build start key. Without this option the release gate is unchanged. Use executionMode=production and inputs.type=webhook, webhookData.method=POST. For feedback, set webhookData.body.callback_url (plus callback_secret when required), or body.feedback=true for the saved Hermes hook. Set feedback=false to disable.\nAfter the tool returns its execution ID, END THIS TURN and return control to the user. Do not poll, sleep or wait for completion. The hook receives only {} after success, failure or cancellation; fetch status/evidence then or when the user explicitly asks.\nOnly webhook feedback is supported here. Do not pass herdr_target: this container has no host/Herdr access. Delivery uses mcp-rendezvous from npm.",
+        "content": "## MCP client instructions\nBefore execute_workflow, read this workflow's details. Optional upgrade-build-deps checks all allowlisted third-party build pins on GitHub Actions, preferring stable releases; Fedora base image stays unchanged. Combine mode=upgrade-safrano9999+upgrade-build-deps+auto-upgrade (or JSON upgrade_build_deps:true). Changes require a build from core-pre. Runtime requirements keep their existing constraints. Optional body.mode=upgrade-safrano9999 checks consumed Safrano sources against published latest images and returns the earliest build start key. Use body.mode=upgrade-safrano9999+auto-upgrade for the maximum sequence, also updating whitelist image digests/services after build/pull success. NO_UPDATE then returns safrano_upgrade_request for podman_smart1 auto-update. Use body.mode=upgrade-safrano9999+auto (or auto:true) for the authorized build-and-pull sequence: on READY_FOR_BUILD pass safrano_build_request unchanged to Safrano MCP build_images. It includes auto_pull:true and feedback:true using the saved Safrano destination; explicit feedback:false is respected. Without auto-upgrade, NO_UPDATE ends the sequence. Without this option the release gate is unchanged. Use executionMode=production and inputs.type=webhook, webhookData.method=POST. For feedback, set webhookData.body.callback_url (plus callback_secret when required), or body.feedback=true for the saved Hermes hook. Set feedback=false to disable.\nAfter the tool returns its execution ID, END THIS TURN and return control to the user. Do not poll, sleep or wait for completion. The hook receives only {} after success, failure or cancellation; fetch status/evidence then or when the user explicitly asks.\nOnly webhook feedback is supported here. Do not pass herdr_target: this container has no host/Herdr access. Delivery uses mcp-rendezvous from npm.",
         "width": 800,
         "height": 440
       }
@@ -29,7 +29,7 @@
         -430
       ],
       "parameters": {
-        "content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nA new OpenClaw OR Hermes release opens the default gate. Explicit mode upgrade-safrano9999 also checks consumed Safrano sources against published :latest image revisions and selects the earliest affected stage. Without changes, no preparation or clones. Resolve latest Safrano sources ONCE after this gate. Share the same snapshot with preparation, depth-1 clones and builds. Test BOTH selected Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.",
+        "content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nA new OpenClaw OR Hermes release opens the default gate. Explicit mode upgrade-safrano9999 also checks consumed Safrano sources against published :latest image revisions and selects the earliest affected stage. Without source changes, no preparation or clones, except an explicit upgrade-build-deps check which runs on the GitHub runner. Dependency changes select Core-pre; no dependency changes return NO_UPDATE unless other requested inputs changed. Resolve latest Safrano sources ONCE after this gate. Share the same snapshot with preparation, depth-1 clones and builds. Test BOTH selected Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.",
         "width": 1600,
         "height": 260
       }
@@ -72,6 +72,19 @@
       }
     },
     {
+      "id": "4ad29800-f719-5e80-8b32-67d7f20be6b2",
+      "name": "Normalize auto mode",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const item=$input.first();\nlet body=item.json.body;\nif(item.binary?.data)body=(await this.helpers.getBinaryDataBuffer(0,'data')).toString('utf8').trim();\nif(typeof body==='string')body=body.trim().startsWith('{')?JSON.parse(body):{mode:body.trim()};\nbody=body&&typeof body==='object'?body:{};\nconst query=item.json.query??{},options={...query,...body};\nlet mode=options.mode??'';\nif(typeof mode!=='string')throw new Error('mode must be a string');\nconst parts=mode.split('+').map(s=>s.trim().replace(/^--/,''));\nconst combined=parts.some(p=>p==='upgrade-safrano9999'||p==='upgrade-build-deps');\nif(combined&&(parts.some(p=>!['upgrade-safrano9999','upgrade-build-deps','auto','auto-upgrade'].includes(p))||new Set(parts).size!==parts.length||parts.includes('auto')&&parts.includes('auto-upgrade')))throw new Error('Invalid upgrade mode combination');\nconst depOption=options.upgrade_build_deps??options['upgrade-build-deps']??options['--upgrade-build-deps'];\nif(depOption!==undefined&&![true,false,'true','false',''].includes(depOption))throw new Error('upgrade-build-deps must be boolean');\nconst upgrade_build_deps=parts.includes('upgrade-build-deps')||[true,'true',''].includes(depOption);\nconst upgradeOption=options.auto_upgrade??options['auto-upgrade'];\nif(upgradeOption!==undefined&&![true,false,'true','false'].includes(upgradeOption))throw new Error('auto-upgrade must be boolean');\nconst auto_upgrade=upgradeOption===undefined?parts.includes('auto-upgrade'):[true,'true'].includes(upgradeOption);\nif(options.auto!==undefined&&![true,false,'true','false'].includes(options.auto))throw new Error('auto must be boolean');\nconst auto=auto_upgrade||(options.auto===undefined?parts.includes('auto'):[true,'true'].includes(options.auto));\nif(combined)mode=parts.includes('upgrade-safrano9999')?'upgrade-safrano9999':'upgrade-build-deps';\nif(auto&&(['--check','--sources','--validate-only'].includes(mode)||['--check','--sources','--validate-only'].some(k=>Object.hasOwn(options,k))))throw new Error('auto cannot be combined with a check-only mode');\nconst normalized={...body,mode,auto,auto_upgrade,upgrade_build_deps};\nif(auto&&options.feedback===undefined)normalized.feedback=true;\nreturn [{json:{...item.json,body:normalized}}];"
+      }
+    },
+    {
       "id": "6370fbc7-765c-5596-98ed-58b7dc18c323",
       "name": "Read request",
       "type": "n8n-nodes-base.code",
@@ -81,7 +94,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const item=$input.first();\nconst webhook=Object.prototype.hasOwnProperty.call(item.json,'headers');\nlet raw='';\nif(item.binary?.data) raw=(await this.helpers.getBinaryDataBuffer(0,'data')).toString('utf8').trim();\nelse if(typeof item.json.body==='string') raw=item.json.body.trim();\nlet body=item.json.body&&typeof item.json.body==='object'?item.json.body:{};\nif(raw.startsWith('{')){body=JSON.parse(raw);raw='';}\nif(body.mode)raw=body.mode;\nif(!['','--check','--validate-only','--sources','upgrade-safrano9999','--upgrade-safrano9999'].includes(raw)) throw new Error('Expected an empty body, --check, --validate-only, --sources or upgrade-safrano9999');\nconst query={...(item.json.query??{}),...body};\nconst opt=query['upgrade-safrano9999']??query['--upgrade-safrano9999'];\nif(opt!==undefined&&![true,false,'true','false',''].includes(opt))throw new Error('upgrade-safrano9999 must be boolean');\nconst upgrade_safrano9999=['upgrade-safrano9999','--upgrade-safrano9999'].includes(raw)||[true,'true',''].includes(opt);\nconst check=Object.prototype.hasOwnProperty.call(query,'--check') || raw==='--check';\nconst validate_only=Object.prototype.hasOwnProperty.call(query,'--validate-only') || raw==='--validate-only';\nconst sources=Object.prototype.hasOwnProperty.call(query,'--sources') || raw==='--sources';\nif([check,validate_only,sources].filter(Boolean).length>1)throw new Error('Choose one check mode');\nif(upgrade_safrano9999&&(check||sources))throw new Error('upgrade-safrano9999 cannot be combined with --check or --sources');\nconst target=query.target||'fedora45-ai-safrano9999',source_ref=query.ref||'main';\nif(!/^fedora45-ai-[a-z0-9-]+$/.test(target))throw new Error('Invalid target image');\nif(!sources&&query.ref)throw new Error('The ref parameter belongs to --sources');\nreturn [{json:{webhook,check,validate_only,sources,upgrade_safrano9999,target,source_ref,completion_feedback:item.json.completion_feedback}}];"
+        "jsCode": "const item=$input.first();\nconst webhook=Object.prototype.hasOwnProperty.call(item.json,'headers');\nlet raw='';\nif(item.binary?.data) raw=(await this.helpers.getBinaryDataBuffer(0,'data')).toString('utf8').trim();\nelse if(typeof item.json.body==='string') raw=item.json.body.trim();\nlet body=item.json.body&&typeof item.json.body==='object'?item.json.body:{};\nif(raw.startsWith('{')){body=JSON.parse(raw);raw='';}\nif(body.mode)raw=body.mode;\nif(!['','--check','--validate-only','--sources','upgrade-safrano9999','--upgrade-safrano9999','upgrade-build-deps','--upgrade-build-deps'].includes(raw)) throw new Error('Expected an empty body, --check, --validate-only, --sources or upgrade-safrano9999');\nconst query={...(item.json.query??{}),...body};\nconst auto_upgrade=query.auto_upgrade===true||query.auto_upgrade==='true';\nconst auto=auto_upgrade||query.auto===true||query.auto==='true';\nconst build_feedback=auto&&query.feedback!==false&&query.feedback!=='false';\nconst upgrade_build_deps=query.upgrade_build_deps===true||query.upgrade_build_deps==='true';\nconst opt=query['upgrade-safrano9999']??query['--upgrade-safrano9999'];\nif(opt!==undefined&&![true,false,'true','false',''].includes(opt))throw new Error('upgrade-safrano9999 must be boolean');\nconst upgrade_safrano9999=['upgrade-safrano9999','--upgrade-safrano9999'].includes(raw)||[true,'true',''].includes(opt);\nconst check=Object.prototype.hasOwnProperty.call(query,'--check') || raw==='--check';\nconst validate_only=Object.prototype.hasOwnProperty.call(query,'--validate-only') || raw==='--validate-only';\nconst sources=Object.prototype.hasOwnProperty.call(query,'--sources') || raw==='--sources';\nif([check,validate_only,sources].filter(Boolean).length>1)throw new Error('Choose one check mode');\nif((upgrade_safrano9999||upgrade_build_deps)&&(check||sources))throw new Error('upgrade-safrano9999 cannot be combined with --check or --sources');\nconst target=query.target||'fedora45-ai-safrano9999',source_ref=query.ref||'main';\nif(!/^fedora45-ai-[a-z0-9-]+$/.test(target))throw new Error('Invalid target image');\nif(!sources&&query.ref)throw new Error('The ref parameter belongs to --sources');\nreturn [{json:{webhook,check,validate_only,sources,upgrade_safrano9999,upgrade_build_deps,auto,auto_upgrade,build_feedback,target,source_ref,completion_feedback:item.json.completion_feedback}}];"
       }
     },
     {
@@ -412,7 +425,7 @@
           "conditions": [
             {
               "id": "Upstream update available?",
-              "leftValue": "={{ $json.update || $json.validate_only || $json.upgrade_safrano9999 }}",
+              "leftValue": "={{ $json.update || $json.validate_only || $json.upgrade_safrano9999 || $json.upgrade_build_deps }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -435,7 +448,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "return [{json:{...$json,status:'NO_UPDATE',build_started:false,image_pulled:false,container_restarted:false}}];"
+        "jsCode": "const upgrade=$json.auto_upgrade===true?{safrano_upgrade_request:{action:'auto-update',feedback:$json.build_feedback!==false},next:'No source build needed. Continue the authorized maximum update: pass safrano_upgrade_request unchanged to Safrano MCP podman_smart1, then end the turn and wait for feedback without polling.'}:{};\nreturn [{json:{...$json,...upgrade,status:'NO_UPDATE',build_started:false,image_pulled:false,container_restarted:false}}];"
       }
     },
     {
@@ -784,7 +797,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const binary=$input.first().binary??{};\nconst keys=Object.keys(binary).filter(k=>binary[k].fileName==='container-preparation.json');\nif(keys.length!==1)throw new Error('Missing preparation report');\nconst report=JSON.parse((await this.helpers.getBinaryDataBuffer(0,keys[0])).toString('utf8'));\nconst validation=$('Prepare request').first().json.validate_only===true;\nconst statuses=validation?['VALIDATED_ONLY']:['NO_UPDATE','READY_FOR_BUILD'];\nif(report.schema_version!==1||!statuses.includes(report.status)||report.validate_only!==validation)throw new Error('Preparation is not ready');\nif(report.build_started!==false||report.image_pulled!==false||report.container_restarted!==false)throw new Error('Preparation scope violated');\nif(report.status!=='NO_UPDATE'){\n const expected=$('Resolve latest sources once').first().json;\n const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;\n if(!/^[0-9a-f]{64}$/.test(report.source_snapshot_id??'')||report.source_snapshot_id!==expected.source_snapshot_id||JSON.stringify(canonical(report.source_snapshot))!==JSON.stringify(canonical(expected.source_snapshot)))throw new Error('Preparation changed the shared source snapshot');\n const entries=Object.fromEntries(report.source_snapshot.repositories.map(e=>[e.repository,e]));\n if(!validation&&!/^[0-9a-f]{40}$/.test(report.build_commit??''))throw new Error('Missing build commit');\n for(const name of ['openclaw','hermes']){\n  const sha=report.ephemeral_commits?.[name];\n  if(!/^[0-9a-f]{40}$/.test(sha??'')||report.checks?.[name]?.status!=='PASS'||report.checks[name].generator_commit!==sha||report.build_inputs?.[name.toUpperCase()+'_EPHEMERAL_COMMIT']!==sha)throw new Error('Incomplete generator evidence: '+name);\n  if(entries['safrano9999/'+name+'-ephemeral']?.commit!==sha)throw new Error('Generator differs from n8n snapshot');\n }\n for(const [repo,prefix] of [['openclaw-deterministic-latest','OPENCLAW_DETERMINISTIC'],['NOTE','NOTE_RELEASE']]){\n  const release=entries['safrano9999/'+repo]?.release;\n  if(!release||report.build_inputs?.[prefix+'_TAG']!==release.ref||report.build_inputs?.[prefix+'_SHA256']!==release.sha256)throw new Error('Release differs from n8n snapshot');\n }\n if(report.checks?.hermes_patch?.status!=='PASS')throw new Error('Missing patch evidence');\n}\nconst plan=report.source_snapshot?.build_plan;\nif(plan&&JSON.stringify(report.build_plan)!==JSON.stringify(plan))throw new Error('Preparation changed the build start plan');\nconst key=plan?.start_key??'fedora45_core_pre';\nif(plan?.required!==undefined&&report.status==='READY_FOR_BUILD'&&!plan.required)throw new Error('No source update to build');\nconst dispatch=report.status==='READY_FOR_BUILD'?{safrano_build_inputs:{build_commit:report.build_commit},safrano_build_key:key,safrano_build_request:{action:'run',section:'chains',key,cascade:plan?.cascade??($('Read request').first().json.target!=='fedora45-ai-core-pre'),inputs:{build_commit:report.build_commit}}}:{};\nreturn [{json:{...report,...dispatch,target:$('Read request').first().json.target,next:'User/Hermes controls build and pull through Safrano MCP. Pass safrano_build_request to build_images. Its key is the earliest affected stage; cascade stops at target. The workflow and all cascade sources stay on this build_commit. Container tests are a separate routine after restart.'}}];"
+        "jsCode": "const binary=$input.first().binary??{};\nconst keys=Object.keys(binary).filter(k=>binary[k].fileName==='container-preparation.json');\nif(keys.length!==1)throw new Error('Missing preparation report');\nconst report=JSON.parse((await this.helpers.getBinaryDataBuffer(0,keys[0])).toString('utf8'));\nconst validation=$('Prepare request').first().json.validate_only===true;\nconst statuses=validation?['VALIDATED_ONLY']:['NO_UPDATE','READY_FOR_BUILD'];\nif(report.schema_version!==1||!statuses.includes(report.status)||report.validate_only!==validation)throw new Error('Preparation is not ready');\nif(report.build_started!==false||report.image_pulled!==false||report.container_restarted!==false)throw new Error('Preparation scope violated');\nif(report.status!=='NO_UPDATE'){\n const expected=$('Resolve latest sources once').first().json;\n const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;\n if(!/^[0-9a-f]{64}$/.test(report.source_snapshot_id??'')||report.source_snapshot_id!==expected.source_snapshot_id||JSON.stringify(canonical(report.source_snapshot))!==JSON.stringify(canonical(expected.source_snapshot)))throw new Error('Preparation changed the shared source snapshot');\n const entries=Object.fromEntries(report.source_snapshot.repositories.map(e=>[e.repository,e]));\n if(!validation&&!/^[0-9a-f]{40}$/.test(report.build_commit??''))throw new Error('Missing build commit');\n for(const name of ['openclaw','hermes']){\n  const sha=report.ephemeral_commits?.[name];\n  if(!/^[0-9a-f]{40}$/.test(sha??'')||report.checks?.[name]?.status!=='PASS'||report.checks[name].generator_commit!==sha||report.build_inputs?.[name.toUpperCase()+'_EPHEMERAL_COMMIT']!==sha)throw new Error('Incomplete generator evidence: '+name);\n  if(entries['safrano9999/'+name+'-ephemeral']?.commit!==sha)throw new Error('Generator differs from n8n snapshot');\n }\n for(const [repo,prefix] of [['openclaw-deterministic-latest','OPENCLAW_DETERMINISTIC'],['NOTE','NOTE_RELEASE']]){\n  const release=entries['safrano9999/'+repo]?.release;\n  if(!release||report.build_inputs?.[prefix+'_TAG']!==release.ref||report.build_inputs?.[prefix+'_SHA256']!==release.sha256)throw new Error('Release differs from n8n snapshot');\n }\n if(report.checks?.hermes_patch?.status!=='PASS')throw new Error('Missing patch evidence');\n}\nconst plan=report.source_snapshot?.build_plan;\nif(plan&&JSON.stringify(report.build_plan)!==JSON.stringify(plan))throw new Error('Preparation changed the build start plan');\nconst requestedDeps=$('Read request').first().json.upgrade_build_deps===true;\nif(requestedDeps&&(report.upgrade_build_deps!==true||report.build_dependencies?.schema_version!==1||report.build_dependencies.status!=='PASS'||typeof report.build_dependencies.required!=='boolean'||report.build_dependencies.image!=='fedora45-ai-core-pre'))throw new Error('Missing build dependency evidence');\nif(!requestedDeps&&report.upgrade_build_deps===true)throw new Error('Unrequested build dependency upgrade');\nconst depsChanged=requestedDeps&&report.build_dependencies.required;\nconst key=depsChanged?'fedora45_core_pre':plan?.start_key??'fedora45_core_pre';\nif(plan?.required!==undefined&&report.status==='READY_FOR_BUILD'&&!plan.required&&!depsChanged)throw new Error('No source update to build');\nconst request=$('Read request').first().json;\nconst automatic=request.auto===true?{auto_pull:true,...(request.auto_upgrade===true?{auto_upgrade:true}:{}),feedback:request.build_feedback!==false}:{};\nconst dispatch=report.status==='READY_FOR_BUILD'?{safrano_build_inputs:{build_commit:report.build_commit},safrano_build_key:key,safrano_build_request:{...automatic,action:'run',section:'chains',key,cascade:depsChanged?request.target!=='fedora45-ai-core-pre':plan?.cascade??(request.target!=='fedora45-ai-core-pre'),inputs:{build_commit:report.build_commit}}}:{};\nconst standalone=report.status==='NO_UPDATE'&&request.auto_upgrade===true?{safrano_upgrade_request:{action:'auto-update',feedback:request.build_feedback!==false}}:{};\nreturn [{json:{...report,...dispatch,...standalone,target:request.target,auto:request.auto===true,auto_upgrade:request.auto_upgrade===true,next:report.status==='NO_UPDATE'?(request.auto_upgrade===true?'No source build needed. Pass safrano_upgrade_request unchanged to Safrano MCP podman_smart1 to complete the authorized whitelist upgrade.':'No update; finished.'):\n(request.auto===true?'Continue the authorized automatic update (build, Smart1 pull and, when auto_upgrade is selected, whitelist digest/service upgrade): pass safrano_build_request unchanged to Safrano MCP build_images. Saved feedback is already selected unless explicitly disabled. ':'User/Hermes controls build and pull through Safrano MCP. Pass safrano_build_request to build_images. ')+ 'Its key is the earliest affected stage; cascade stops at target. The workflow and all cascade sources stay on this build_commit. Container tests are a separate routine after restart.'}}];"
       }
     },
     {
@@ -860,7 +873,7 @@
       "main": [
         [
           {
-            "node": "Register completion hook",
+            "node": "Normalize auto mode",
             "type": "main",
             "index": 0
           }
@@ -871,7 +884,7 @@
       "main": [
         [
           {
-            "node": "Register completion hook",
+            "node": "Normalize auto mode",
             "type": "main",
             "index": 0
           }
@@ -1200,6 +1213,17 @@
         [
           {
             "node": "Sync sources for ready build",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize auto mode": {
+      "main": [
+        [
+          {
+            "node": "Register completion hook",
             "type": "main",
             "index": 0
           }

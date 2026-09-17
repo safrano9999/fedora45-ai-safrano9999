@@ -158,3 +158,80 @@ test('generated request and acknowledgement carry the actual feedback choice wit
     assert.ok(!JSON.stringify({ request, response }).includes('private'));
   }
 });
+
+test('auto shorthand selects saved preparation feedback and carries its build choice without credentials', async t => {
+  const { url } = await receiver(t);
+  await rv.configure('set', url, 'saved-auto-secret');
+  const workflow = JSON.parse(fs.readFileSync(path.join(__dirname, '../n8n-fedora45-workflow.json')));
+  const nodes = Object.fromEntries(workflow.nodes.map(node => [node.name, node]));
+  const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+  const normalize = new AsyncFunction('$input', nodes['Normalize auto mode'].parameters.jsCode);
+  const parse = new AsyncFunction('$input', nodes['Read request'].parameters.jsCode);
+  const feedback = new Fedora45Feedback();
+  const cases = [
+    ['upgrade-safrano9999 + auto', true, true],
+    [{mode:'upgrade-safrano9999+auto'}, true, true],
+    [{mode:'upgrade-safrano9999', auto:true}, true, true],
+    [{mode:'upgrade-safrano9999+auto', feedback:false}, true, false],
+    [{mode:'upgrade-safrano9999', auto:'true', feedback:'false'}, true, false],
+    [{mode:'upgrade-safrano9999+auto', auto:false}, false, false],
+    ['--check', false, false],
+  ];
+  for (const [index,[body,auto,notify]] of cases.entries()) {
+    const normalized = (await normalize({first:()=>({json:{headers:{},body}})}))[0];
+    const registered = (await feedback.execute.call({getInputData:()=>[normalized],getExecutionId:()=>String(80+index)}))[0][0];
+    const request = (await parse({first:()=>registered}))[0].json;
+    assert.equal(request.auto,auto);assert.equal(request.build_feedback,notify);
+    assert.equal(request.completion_feedback.enabled,notify);
+    assert.ok(!JSON.stringify(request).includes('saved-auto-secret'));
+    if (notify) assert.equal(JSON.parse(fs.readFileSync(rv.path(request.completion_feedback.feedback_id))).callback.secret,'saved-auto-secret');
+  }
+  for(const body of [{auto:'yes'},{mode:'--check',auto:true},{mode:'--sources',auto:true},{mode:'--validate-only',auto:true}])
+    await assert.rejects(normalize({first:()=>({json:{body}})}));
+  const binary={json:{headers:{}},binary:{data:{id:'test'}}};
+  const raw=(await normalize.call({helpers:{getBinaryDataBuffer:async()=>Buffer.from('upgrade-safrano9999+auto')}},{first:()=>binary}))[0];
+  assert.equal(raw.json.body.mode,'upgrade-safrano9999');assert.equal(raw.json.body.feedback,true);
+  assert.equal(raw.binary,undefined);
+  const edges=workflow.connections;
+  assert.equal(edges['Webhook - preparation or --check'].main[0][0].node,'Normalize auto mode');
+  assert.equal(edges['Normalize auto mode'].main[0][0].node,'Register completion hook');
+});
+
+test('maximum mode preserves feedback choice and returns whitelist upgrade even without a build', async () => {
+  const w=JSON.parse(fs.readFileSync(path.join(__dirname,'../n8n-fedora45-workflow.json')));
+  const nodes=Object.fromEntries(w.nodes.map(n=>[n.name,n]));
+  const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+  const normalize=new AsyncFunction('$input',nodes['Normalize auto mode'].parameters.jsCode);
+  const parse=new AsyncFunction('$input',nodes['Read request'].parameters.jsCode);
+  const noUpdate=new Function('$json',nodes['No update'].parameters.jsCode);
+  for(const body of ['upgrade-safrano9999 + auto-upgrade',{mode:'upgrade-safrano9999+auto-upgrade'},
+      {mode:'upgrade-safrano9999',auto_upgrade:true}, {mode:'upgrade-safrano9999+auto-upgrade',feedback:false}]) {
+    const normalized=(await normalize({first:()=>({json:{headers:{},body}})}))[0];
+    const request=(await parse({first:()=>normalized}))[0].json;
+    assert.equal(request.auto,true);assert.equal(request.auto_upgrade,true);assert.equal(request.upgrade_safrano9999,true);
+    const output=noUpdate(request)[0].json;
+    assert.equal(output.status,'NO_UPDATE');assert.equal(output.safrano_build_request,undefined);
+    assert.deepEqual(output.safrano_upgrade_request,{action:'auto-update',feedback:typeof body==='object'&&body.feedback===false?false:true});
+  }
+  assert.equal(noUpdate({auto:true})[0].json.safrano_upgrade_request,undefined);
+});
+
+test('build dependency option composes with source upgrades and automatic modes', async()=>{
+  const workflow=JSON.parse(fs.readFileSync(path.join(__dirname,'../n8n-fedora45-workflow.json')));
+  const nodes=Object.fromEntries(workflow.nodes.map(n=>[n.name,n]));
+  const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+  const normalize=new AsyncFunction('$input',nodes['Normalize auto mode'].parameters.jsCode);
+  const read=new AsyncFunction('$input',nodes['Read request'].parameters.jsCode);
+  for(const body of ['upgrade-build-deps','--upgrade-build-deps + auto',
+    'upgrade-safrano9999 + upgrade-build-deps + auto-upgrade',
+    {mode:'upgrade-safrano9999',upgrade_build_deps:true,auto_upgrade:true}]) {
+    const normalized=(await normalize({first:()=>({json:{body,headers:{}}})}))[0];
+    const request=(await read({first:()=>normalized}))[0].json;
+    assert.equal(request.upgrade_build_deps,true);
+    if(typeof body==='object'||body.includes('safrano9999')) {
+      assert.equal(request.upgrade_safrano9999,true);assert.equal(request.auto_upgrade,true);
+    }
+  }
+  for(const mode of ['upgrade-build-deps + nightly','upgrade-build-deps + auto + auto-upgrade','upgrade-build-deps + upgrade-build-deps'])
+    await assert.rejects(normalize({first:()=>({json:{body:{mode},headers:{}}})}));
+});

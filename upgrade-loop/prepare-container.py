@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parent
 sys.path.insert(0, str(ROOT))
 from source_snapshot import build_inputs as snapshot_build_inputs, snapshot_id, validate_snapshot
+import build_dependencies
 COMPONENTS = {"openclaw": "openclaw/openclaw", "hermes": "NousResearch/hermes-agent"}
 
 
@@ -131,7 +132,7 @@ def note_inputs(core, latest):
     return {"NOTE_RELEASE_TAG": latest["tag_name"], "NOTE_RELEASE_SHA256": digest}
 
 
-def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upgrade_safrano9999=False):
+def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upgrade_safrano9999=False, upgrade_build_deps=False):
     if os.environ.get("GITHUB_ACTIONS") != "true":
         raise ValueError("Preparation must run on GitHub Actions")
     foundation = REPO / "fedora45-ai-core-pre/Containerfile"
@@ -155,8 +156,21 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
     source_update = upgrade_safrano9999 and snapshot["build_plan"]["required"]
     if upgrade_safrano9999:
         report.update(upgrade_safrano9999=True, build_plan=snapshot["build_plan"])
+    if upgrade_build_deps != bool((snapshot or {}).get('upgrade_build_deps')):
+        raise ValueError('Explicit upgrade-build-deps option and snapshot must agree')
+    dependency_files = {}
+    dependency_update = False
+    if upgrade_build_deps:
+        dependencies, dependency_files = build_dependencies.plan(REPO)
+        baseline = snapshot['build_dependencies_baseline']
+        selected_hash = build_dependencies.hashlib.sha256(dependency_files[build_dependencies.POLICY].encode()).hexdigest()
+        dependencies['published_policy_sha256'] = baseline['policy_sha256']
+        dependencies['selected_policy_sha256'] = selected_hash
+        dependencies['required'] = dependencies['required'] or selected_hash != baseline['policy_sha256']
+        dependency_update = dependencies['required']
+        report.update(upgrade_build_deps=True, build_dependencies=dependencies)
     # Source commits open the gate only with the explicit Safrano option.
-    if not report["update"] and not source_update and not validate_only and not force_prepare:
+    if not report["update"] and not source_update and not dependency_update and not validate_only and not force_prepare:
         report["status"] = "NO_UPDATE"
         return
     core = dict(line.split("=", 1) for line in before_core.splitlines()
@@ -218,6 +232,9 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
     foundation.write_text(after_foundation)
     core_path.write_text(after_core)
     changed = [foundation, core_path]
+    for path, content in dependency_files.items():
+        (REPO / path).write_text(content)
+        changed.append(REPO / path)
     if snapshot is not None:
         snapshot_path = ROOT / "prepared-sources.json"
         snapshot_path.write_text(json.dumps(snapshot, indent=2) + "\n")
@@ -225,7 +242,7 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
     run(["git", "diff", "--check"], cwd=REPO)
     run(["git", "add", "--", *changed], cwd=REPO)
     run(["git", "-c", "user.name=Fedora45 preparation", "-c", "user.email=actions@users.noreply.github.com",
-         "commit", "-m", "Prepare Fedora45 versions and both tested Ephemeral commits"], cwd=REPO)
+         "commit", "-m", "Prepare Fedora45 versions, tested Ephemeral commits and selected build dependencies"], cwd=REPO)
     commit = exact_commit(run(["git", "rev-parse", "HEAD"], capture_output=True, cwd=REPO).stdout.strip())
     # A concurrent main change fails the push. Never force-push or mix in untested inputs.
     run(["git", "push", "origin", "HEAD:main"], cwd=REPO)
@@ -236,6 +253,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--force-prepare", action="store_true", help="Explicit operator rebuild; never used by the automatic n8n version gate")
     parser.add_argument("--upgrade-safrano9999", action="store_true", help="Prepare changed Safrano inputs from the earliest affected published image")
+    parser.add_argument("--upgrade-build-deps", action="store_true", help="Refresh allowlisted stable third-party pins; preserve the Fedora base image")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--source-snapshot", type=Path, required=True)
@@ -245,7 +263,7 @@ def main():
               "actions_url": f"https://github.com/{os.environ.get('GITHUB_REPOSITORY', '')}/actions/runs/{os.environ.get('GITHUB_RUN_ID', '')}"}
     code = 0
     try:
-        prepare(report, args.validate_only, json.loads(args.source_snapshot.read_text()), args.force_prepare, args.upgrade_safrano9999)
+        prepare(report, args.validate_only, json.loads(args.source_snapshot.read_text()), args.force_prepare, args.upgrade_safrano9999, args.upgrade_build_deps)
     except Exception as error:
         report.update(status="BLOCKED", reason=str(error))
         code = 1

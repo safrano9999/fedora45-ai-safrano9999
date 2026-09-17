@@ -42,12 +42,38 @@ def http(name, url, x, y=0, **parameters):
 
 
 base = "https://api.github.com/repos/safrano9999/fedora45-ai-safrano9999"
-client_description = "GitHub-only preparation. mode=upgrade-safrano9999 selects earliest changed Safrano stage. callback_url (+ callback_secret) or feedback:true enables completion webhook. End turn after start; do not poll. No host access or image build."
-node("MCP start and completion feedback", "stickyNote", {"content": "## MCP client instructions\nBefore execute_workflow, read this workflow's details. Optional body.mode=upgrade-safrano9999 checks consumed Safrano sources against published latest images and returns the earliest build start key. Without this option the release gate is unchanged. Use executionMode=production and inputs.type=webhook, webhookData.method=POST. For feedback, set webhookData.body.callback_url (plus callback_secret when required), or body.feedback=true for the saved Hermes hook. Set feedback=false to disable.\nAfter the tool returns its execution ID, END THIS TURN and return control to the user. Do not poll, sleep or wait for completion. The hook receives only {} after success, failure or cancellation; fetch status/evidence then or when the user explicitly asks.\nOnly webhook feedback is supported here. Do not pass herdr_target: this container has no host/Herdr access. Delivery uses mcp-rendezvous from npm.", "width": 800, "height": 440}, -900, 420)
-node("Scope", "stickyNote", {"content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nA new OpenClaw OR Hermes release opens the default gate. Explicit mode upgrade-safrano9999 also checks consumed Safrano sources against published :latest image revisions and selects the earliest affected stage. Without changes, no preparation or clones. Resolve latest Safrano sources ONCE after this gate. Share the same snapshot with preparation, depth-1 clones and builds. Test BOTH selected Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.", "width": 1600, "height": 260}, 0, -430)
+client_description = "GitHub prep: upgrade-safrano9999 and/or upgrade-build-deps; + auto builds/pulls; + auto-upgrade also updates whitelist images/services. Pass returned requests to Safrano MCP. Saved webhook feedback; end turn after dispatch, do not poll. No host access."
+node("MCP start and completion feedback", "stickyNote", {"content": "## MCP client instructions\nBefore execute_workflow, read this workflow's details. Optional upgrade-build-deps checks all allowlisted third-party build pins on GitHub Actions, preferring stable releases; Fedora base image stays unchanged. Combine mode=upgrade-safrano9999+upgrade-build-deps+auto-upgrade (or JSON upgrade_build_deps:true). Changes require a build from core-pre. Runtime requirements keep their existing constraints. Optional body.mode=upgrade-safrano9999 checks consumed Safrano sources against published latest images and returns the earliest build start key. Use body.mode=upgrade-safrano9999+auto-upgrade for the maximum sequence, also updating whitelist image digests/services after build/pull success. NO_UPDATE then returns safrano_upgrade_request for podman_smart1 auto-update. Use body.mode=upgrade-safrano9999+auto (or auto:true) for the authorized build-and-pull sequence: on READY_FOR_BUILD pass safrano_build_request unchanged to Safrano MCP build_images. It includes auto_pull:true and feedback:true using the saved Safrano destination; explicit feedback:false is respected. Without auto-upgrade, NO_UPDATE ends the sequence. Without this option the release gate is unchanged. Use executionMode=production and inputs.type=webhook, webhookData.method=POST. For feedback, set webhookData.body.callback_url (plus callback_secret when required), or body.feedback=true for the saved Hermes hook. Set feedback=false to disable.\nAfter the tool returns its execution ID, END THIS TURN and return control to the user. Do not poll, sleep or wait for completion. The hook receives only {} after success, failure or cancellation; fetch status/evidence then or when the user explicitly asks.\nOnly webhook feedback is supported here. Do not pass herdr_target: this container has no host/Herdr access. Delivery uses mcp-rendezvous from npm.", "width": 800, "height": 440}, -900, 420)
+node("Scope", "stickyNote", {"content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nA new OpenClaw OR Hermes release opens the default gate. Explicit mode upgrade-safrano9999 also checks consumed Safrano sources against published :latest image revisions and selects the earliest affected stage. Without source changes, no preparation or clones, except an explicit upgrade-build-deps check which runs on the GitHub runner. Dependency changes select Core-pre; no dependency changes return NO_UPDATE unless other requested inputs changed. Resolve latest Safrano sources ONCE after this gate. Share the same snapshot with preparation, depth-1 clones and builds. Test BOTH selected Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.", "width": 1600, "height": 260}, 0, -430)
 node("Manual preparation", "manualTrigger", {}, -440, -120)
 node("Webhook - preparation or --check", "webhook", {"httpMethod": "POST", "path": "fedora45-update-loop", "authentication": "headerAuth", "responseMode": "responseNode", "options": {"rawBody": True}}, -440, 120, 2,
      webhookId="851b669a-1ae5-4167-bac0-59e3d2e6555a", credentials={"httpHeaderAuth": {"id": "fedora45WebhookBearer", "name": "Fedora45 webhook bearer"}})
+code("Normalize auto mode", r"""
+const item=$input.first();
+let body=item.json.body;
+if(item.binary?.data)body=(await this.helpers.getBinaryDataBuffer(0,'data')).toString('utf8').trim();
+if(typeof body==='string')body=body.trim().startsWith('{')?JSON.parse(body):{mode:body.trim()};
+body=body&&typeof body==='object'?body:{};
+const query=item.json.query??{},options={...query,...body};
+let mode=options.mode??'';
+if(typeof mode!=='string')throw new Error('mode must be a string');
+const parts=mode.split('+').map(s=>s.trim().replace(/^--/,''));
+const combined=parts.some(p=>p==='upgrade-safrano9999'||p==='upgrade-build-deps');
+if(combined&&(parts.some(p=>!['upgrade-safrano9999','upgrade-build-deps','auto','auto-upgrade'].includes(p))||new Set(parts).size!==parts.length||parts.includes('auto')&&parts.includes('auto-upgrade')))throw new Error('Invalid upgrade mode combination');
+const depOption=options.upgrade_build_deps??options['upgrade-build-deps']??options['--upgrade-build-deps'];
+if(depOption!==undefined&&![true,false,'true','false',''].includes(depOption))throw new Error('upgrade-build-deps must be boolean');
+const upgrade_build_deps=parts.includes('upgrade-build-deps')||[true,'true',''].includes(depOption);
+const upgradeOption=options.auto_upgrade??options['auto-upgrade'];
+if(upgradeOption!==undefined&&![true,false,'true','false'].includes(upgradeOption))throw new Error('auto-upgrade must be boolean');
+const auto_upgrade=upgradeOption===undefined?parts.includes('auto-upgrade'):[true,'true'].includes(upgradeOption);
+if(options.auto!==undefined&&![true,false,'true','false'].includes(options.auto))throw new Error('auto must be boolean');
+const auto=auto_upgrade||(options.auto===undefined?parts.includes('auto'):[true,'true'].includes(options.auto));
+if(combined)mode=parts.includes('upgrade-safrano9999')?'upgrade-safrano9999':'upgrade-build-deps';
+if(auto&&(['--check','--sources','--validate-only'].includes(mode)||['--check','--sources','--validate-only'].some(k=>Object.hasOwn(options,k))))throw new Error('auto cannot be combined with a check-only mode');
+const normalized={...body,mode,auto,auto_upgrade,upgrade_build_deps};
+if(auto&&options.feedback===undefined)normalized.feedback=true;
+return [{json:{...item.json,body:normalized}}];
+""", -560, 300)
 code("Read request", """
 const item=$input.first();
 const webhook=Object.prototype.hasOwnProperty.call(item.json,'headers');
@@ -57,8 +83,12 @@ else if(typeof item.json.body==='string') raw=item.json.body.trim();
 let body=item.json.body&&typeof item.json.body==='object'?item.json.body:{};
 if(raw.startsWith('{')){body=JSON.parse(raw);raw='';}
 if(body.mode)raw=body.mode;
-if(!['','--check','--validate-only','--sources','upgrade-safrano9999','--upgrade-safrano9999'].includes(raw)) throw new Error('Expected an empty body, --check, --validate-only, --sources or upgrade-safrano9999');
+if(!['','--check','--validate-only','--sources','upgrade-safrano9999','--upgrade-safrano9999','upgrade-build-deps','--upgrade-build-deps'].includes(raw)) throw new Error('Expected an empty body, --check, --validate-only, --sources or upgrade-safrano9999');
 const query={...(item.json.query??{}),...body};
+const auto_upgrade=query.auto_upgrade===true||query.auto_upgrade==='true';
+const auto=auto_upgrade||query.auto===true||query.auto==='true';
+const build_feedback=auto&&query.feedback!==false&&query.feedback!=='false';
+const upgrade_build_deps=query.upgrade_build_deps===true||query.upgrade_build_deps==='true';
 const opt=query['upgrade-safrano9999']??query['--upgrade-safrano9999'];
 if(opt!==undefined&&![true,false,'true','false',''].includes(opt))throw new Error('upgrade-safrano9999 must be boolean');
 const upgrade_safrano9999=['upgrade-safrano9999','--upgrade-safrano9999'].includes(raw)||[true,'true',''].includes(opt);
@@ -66,11 +96,11 @@ const check=Object.prototype.hasOwnProperty.call(query,'--check') || raw==='--ch
 const validate_only=Object.prototype.hasOwnProperty.call(query,'--validate-only') || raw==='--validate-only';
 const sources=Object.prototype.hasOwnProperty.call(query,'--sources') || raw==='--sources';
 if([check,validate_only,sources].filter(Boolean).length>1)throw new Error('Choose one check mode');
-if(upgrade_safrano9999&&(check||sources))throw new Error('upgrade-safrano9999 cannot be combined with --check or --sources');
+if((upgrade_safrano9999||upgrade_build_deps)&&(check||sources))throw new Error('upgrade-safrano9999 cannot be combined with --check or --sources');
 const target=query.target||'fedora45-ai-safrano9999',source_ref=query.ref||'main';
 if(!/^fedora45-ai-[a-z0-9-]+$/.test(target))throw new Error('Invalid target image');
 if(!sources&&query.ref)throw new Error('The ref parameter belongs to --sources');
-return [{json:{webhook,check,validate_only,sources,upgrade_safrano9999,target,source_ref,completion_feedback:item.json.completion_feedback}}];
+return [{json:{webhook,check,validate_only,sources,upgrade_safrano9999,upgrade_build_deps,auto,auto_upgrade,build_feedback,target,source_ref,completion_feedback:item.json.completion_feedback}}];
 """, -200)
 branch("Sources preview?", "={{ $json.sources }}", -200, -180)
 source_credentials={"httpHeaderAuth": {"id": "fedora45GitHubPreparation", "name": "Fedora45 GitHub preparation"}}
@@ -105,8 +135,11 @@ branch("Check only?", "={{ $json.check }}", 900)
 node("Return two version lines", "respondToWebhook", {"respondWith": "text", "responseBody": "={{ $json.stdout }}", "options": {"responseCode": 200, "responseHeaders": {"entries": [{"name": "Content-Type", "value": "text/plain; charset=utf-8"}]}}}, 1120, -160, 1.4)
 branch("Webhook request?", "={{ $json.webhook }}", 1120, 100)
 node("Accept preparation", "respondToWebhook", {"respondWith": "json", "responseBody": "={{ {status:'ACCEPTED',execution_id:$execution.id,feedback_enabled:$json.completion_feedback?.enabled === true,feedback_id:$json.completion_feedback?.feedback_id ?? null,next:$json.completion_feedback?.next ?? 'End this turn immediately. Do not poll. No completion notification was requested.'} }}", "options": {"responseCode": 202}}, 1340, 0, 1.4)
-branch("Upstream update available?", "={{ $json.update || $json.validate_only || $json.upgrade_safrano9999 }}", 1560, 120)
-code("No update", "return [{json:{...$json,status:'NO_UPDATE',build_started:false,image_pulled:false,container_restarted:false}}];", 1780, 300)
+branch("Upstream update available?", "={{ $json.update || $json.validate_only || $json.upgrade_safrano9999 || $json.upgrade_build_deps }}", 1560, 120)
+code("No update", """
+const upgrade=$json.auto_upgrade===true?{safrano_upgrade_request:{action:'auto-update',feedback:$json.build_feedback!==false},next:'No source build needed. Continue the authorized maximum update: pass safrano_upgrade_request unchanged to Safrano MCP podman_smart1, then end the turn and wait for feedback without polling.'}:{};
+return [{json:{...$json,...upgrade,status:'NO_UPDATE',build_started:false,image_pulled:false,container_restarted:false}}];
+""", 1780, 300)
 code("Prepare request", """
 const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+3600000};
 return [{json:request}];
@@ -178,10 +211,18 @@ if(report.status!=='NO_UPDATE'){
 }
 const plan=report.source_snapshot?.build_plan;
 if(plan&&JSON.stringify(report.build_plan)!==JSON.stringify(plan))throw new Error('Preparation changed the build start plan');
-const key=plan?.start_key??'fedora45_core_pre';
-if(plan?.required!==undefined&&report.status==='READY_FOR_BUILD'&&!plan.required)throw new Error('No source update to build');
-const dispatch=report.status==='READY_FOR_BUILD'?{safrano_build_inputs:{build_commit:report.build_commit},safrano_build_key:key,safrano_build_request:{action:'run',section:'chains',key,cascade:plan?.cascade??($('Read request').first().json.target!=='fedora45-ai-core-pre'),inputs:{build_commit:report.build_commit}}}:{};
-return [{json:{...report,...dispatch,target:$('Read request').first().json.target,next:'User/Hermes controls build and pull through Safrano MCP. Pass safrano_build_request to build_images. Its key is the earliest affected stage; cascade stops at target. The workflow and all cascade sources stay on this build_commit. Container tests are a separate routine after restart.'}}];
+const requestedDeps=$('Read request').first().json.upgrade_build_deps===true;
+if(requestedDeps&&(report.upgrade_build_deps!==true||report.build_dependencies?.schema_version!==1||report.build_dependencies.status!=='PASS'||typeof report.build_dependencies.required!=='boolean'||report.build_dependencies.image!=='fedora45-ai-core-pre'))throw new Error('Missing build dependency evidence');
+if(!requestedDeps&&report.upgrade_build_deps===true)throw new Error('Unrequested build dependency upgrade');
+const depsChanged=requestedDeps&&report.build_dependencies.required;
+const key=depsChanged?'fedora45_core_pre':plan?.start_key??'fedora45_core_pre';
+if(plan?.required!==undefined&&report.status==='READY_FOR_BUILD'&&!plan.required&&!depsChanged)throw new Error('No source update to build');
+const request=$('Read request').first().json;
+const automatic=request.auto===true?{auto_pull:true,...(request.auto_upgrade===true?{auto_upgrade:true}:{}),feedback:request.build_feedback!==false}:{};
+const dispatch=report.status==='READY_FOR_BUILD'?{safrano_build_inputs:{build_commit:report.build_commit},safrano_build_key:key,safrano_build_request:{...automatic,action:'run',section:'chains',key,cascade:depsChanged?request.target!=='fedora45-ai-core-pre':plan?.cascade??(request.target!=='fedora45-ai-core-pre'),inputs:{build_commit:report.build_commit}}}:{};
+const standalone=report.status==='NO_UPDATE'&&request.auto_upgrade===true?{safrano_upgrade_request:{action:'auto-update',feedback:request.build_feedback!==false}}:{};
+return [{json:{...report,...dispatch,...standalone,target:request.target,auto:request.auto===true,auto_upgrade:request.auto_upgrade===true,next:report.status==='NO_UPDATE'?(request.auto_upgrade===true?'No source build needed. Pass safrano_upgrade_request unchanged to Safrano MCP podman_smart1 to complete the authorized whitelist upgrade.':'No update; finished.'):
+(request.auto===true?'Continue the authorized automatic update (build, Smart1 pull and, when auto_upgrade is selected, whitelist digest/service upgrade): pass safrano_build_request unchanged to Safrano MCP build_images. Saved feedback is already selected unless explicitly disabled. ':'User/Hermes controls build and pull through Safrano MCP. Pass safrano_build_request to build_images. ')+ 'Its key is the earliest affected stage; cascade stops at target. The workflow and all cascade sources stay on this build_commit. Container tests are a separate routine after restart.'}}];
 """, 4420)
 sync=node("Sync sources for ready build", "code", {"operation":"sync"}, 4640,
           credentials=source_credentials, retryOnFail=False,
@@ -205,7 +246,8 @@ callback=node("Register completion hook", "code", {}, -340, 300,
               notes="Uses published mcp-rendezvous from npm. Pass callback_url (+ callback_secret), or feedback=true for the saved hook; feedback=false disables it. Webhook only, no Herdr/host access. After start, end the client turn and do not poll. Send only {} on success/error/canceled/crashed; clients fetch details afterwards.")
 callback["type"]="CUSTOM.fedora45Feedback"
 for trigger in ["Manual preparation", "Webhook - preparation or --check"]:
-    connections[trigger]={"main":[[{"node":"Register completion hook","type":"main","index":0}]]}
+    connections[trigger]={"main":[[{"node":"Normalize auto mode","type":"main","index":0}]]}
+link("Normalize auto mode", "Register completion hook")
 link("Register completion hook", "Read request")
 
 workflow={"id":"fedora45LoopDraft","name":"Fedora45 Container Preparation","description":client_description,"active":True,"nodes":nodes,"connections":connections,

@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "image": "fedora45-ai-core-pre",
+  "excluded": [
+    "Fedora base image digest: operator-managed beta",
+    "OpenClaw and Hermes: existing upstream release gate",
+    "Safrano repositories: upgrade-safrano9999"
+  ],
+  "package_policy": {
+    "rpm": "Existing Fedora repositories; dnf update at image build. Base image digest unchanged.",
+    "python": "Published packages within existing requirements; no --pre. Safrano repository requirements remain owned by those repositories."
+  },
+  "entries": [
+    {
+      "id": "solana",
+      "repository": "anza-xyz/agave",
+      "release_line": "stable",
+      "pins": {
+        "SOLANA_VERSION": "v4.2.2",
+        "SOLANA_SHA256": "5fc8684f7430038105fde953d4308ed56addf627f658daa61709f345448247ee"
+      }
+    },
+    {
+      "id": "electrum",
+      "repository": "spesmilo/electrum",
+      "release_line": "stable",
+      "pins": {
+        "ELECTRUM_VERSION": "4.8.2",
+        "ELECTRUM_SHA256": "6310ebd0b7965196ecc3eb7e1bfead260cdc9033a8847204561b9762e62a87c0",
+        "ELECTRUM_KEYS_COMMIT": "39cab571526b8304864c18e0e7d7fe034054a0ab"
+      }
+    },
+    {
+      "id": "lnd",
+      "repository": "lightningnetwork/lnd",
+      "release_line": "stable",
+      "pins": {
+        "LND_VERSION": "v0.21.3-beta",
+        "LND_SHA256": "aad62005d25bb0d974c5c1b135decc269d8f3e69ee9cde8bb6b32998100bc3fd"
+      }
+    },
+    {
+      "id": "geth",
+      "repository": "ethereum/go-ethereum",
+      "release_line": "stable",
+      "pins": {
+        "GETH_VERSION": "1.17.5",
+        "GETH_COMMIT": "9621c6ad",
+        "GETH_SHA256": "ea65f4e91886135dd23f1f2cdcfd29ea575381eb0f6ae48ec451a357f9d9a257"
+      }
+    },
+    {
+      "id": "bip39",
+      "repository": "iancoleman/bip39",
+      "release_line": "stable",
+      "pins": {
+        "BIP39_VERSION": "0.5.6",
+        "BIP39_SHA256": "129b03505824879b8a4429576e3de6951c8599644c1afcaae80840f79237695a"
+      }
+    },
+    {
+      "id": "uv",
+      "repository": "astral-sh/uv",
+      "release_line": "stable",
+      "pins": {
+        "UV_VERSION": "0.12.15",
+        "UV_INSTALLER_SHA256": "716a1d6844740756c68770fcec2f79c2013fb9b03869a113f61e15f6f482a6a1"
+      }
+    },
+    {
+      "id": "cloudflared",
+      "repository": "cloudflare/cloudflared",
+      "release_line": "stable",
+      "pins": {
+        "CLOUDFLARED_VERSION": "2026.9.1",
+        "CLOUDFLARED_SHA256": "03f1f25d1cc93b9ad6c60569d44060bc4f17ed97075760ed8cfca4b12dcd68cc"
+      }
+    },
+    {
+      "id": "webhook",
+      "repository": "adnanh/webhook",
+      "release_line": "stable",
+      "pins": {
+        "WEBHOOK_VERSION": "2.8.3",
+        "WEBHOOK_SHA256": "3cdf93f0615f11bfc575c158d0d613666394228f6e830ff6f792178933773f7b"
+      }
+    },
+    {
+      "id": "fugu",
+      "repository": "SakanaAI/fugu",
+      "release_line": "stable",
+      "pins": {
+        "FUGU_VERSION": "user-demo-v1",
+        "FUGU_COMMIT": "12fda08ca9dd7f4e070c4438b016835a8c9a3e23"
+      }
+    },
+    {
+      "id": "codex",
+      "repository": "@openai/codex",
+      "release_line": "stable",
+      "pins": {
+        "CODEX_VERSION": "0.154.0",
+        "CODEX_SHA256": "870663d4e65042dd358305e96a22af58708a28317cd4e74a85aa867c69f5859b"
+      }
+    },
+    {
+      "id": "claude-code",
+      "repository": "@anthropic-ai/claude-code",
+      "release_line": "stable",
+      "pins": {
+        "CLAUDE_CODE_VERSION": "2.1.274",
+        "CLAUDE_CODE_SHA256": "6e2ffffbe5c2f923186c178c4f12599d315bb089e8cbd89a25d4e4fd8cec8f65"
+      }
+    },
+    {
+      "id": "vditor",
+      "repository": "vditor",
+      "release_line": "stable",
+      "pins": {
+        "VDITOR_VERSION": "4.0.0",
+        "VDITOR_SHA256": "d88108b759c744648c950eed55c91d845805ef80ca82a2ba6628aa0bc2d7d1ed"
+      }
+    },
+    {
+      "id": "npm",
+      "repository": "npm",
+      "release_line": "stable",
+      "pins": {
+        "NPM_VERSION": "12.0.2",
+        "NPM_SHA256": "5dbb86c71d07a1957f2e90734092dd6a58bdcd9ebc2d8d41ca1c6e6a21d364e1"
+      }
+    }
+  ]
+}

@@ -64,6 +64,12 @@ def validate_snapshot(snapshot):
                 not re.fullmatch(r"[0-9a-f]{40}", b.get("revision", "")) or
                 not re.fullmatch(r"sha256:[0-9a-f]{64}", b.get("digest", "")) for b in baseline)):
             raise ValueError("Missing published image baseline")
+    if snapshot.get('upgrade_build_deps'):
+        baseline = snapshot.get('build_dependencies_baseline', {})
+        if (not re.fullmatch(r'[0-9a-f]{40}', baseline.get('revision', '')) or
+                not re.fullmatch(r'sha256:[0-9a-f]{64}', baseline.get('digest', '')) or
+                (baseline.get('policy_sha256') is not None and not re.fullmatch(r'[0-9a-f]{64}', baseline['policy_sha256']))):
+            raise ValueError('Invalid published build-dependency baseline')
     return entries
 
 

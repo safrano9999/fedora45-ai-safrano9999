@@ -97,3 +97,13 @@ test('a final-stage-only change dispatches that image without a nonexistent casc
   const p=await upgradePlan(f.get,f.manifest,versions,f.readImage);
   assert.equal(p.start_key,'fedora45_safrano_full');assert.equal(p.cascade,false);
 });
+
+test('dependency baseline handles first migration, binds published bytes and rejects unavailable evidence',async()=>{
+  const {dependencyBaseline}=require('../n8n-sources/source-upgrade');
+  const image={revision:old,digest:digest(2)};
+  const read=async()=>({encoding:'base64',size:2,content:Buffer.from('{}').toString('base64')});
+  assert.equal((await dependencyBaseline(read,image)).policy_sha256,createHash('sha256').update('{}').digest('hex'));
+  assert.equal((await dependencyBaseline(async()=>{throw Object.assign(new Error('missing'),{status:404})},image)).policy_sha256,null);
+  for(const status of [401,403,500])await assert.rejects(dependencyBaseline(async()=>{throw Object.assign(new Error('failed'),{status})},image));
+  await assert.rejects(dependencyBaseline(async()=>({encoding:'base64',size:200000,content:''}),image));
+});

@@ -18,6 +18,11 @@ on:
         required: false
         type: boolean
         default: false
+      upgrade_build_deps:
+        description: "Refresh stable allowlisted third-party build pins; preserve Fedora base image"
+        required: false
+        type: boolean
+        default: false
       force_prepare:
         description: "Explicit operator rebuild with refreshed dependencies; automatic n8n gate remains version-only"
         required: false
@@ -58,6 +63,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
           FORCE_PREPARE: ${{ inputs.force_prepare }}
+          UPGRADE_BUILD_DEPS: ${{ inputs.upgrade_build_deps }}
           UPGRADE_SAFRANO9999: ${{ inputs.upgrade_safrano9999 }}
           VALIDATE_ONLY: ${{ inputs.validate_only }}
           SOURCE_SNAPSHOT_JSON: ${{ inputs.source_snapshot }}
@@ -67,6 +73,7 @@ jobs:
           flags=()
           if [ "$FORCE_PREPARE" = true ]; then flags+=(--force-prepare); fi
           if [ "$UPGRADE_SAFRANO9999" = true ]; then flags+=(--upgrade-safrano9999); fi
+          if [ "$UPGRADE_BUILD_DEPS" = true ]; then flags+=(--upgrade-build-deps); fi
           if [ "$VALIDATE_ONLY" = true ]; then flags+=(--validate-only); fi
           python3 -c 'import os; from pathlib import Path; Path(os.environ["RUNNER_TEMP"], "source-snapshot.json").write_text(os.environ["SOURCE_SNAPSHOT_JSON"])'
           python3 upgrade-loop/prepare-container.py "${flags[@]}" \
