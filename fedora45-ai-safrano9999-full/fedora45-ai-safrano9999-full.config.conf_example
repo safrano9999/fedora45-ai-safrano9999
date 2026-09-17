@@ -114,6 +114,7 @@ OPENCLAW_MODEL_THINKING=high
 #named-volume: /named_volumes/HERMES /named_volumes/HERMES/SOUL.md @HOME@/.hermes/SOUL.md link
 #named-volume: /named_volumes/HERMES /named_volumes/HERMES/channel_directory.json @HOME@/.hermes/channel_directory.json link
 #named-volume: /named_volumes/HERMES /named_volumes/HERMES/gateway_state.json @HOME@/.hermes/gateway_state.json link
+#named-volume: /named_volumes/HERMES /named_volumes/HERMES/webhook_subscriptions.json @HOME@/.hermes/webhook_subscriptions.json link
 #named-volume: /named_volumes/HERMES /named_volumes/HERMES/memories @HOME@/.hermes/memories dir
 #named-volume: /named_volumes/HERMES /named_volumes/HERMES/sessions @HOME@/.hermes/sessions dir
 #named-volume: /named_volumes/HERMES /named_volumes/HERMES/cron @HOME@/.hermes/cron dir
@@ -125,6 +126,10 @@ OPENCLAW_MODEL_THINKING=high
 #named-volume: /named_volumes/HERMES /named_volumes/HERMES/skills/custom @HOME@/.hermes/skills/custom dir
 #default-preset: 1
 HERMES_PERSISTENT=1
+
+HERMES_WEBHOOK_HOST=0.0.0.0
+
+HERMES_WEBHOOK_PORT=8644
 
 #required: CODEANALYST internal web UI port
 CODEANALYST_PORT=11010

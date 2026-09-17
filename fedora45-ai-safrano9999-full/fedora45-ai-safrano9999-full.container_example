@@ -32,6 +32,8 @@ TAILSCALE_VOLUMES=${CONTAINER_NAME}-tailscale:/var/lib/tailscale:Z
 #discover-podman-host-internal
 ADDITIONAL_LINE=Network=pasta:--map-host-loopback,169.254.1.2,--dns-host,1.1.1.1,--dns-host,9.9.9.9
 
+HERMES_WEBHOOK_PUBLISH_PORT=18644
+
 #required: CODEANALYST published host port
 CODEANALYST_PUBLISH_PORT=11010
 
