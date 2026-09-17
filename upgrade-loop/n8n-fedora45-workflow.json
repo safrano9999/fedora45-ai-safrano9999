@@ -1,8 +1,24 @@
 {
   "id": "fedora45LoopDraft",
   "name": "Fedora45 Container Preparation",
+  "description": "GitHub-only preparation. MCP: webhook POST body with callback_url (+ callback_secret) or feedback:true for saved hook; feedback:false disables it. After start, end turn; do not poll. Webhook feedback only; no Herdr/host access.",
   "active": true,
   "nodes": [
+    {
+      "id": "1bc916d6-1bab-53de-9aa4-428ff1d6e726",
+      "name": "MCP start and completion feedback",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -900,
+        420
+      ],
+      "parameters": {
+        "content": "## MCP client instructions\nBefore execute_workflow, read this workflow's details. Use executionMode=production and inputs.type=webhook, webhookData.method=POST. For feedback, set webhookData.body.callback_url (plus callback_secret when required), or body.feedback=true for the saved Hermes hook. Set feedback=false to disable.\nAfter the tool returns its execution ID, END THIS TURN and return control to the user. Do not poll, sleep or wait for completion. The hook receives only {} after success, failure or cancellation; fetch status/evidence then or when the user explicitly asks.\nOnly webhook feedback is supported here. Do not pass herdr_target: this container has no host/Herdr access. Delivery uses mcp-rendezvous from npm.",
+        "width": 800,
+        "height": 440
+      }
+    },
     {
       "id": "f2cc5362-339a-5029-92b6-b51ba8799cd8",
       "name": "Scope",
@@ -65,7 +81,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const item=$input.first();\nconst webhook=Object.prototype.hasOwnProperty.call(item.json,'headers');\nlet raw='';\nif(item.binary?.data) raw=(await this.helpers.getBinaryDataBuffer(0,'data')).toString('utf8').trim();\nelse if(typeof item.json.body==='string') raw=item.json.body.trim();\nlet body=item.json.body&&typeof item.json.body==='object'?item.json.body:{};\nif(raw.startsWith('{')){body=JSON.parse(raw);raw='';}\nif(body.mode)raw=body.mode;\nif(!['','--check','--validate-only','--sources'].includes(raw)) throw new Error('Expected an empty body, --check, --validate-only or --sources');\nconst query={...(item.json.query??{}),...body};\nconst check=Object.prototype.hasOwnProperty.call(query,'--check') || raw==='--check';\nconst validate_only=Object.prototype.hasOwnProperty.call(query,'--validate-only') || raw==='--validate-only';\nconst sources=Object.prototype.hasOwnProperty.call(query,'--sources') || raw==='--sources';\nif([check,validate_only,sources].filter(Boolean).length>1)throw new Error('Choose one check mode');\nconst target=query.target||'fedora45-ai-safrano9999',source_ref=query.ref||'main';\nif(!/^fedora45-ai-[a-z0-9-]+$/.test(target))throw new Error('Invalid target image');\nif(!sources&&query.ref)throw new Error('The ref parameter belongs to --sources');\nreturn [{json:{webhook,check,validate_only,sources,target,source_ref}}];"
+        "jsCode": "const item=$input.first();\nconst webhook=Object.prototype.hasOwnProperty.call(item.json,'headers');\nlet raw='';\nif(item.binary?.data) raw=(await this.helpers.getBinaryDataBuffer(0,'data')).toString('utf8').trim();\nelse if(typeof item.json.body==='string') raw=item.json.body.trim();\nlet body=item.json.body&&typeof item.json.body==='object'?item.json.body:{};\nif(raw.startsWith('{')){body=JSON.parse(raw);raw='';}\nif(body.mode)raw=body.mode;\nif(!['','--check','--validate-only','--sources'].includes(raw)) throw new Error('Expected an empty body, --check, --validate-only or --sources');\nconst query={...(item.json.query??{}),...body};\nconst check=Object.prototype.hasOwnProperty.call(query,'--check') || raw==='--check';\nconst validate_only=Object.prototype.hasOwnProperty.call(query,'--validate-only') || raw==='--validate-only';\nconst sources=Object.prototype.hasOwnProperty.call(query,'--sources') || raw==='--sources';\nif([check,validate_only,sources].filter(Boolean).length>1)throw new Error('Choose one check mode');\nconst target=query.target||'fedora45-ai-safrano9999',source_ref=query.ref||'main';\nif(!/^fedora45-ai-[a-z0-9-]+$/.test(target))throw new Error('Invalid target image');\nif(!sources&&query.ref)throw new Error('The ref parameter belongs to --sources');\nreturn [{json:{webhook,check,validate_only,sources,target,source_ref,completion_feedback:item.json.completion_feedback}}];"
       }
     },
     {
@@ -368,7 +384,8 @@
         0
       ],
       "parameters": {
-        "respondWith": "noData",
+        "respondWith": "json",
+        "responseBody": "={{ {status:'ACCEPTED',execution_id:$execution.id,feedback_enabled:$json.completion_feedback?.enabled === true,feedback_id:$json.completion_feedback?.feedback_id ?? null,next:$json.completion_feedback?.next ?? 'End this turn immediately. Do not poll. No completion notification was requested.'} }}",
         "options": {
           "responseCode": 202
         }
@@ -801,7 +818,7 @@
         300
       ],
       "parameters": {},
-      "notes": "Optional feedback=true with callback_url and callback_secret, or a persisted default. Inside n8n, watch execution completion (success/error/canceled/crashed). Send only {}. No host access; clients read details separately."
+      "notes": "Uses published mcp-rendezvous from npm. Pass callback_url (+ callback_secret), or feedback=true for the saved hook; feedback=false disables it. Webhook only, no Herdr/host access. After start, end the client turn and do not poll. Send only {} on success/error/canceled/crashed; clients fetch details afterwards."
     }
   ],
   "connections": {

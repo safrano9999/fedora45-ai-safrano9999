@@ -131,9 +131,12 @@ not URLs, arguments, workflow data or `.git/config`. It runs only Git inside n8n
 it does not execute checkout scripts, initialize submodules, use SSH, access a
 container socket or run a local image build. Execute Command remains disabled.
 
-Install/update all four JavaScript files from [n8n-sources](n8n-sources) in
-`/home/node/.n8n/custom/fedora45-sources/`, then restart n8n when no execution is
-running. The custom node and checkouts persist in the existing volume. Install
+Install/update all JavaScript files, `rendezvous.json`, `package.json` and
+`package-lock.json` from [n8n-sources](n8n-sources) in
+`/home/node/.n8n/custom/fedora45-sources/`. Run `npm ci --omit=dev --ignore-scripts
+--registry=https://registry.npmjs.org/` in that directory inside n8n, then restart
+n8n when no execution is running. The custom nodes, npm dependency and checkouts
+persist in the existing volume. Install
 the node before publishing/importing the workflow; no AI-container restart,
 new host mount or additional container environment secret is needed.
 
@@ -182,6 +185,8 @@ python3 upgrade-loop/generate-workflows.py
 python3 upgrade-loop/generate-workflows.py --check
 python3 -m unittest discover -s upgrade-loop/tests -p test_preparation.py
 node --test upgrade-loop/tests/test_sources.cjs
+npm ci --prefix upgrade-loop/n8n-sources --ignore-scripts
+node --test upgrade-loop/tests/test_feedback.cjs
 ```
 
 The separate Safrano MCP now supports authenticated HTTPS as well as stdio.
@@ -193,6 +198,10 @@ it; adding the server to the environment does not start either operation.
 
 Through n8n MCP `execute_workflow`, use production mode and a JSON webhook body such as `{"feedback":true,"callback_url":"http://…/webhooks/ucore-mcp-finish.hook","callback_secret":"…"}`. Legacy `--check`, `--sources`, and `--validate-only` remain valid; JSON may specify `"mode":"--check"`. Passing `callback_url` opts in; `feedback:false` explicitly suppresses it. With neither URL nor `feedback:true`, no callback is sent. A private `/home/node/.n8n/fedora45-feedback/default.json` containing `{"url":"…","secret":"…"}` allows subsequent calls to use only `feedback:true`.
 
-The custom completion node stores the optional destination in the existing n8n volume. Its worker runs inside n8n and reads n8n's own execution table using the existing database connection, with a read-only PostgreSQL session (or SQLite read-only mode). On `success`, `error`, `canceled`, or `crashed`, it sends exactly `{}` to the callback. No outcome details leave in the body; the client retrieves execution evidence separately. HMAC and a stable delivery ID support Hermes' native webhook adapter. Failed deliveries are retried and survive container restarts. The receiving hook should deduplicate delivery IDs. Client-provided secrets are sensitive request inputs; the generated graph does not propagate them after registration.
+The custom completion node uses the published [`mcp-rendezvous` npm package](https://www.npmjs.com/package/mcp-rendezvous) to store and deliver notifications in the existing n8n volume. There is no separate REST service. The small n8n worker still reads n8n's own execution table using the existing database connection, with a read-only PostgreSQL session (or SQLite read-only mode). It maps `success` to success, `error`/`crashed` to failure and `canceled` to cancellation; the library then sends exactly `{}` to the callback. No outcome details leave in the body; the client retrieves execution evidence separately. HMAC and a stable delivery ID support Hermes' native webhook adapter. Failed deliveries are retried and survive container restarts. The receiving hook should deduplicate delivery IDs. Client-provided secrets are sensitive request inputs; the custom node removes them from the body, query and raw JSON binary before continuing the graph.
 
-Install all `n8n-sources/*.js` files together under `/home/node/.n8n/custom/fedora45-sources` and restart n8n after updating custom node definitions. This adds no host access, image build or deployment to the preparation loop. Automatic preparation still requires an upstream OpenClaw/Hermes version change. The GitHub preparation Action's `force_prepare` input is reserved for an explicitly requested operator rebuild.
+The workflow description and the "MCP start and completion feedback" note instruct MCP clients to supply a callback URL or opt into the saved default before starting. `execute_workflow` already instructs clients to read workflow details first. Once it returns the execution ID, end the turn and do not poll. Direct webhook callers also receive an HTTP 202 JSON acknowledgement with `feedback_enabled`, `feedback_id` and the library's `next` instruction. `--check` keeps its two-line response. Only webhook feedback is enabled in this container; `herdr_target` belongs to host-side Safrano MCP and is not supported here.
+
+Before upgrading the old worker, let any pending legacy notifications finish. Already delivered numeric job files remain as history and are never resent; new jobs use the library's UUID format with the n8n execution ID recorded as metadata. The existing private `default.json` is reused. Repeated registration for the same execution recovers its existing job. A fresh worker heartbeat is required before a feedback-enabled request continues.
+
+Install the custom files and their locked npm dependencies as described above, then restart n8n after updating custom node definitions. This adds no host access, image build or deployment to the preparation loop. Automatic preparation still requires an upstream OpenClaw/Hermes version change. The GitHub preparation Action's `force_prepare` input is reserved for an explicitly requested operator rebuild.

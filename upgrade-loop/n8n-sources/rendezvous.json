@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "tools": {"execute_workflow": {"actions": ["run"]}},
+  "feedback": {
+    "default": false,
+    "on": ["success", "failure", "cancelled"],
+    "routes": {
+      "webhook": {"adapter": "webhook", "method": "POST", "body": {}}
+    },
+    "client_instruction": "End this turn immediately. Do not poll."
+  }
+}

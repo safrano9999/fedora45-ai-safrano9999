@@ -42,6 +42,8 @@ def http(name, url, x, y=0, **parameters):
 
 
 base = "https://api.github.com/repos/safrano9999/fedora45-ai-safrano9999"
+client_description = "GitHub-only preparation. MCP: webhook POST body with callback_url (+ callback_secret) or feedback:true for saved hook; feedback:false disables it. After start, end turn; do not poll. Webhook feedback only; no Herdr/host access."
+node("MCP start and completion feedback", "stickyNote", {"content": "## MCP client instructions\nBefore execute_workflow, read this workflow's details. Use executionMode=production and inputs.type=webhook, webhookData.method=POST. For feedback, set webhookData.body.callback_url (plus callback_secret when required), or body.feedback=true for the saved Hermes hook. Set feedback=false to disable.\nAfter the tool returns its execution ID, END THIS TURN and return control to the user. Do not poll, sleep or wait for completion. The hook receives only {} after success, failure or cancellation; fetch status/evidence then or when the user explicitly asks.\nOnly webhook feedback is supported here. Do not pass herdr_target: this container has no host/Herdr access. Delivery uses mcp-rendezvous from npm.", "width": 800, "height": 440}, -900, 420)
 node("Scope", "stickyNote", {"content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nA new OpenClaw OR Hermes release opens the gate. Resolve latest Safrano sources ONCE after this gate. Share the same snapshot with preparation, depth-1 clones and builds. Test BOTH selected Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.", "width": 1600, "height": 260}, 0, -430)
 node("Manual preparation", "manualTrigger", {}, -440, -120)
 node("Webhook - preparation or --check", "webhook", {"httpMethod": "POST", "path": "fedora45-update-loop", "authentication": "headerAuth", "responseMode": "responseNode", "options": {"rawBody": True}}, -440, 120, 2,
@@ -64,7 +66,7 @@ if([check,validate_only,sources].filter(Boolean).length>1)throw new Error('Choos
 const target=query.target||'fedora45-ai-safrano9999',source_ref=query.ref||'main';
 if(!/^fedora45-ai-[a-z0-9-]+$/.test(target))throw new Error('Invalid target image');
 if(!sources&&query.ref)throw new Error('The ref parameter belongs to --sources');
-return [{json:{webhook,check,validate_only,sources,target,source_ref}}];
+return [{json:{webhook,check,validate_only,sources,target,source_ref,completion_feedback:item.json.completion_feedback}}];
 """, -200)
 branch("Sources preview?", "={{ $json.sources }}", -200, -180)
 source_credentials={"httpHeaderAuth": {"id": "fedora45GitHubPreparation", "name": "Fedora45 GitHub preparation"}}
@@ -98,7 +100,7 @@ return [{json:{...$('Read request').first().json,versions,update,stdout,baseline
 branch("Check only?", "={{ $json.check }}", 900)
 node("Return two version lines", "respondToWebhook", {"respondWith": "text", "responseBody": "={{ $json.stdout }}", "options": {"responseCode": 200, "responseHeaders": {"entries": [{"name": "Content-Type", "value": "text/plain; charset=utf-8"}]}}}, 1120, -160, 1.4)
 branch("Webhook request?", "={{ $json.webhook }}", 1120, 100)
-node("Accept preparation", "respondToWebhook", {"respondWith": "noData", "options": {"responseCode": 202}}, 1340, 0, 1.4)
+node("Accept preparation", "respondToWebhook", {"respondWith": "json", "responseBody": "={{ {status:'ACCEPTED',execution_id:$execution.id,feedback_enabled:$json.completion_feedback?.enabled === true,feedback_id:$json.completion_feedback?.feedback_id ?? null,next:$json.completion_feedback?.next ?? 'End this turn immediately. Do not poll. No completion notification was requested.'} }}", "options": {"responseCode": 202}}, 1340, 0, 1.4)
 branch("Upstream update available?", "={{ $json.update || $json.validate_only }}", 1560, 120)
 code("No update", "return [{json:{...$json,status:'NO_UPDATE',build_started:false,image_pulled:false,container_restarted:false}}];", 1780, 300)
 code("Prepare request", """
@@ -189,13 +191,13 @@ link("Sources preview?","Published version pins",1)
 link("Handoff to Hermes","Sync sources for ready build")
 
 callback=node("Register completion hook", "code", {}, -340, 300,
-              notes="Optional feedback=true with callback_url and callback_secret, or a persisted default. Inside n8n, watch execution completion (success/error/canceled/crashed). Send only {}. No host access; clients read details separately.")
+              notes="Uses published mcp-rendezvous from npm. Pass callback_url (+ callback_secret), or feedback=true for the saved hook; feedback=false disables it. Webhook only, no Herdr/host access. After start, end the client turn and do not poll. Send only {} on success/error/canceled/crashed; clients fetch details afterwards.")
 callback["type"]="CUSTOM.fedora45Feedback"
 for trigger in ["Manual preparation", "Webhook - preparation or --check"]:
     connections[trigger]={"main":[[{"node":"Register completion hook","type":"main","index":0}]]}
 link("Register completion hook", "Read request")
 
-workflow={"id":"fedora45LoopDraft","name":"Fedora45 Container Preparation","active":True,"nodes":nodes,"connections":connections,
+workflow={"id":"fedora45LoopDraft","name":"Fedora45 Container Preparation","description":client_description,"active":True,"nodes":nodes,"connections":connections,
           "settings":{"executionOrder":"v1","executionTimeout":3600,"availableInMCP":True,"saveDataErrorExecution":"all","saveDataSuccessExecution":"all"}}
 (ROOT/'n8n-fedora45-workflow.json').write_text(json.dumps(workflow,indent=2,ensure_ascii=False)+'\n')
 for suffix,identifier,title in [('integration','fedora45Integration','Integration'),('repair','fedora45Repair','Repair'),('step-report','fedora45StepReport','Step Report')]:

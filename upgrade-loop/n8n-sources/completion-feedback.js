@@ -1,77 +1,88 @@
-'use strict';
+"use strict";
+// n8n owns execution monitoring; mcp-rendezvous owns persistence and delivery.
 const fs = require('node:fs');
 const path = require('node:path');
-const crypto = require('node:crypto');
-const http = require('node:http');
-const https = require('node:https');
 const ROOT = process.env.FEDORA45_FEEDBACK_ROOT || '/home/node/.n8n/fedora45-feedback';
-const TERMINAL = new Set(['success', 'error', 'canceled', 'crashed']);
+const CONFIG = process.env.FEDORA45_RENDEZVOUS_CONFIG || path.join(__dirname, 'rendezvous.json');
+const WORKFLOW = 'fedora45LoopDraft';
+const OUTCOMES = { success: 'success', error: 'failure', canceled: 'cancelled', crashed: 'failure' };
+const TERMINAL = new Set(Object.keys(OUTCOMES));
+let instance;
+let registration = Promise.resolve();
 
-function atomic(file, value) {
-  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
-  const tmp = file + '.' + crypto.randomUUID();
-  fs.writeFileSync(tmp, JSON.stringify(value), { mode: 0o600 });
-  fs.renameSync(tmp, file);
-}
-function endpoint(url, secret = '') {
-  const u = new URL(url);
-  if (!['http:', 'https:'].includes(u.protocol) || !u.hostname || u.username || u.password || u.hash || /[\r\n]/.test(url + secret)) throw new Error('Invalid callback endpoint');
-  return { url, secret };
-}
-function register(id, input) {
-  if (!/^[0-9]+$/.test(String(id))) throw new Error('Invalid execution ID');
-  const enabled = input.feedback !== false && input.feedback !== 'false' && (Boolean(input.callback_url) || input.feedback === true || input.feedback === 'true');
-  if (!enabled) return false;
-  const defaults = path.join(ROOT, 'default.json');
-  const saved = fs.existsSync(defaults) ? JSON.parse(fs.readFileSync(defaults)) : null;
-  const url = input.callback_url || saved?.url;
-  const secret = input.callback_secret || (saved?.url === url ? saved.secret : '') || '';
-  if (!url) throw new Error('feedback=true requires callback_url or a configured default hook');
-  const file = path.join(ROOT, 'jobs', id + '.json');
-  if (!fs.existsSync(file)) atomic(file, { id: String(id), callback: endpoint(url, secret), delivery: crypto.randomUUID(), attempts: 0, state: 'waiting' });
-  return true;
-}
-function send(job) {
-  return new Promise((resolve, reject) => {
-    const body = '{}', headers = { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'X-GitHub-Delivery': job.delivery };
-    if (job.callback.secret) headers['X-Hub-Signature-256'] = 'sha256=' + crypto.createHmac('sha256', job.callback.secret).update(body).digest('hex');
-    const u = new URL(job.callback.url), client = u.protocol === 'https:' ? https : http;
-    const request = client.request(u, { method: 'POST', headers, timeout: 15000 }, response => {
-      response.resume();
-      if (response.statusCode >= 200 && response.statusCode < 300) resolve();
-      else reject(new Error('Callback rejected')); // Never follow redirects with the signature.
-    });
-    request.on('timeout', () => request.destroy(new Error('Callback timeout')));
-    request.on('error', reject);
-    request.end(body);
-  });
-}
-async function tick(readExecution, deliver = send) {
+function assertLegacyDrained() {
   const jobs = path.join(ROOT, 'jobs');
   if (!fs.existsSync(jobs)) return;
   for (const name of fs.readdirSync(jobs).filter(n => /^\d+\.json$/.test(n))) {
-    const file = path.join(jobs, name), job = JSON.parse(fs.readFileSync(file));
-    if (job.state === 'delivered' || Date.now() < (job.retry_after || 0)) continue;
-    try {
-      const execution = await readExecution(job.id);
-      if (!execution || execution.workflowId !== 'fedora45LoopDraft' || !TERMINAL.has(execution.status)) continue;
-      await deliver(job);
-      job.state = 'delivered'; job.delivered = new Date().toISOString();
-      delete job.callback; delete job.error;
-    } catch {
-      job.attempts++; job.error = 'completion_delivery_failed'; job.retry_after = Date.now() + Math.min(300000, 15000 * job.attempts);
-    }
-    atomic(file, job);
+    const job = JSON.parse(fs.readFileSync(path.join(jobs, name)));
+    if (job.state !== 'delivered') throw new Error('Drain legacy completion notifications before upgrading the worker');
   }
+  // Delivered numeric jobs remain as history. The SDK reads only its UUID jobs.
 }
+
+async function client() {
+  if (!instance) instance = import('mcp-rendezvous').then(({ Rendezvous }) => {
+    assertLegacyDrained();
+    return new Rendezvous(CONFIG, ROOT);
+  });
+  return instance;
+}
+
+async function registerOnce(id, input) {
+  if (!/^[0-9]+$/.test(String(id))) throw new Error('Invalid execution ID');
+  if (input.herdr_target) throw new Error('This n8n workflow supports webhook feedback only; pass callback_url or feedback=true for the saved hook');
+  const enabled = input.feedback !== false && input.feedback !== 'false' &&
+    (Boolean(input.callback_url) || input.feedback === true || input.feedback === 'true');
+  if (!enabled) return false;
+  const rv = await client();
+  const destination = await rv.resolve(true, input.callback_url || '', input.callback_secret || '');
+  // Recover registration after a node retry or a crash following the durable write.
+  // The workflow has one registration node and one request item per execution.
+  for (const file of await rv.jobs()) {
+    const job = JSON.parse(fs.readFileSync(file));
+    if (job.tool === 'execute_workflow' && job.execution_id === String(id) && job.workflow_id === WORKFLOW) return job.id;
+  }
+  return rv.queue('execute_workflow', 'run', destination, {
+    kind: 'n8n_execution', execution_id: String(id), workflow_id: WORKFLOW,
+  });
+}
+
+function register(id, input) {
+  const next = registration.catch(() => {}).then(() => registerOnce(id, input));
+  registration = next;
+  return next;
+}
+
+async function instructions(enabled) {
+  const { completionNext } = await import('mcp-rendezvous');
+  return completionNext(enabled ? { kind: 'webhook' } : null);
+}
+
+async function tick(readExecution) {
+  const rv = await client();
+  for (const file of await rv.jobs()) {
+    const job = JSON.parse(fs.readFileSync(file));
+    if (job.state === 'finished' || job.tool !== 'execute_workflow' || job.workflow_id !== WORKFLOW) continue;
+    try {
+      const execution = await readExecution(job.execution_id);
+      if (!execution || execution.workflowId !== WORKFLOW || !TERMINAL.has(execution.status)) continue;
+      await rv.complete(job.id, OUTCOMES[execution.status], { execution_status: execution.status });
+    } catch {
+      // A temporary database failure must never become a false terminal result.
+      continue;
+    }
+  }
+  await rv.deliverPending();
+}
+
 let launched = false;
 function start() {
   if (launched || process.env.FEDORA45_FEEDBACK_NO_WORKER === '1') return;
   launched = true;
   const child = require('node:child_process').spawn(process.execPath, [path.join(__dirname, 'completion-worker.js')], { detached: true, stdio: 'ignore' });
-  child.on('exit', code => {
-    if (code !== 0) { launched = false; setTimeout(start, 5000).unref(); }
-  });
+  const retry = () => { launched = false; setTimeout(start, 5000).unref(); };
+  child.on('error', retry);
+  child.on('exit', code => { if (code !== 0) retry(); });
   child.unref();
 }
-module.exports = { ROOT, TERMINAL, atomic, endpoint, register, send, tick, start };
+module.exports = { ROOT, CONFIG, TERMINAL, assertLegacyDrained, client, register, instructions, tick, start };

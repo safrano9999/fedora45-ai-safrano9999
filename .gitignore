@@ -5,3 +5,4 @@ __pycache__/
 # Generated instances contain host paths, credentials and local runtime data.
 **/CONTAINER/
 .tag
+upgrade-loop/n8n-sources/node_modules/

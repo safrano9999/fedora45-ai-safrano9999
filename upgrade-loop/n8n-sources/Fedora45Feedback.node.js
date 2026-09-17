@@ -16,13 +16,20 @@ class Fedora45Feedback {
     if (item.binary?.data) body = (await this.helpers.getBinaryDataBuffer(0, 'data')).toString('utf8').trim();
     if (typeof body === 'string' && body.startsWith('{')) body = JSON.parse(body);
     const options = { ...(item.json.query || {}), ...(body && typeof body === 'object' ? body : {}) };
-    feedback.register(this.getExecutionId(), options);
+    const feedbackId = await feedback.register(this.getExecutionId(), options);
     // The durable queue retains a private secret; don't propagate it through the graph.
+    const json = { ...item.json, completion_feedback: {
+      enabled: Boolean(feedbackId), feedback_id: feedbackId || null,
+      next: await feedback.instructions(Boolean(feedbackId)),
+    } };
+    if (json.query && typeof json.query === 'object') {
+      json.query = { ...json.query }; delete json.query.callback_secret;
+    }
     if (body && typeof body === 'object') {
       body = { ...body }; delete body.callback_secret;
-      return [[{ json: { ...item.json, body } }]];
+      return [[{ json: { ...json, body } }]];
     }
-    return [input];
+    return [[{ ...item, json }]];
   }
 }
 module.exports = { Fedora45Feedback };

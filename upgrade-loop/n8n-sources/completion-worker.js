@@ -20,6 +20,8 @@ lock.on('error', error => {
 });
 lock.on('listening', async () => {
   fs.chmodSync(socket, 0o600);
+  const rv = await f.client();
+  await rv.recoverDeliveries();
   let read;
   if (process.env.DB_TYPE === 'postgresdb') {
     const { Client } = dependency('pg');
@@ -35,7 +37,7 @@ lock.on('listening', async () => {
     read = id => new Promise((resolve, reject) => db.get('SELECT status, workflowId FROM execution_entity WHERE id = ?', [id], (err, row) => err ? reject(err) : resolve(row)));
   }
   async function cycle() {
-    try { await f.tick(read); fs.writeFileSync(path.join(f.ROOT, 'heartbeat'), String(Date.now()), { mode: 0o600 }); }
+    try { await rv.heartbeat(); await f.tick(read); }
     catch { /* Retry after temporary DB or filesystem failures; never log a secret. */ }
     setTimeout(cycle, 3000);
   }

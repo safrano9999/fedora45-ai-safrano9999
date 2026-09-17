@@ -1,0 +1,9 @@
+{
+  "name": "fedora45-n8n-sources",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fedora45 n8n preparation nodes and completion worker",
+  "type": "commonjs",
+  "engines": {"node": ">=20"},
+  "dependencies": {"mcp-rendezvous": "^0.1.0"}
+}
