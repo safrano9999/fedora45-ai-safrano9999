@@ -6,7 +6,9 @@ const f=require('../n8n-sources/completion-feedback');
 test.after(()=>fs.rmSync(root,{recursive:true,force:true}));
 test('opt-in, private persisted endpoint, every terminal outcome, no payload details',async()=>{
  let delivered=[];
- assert.equal(f.register('1',{callback_url:'http://example.test'}),false);
+ assert.equal(f.register('1',{callback_url:'http://example.test',feedback:false}),false);
+ assert.equal(f.register('2',{}),false);
+ assert.equal(f.register('3',{callback_url:'http://example.test'}),true);
  for(const [index,status] of ['success','error','canceled','crashed'].entries()){
   const id=String(index+10);f.register(id,{feedback:true,callback_url:'http://example.test',callback_secret:'secret'});
   assert.equal(fs.statSync(path.join(root,'jobs',id+'.json')).mode&0o777,0o600);

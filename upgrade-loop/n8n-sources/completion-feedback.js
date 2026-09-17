@@ -20,7 +20,7 @@ function endpoint(url, secret = '') {
 }
 function register(id, input) {
   if (!/^[0-9]+$/.test(String(id))) throw new Error('Invalid execution ID');
-  const enabled = input.feedback === true || input.feedback === 'true';
+  const enabled = input.feedback !== false && input.feedback !== 'false' && (Boolean(input.callback_url) || input.feedback === true || input.feedback === 'true');
   if (!enabled) return false;
   const defaults = path.join(ROOT, 'default.json');
   const saved = fs.existsSync(defaults) ? JSON.parse(fs.readFileSync(defaults)) : null;
