@@ -99,8 +99,8 @@
       "repository": "@openai/codex",
       "release_line": "stable",
       "pins": {
-        "CODEX_VERSION": "0.154.0",
-        "CODEX_SHA256": "870663d4e65042dd358305e96a22af58708a28317cd4e74a85aa867c69f5859b"
+        "CODEX_VERSION": "0.155.0",
+        "CODEX_SHA256": "be7ee5f16f4c37d3a90e4edce35079cc65b62e5d83bad40f3613a6f2b45efbac"
       }
     },
     {
