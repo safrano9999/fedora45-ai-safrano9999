@@ -246,7 +246,7 @@ test('maximal shortcut selects every upgrade step with saved feedback and reject
     {mode:'maximal',feedback:false},{mode:'maximal',feedback:'false'}]) {
     const normalized=(await normalize({first:()=>({json:{body,headers:{}}})}))[0];
     const request=(await read({first:()=>normalized}))[0].json;
-    for(const key of ['maximal','upgrade_safrano9999','upgrade_build_deps','auto','auto_upgrade'])assert.equal(request[key],true);
+    for(const key of ['maximal','upgrade_safrano9999','upgrade_build_deps','upgrade_custom_images','auto','auto_upgrade'])assert.equal(request[key],true);
     const notify=!(body.feedback===false||body.feedback==='false');
     assert.equal(request.build_feedback,notify);
     assert.equal(normalized.json.body.feedback,notify?true:body.feedback);
@@ -256,7 +256,7 @@ test('maximal shortcut selects every upgrade step with saved feedback and reject
   assert.equal(raw.json.body.maximal,true);assert.equal(raw.binary,undefined);
   const query=(await normalize({first:()=>({json:{headers:{},query:{mode:'maximal'}}})}))[0];
   assert.equal(query.json.body.auto_upgrade,true);
-  for(const body of [{mode:'maximal',auto:false},{mode:'maximal',auto_upgrade:false},
+  for(const body of [{mode:'maximal',auto:false},{mode:'maximal',auto_upgrade:false},{mode:'maximal',upgrade_custom_images:false},
     {mode:'maximal',upgrade_build_deps:false},{mode:'--check',maximal:true},{maximal:'yes'},
     {mode:'maximal','--sources':true}])await assert.rejects(normalize({first:()=>({json:{body}})}));
   assert.match(workflow.description,/Feuer den maximalen Loop/);
