@@ -63,8 +63,8 @@
       "repository": "astral-sh/uv",
       "release_line": "stable",
       "pins": {
-        "UV_VERSION": "0.12.15",
-        "UV_INSTALLER_SHA256": "716a1d6844740756c68770fcec2f79c2013fb9b03869a113f61e15f6f482a6a1"
+        "UV_VERSION": "0.12.16",
+        "UV_INSTALLER_SHA256": "889a5745afddc78b389841caede74711003b782e2ec8c2f29b3c03cbd7b580a9"
       }
     },
     {
