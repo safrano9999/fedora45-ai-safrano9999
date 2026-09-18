@@ -190,6 +190,9 @@ jobs:
             build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-model-defaults/plugin.yaml
             build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-mcp-feedback/plugin.yaml
             build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-mcp-feedback/__init__.py
+            build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/main_session.py
+            build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-main-session/__init__.py
+            build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-main-session/plugin.yaml
             build/vendor/hermes-ephemeral/image/runtime/etc/systemd/system/hermes-config.service
           )
           for file in "${vendor_files[@]}"; do
@@ -198,14 +201,14 @@ jobs:
               exit 1
             }
           done
-          [ "$(find build/vendor/openclaw-ephemeral -type f | wc -l)" -eq 12 ] || {
-            echo "Unexpected openclaw-ephemeral vendor file set" >&2
-            exit 1
-          }
-          [ "$(find build/vendor/hermes-ephemeral -type f | wc -l)" -eq 16 ] || {
-            echo "Unexpected hermes-ephemeral vendor file set" >&2
-            exit 1
-          }
+          for family in openclaw-ephemeral hermes-ephemeral; do
+            diff -u \
+              <(printf '%s\n' "${vendor_files[@]}" | grep -F "build/vendor/$family/" | LC_ALL=C sort) \
+              <(find "build/vendor/$family" -type f | LC_ALL=C sort) || {
+                echo "Unexpected $family vendor file set" >&2
+                exit 1
+              }
+          done
           {
             echo "openclaw_version=$OPENCLAW_VERSION"
             echo "build_args<<EOF"
