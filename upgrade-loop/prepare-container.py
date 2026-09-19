@@ -219,7 +219,10 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
         run(["git", "apply", "--check", REPO / "fedora45-ai-core-pre/build/hermes-nous-api-key.patch"],
             cwd=targets["hermes"]["source"])
         report["checks"]["hermes_patch"] = {"status": "PASS"}
-    after_foundation, after_core = before_foundation, before_core
+    # A base-image refresh and upstream version changes share this file. Apply
+    # version changes on the refreshed foundation so neither update is lost.
+    after_foundation = dependency_files.pop(foundation.relative_to(REPO), before_foundation)
+    after_core = before_core
     for name in COMPONENTS:
         after_foundation = replace_pin(after_foundation, name.upper() + "_VERSION", latest[name], "ARG ")
     for key, value in inputs.items():
@@ -253,7 +256,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--force-prepare", action="store_true", help="Explicit operator rebuild; never used by the automatic n8n version gate")
     parser.add_argument("--upgrade-safrano9999", action="store_true", help="Prepare changed Safrano inputs from the earliest affected published image")
-    parser.add_argument("--upgrade-build-deps", action="store_true", help="Refresh allowlisted stable third-party pins; preserve the Fedora base image")
+    parser.add_argument("--upgrade-build-deps", action="store_true", help="Refresh allowlisted third-party pins and configured base-image release lines")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--source-snapshot", type=Path, required=True)

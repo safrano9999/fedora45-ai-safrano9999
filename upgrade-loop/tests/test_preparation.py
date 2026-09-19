@@ -2,9 +2,12 @@ import importlib.util
 import copy
 import json
 import subprocess
+import tempfile
 import unittest
+from contextlib import ExitStack
 from pathlib import Path
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 spec = importlib.util.spec_from_file_location("prepare_container", Path(__file__).parents[1] / "prepare-container.py")
 prep = importlib.util.module_from_spec(spec)
@@ -12,6 +15,44 @@ spec.loader.exec_module(prep)
 
 
 class PreparationTests(unittest.TestCase):
+    def test_base_and_upstream_version_changes_survive_the_same_preparation(self):
+        with tempfile.TemporaryDirectory() as raw, ExitStack() as stack:
+            root = Path(raw)
+            foundation = root / 'fedora45-ai-core-pre/Containerfile'
+            core = root / 'fedora45-ai-core/build.conf'
+            foundation.parent.mkdir(); core.parent.mkdir(); (root / 'upgrade-loop').mkdir()
+            before = 'FROM quay.io/fedora/fedora@sha256:' + 'a'*64 + ' AS ai-core-pre\nARG OPENCLAW_VERSION=2026.9.4\nARG HERMES_VERSION=0.21.2\n'
+            foundation.write_text(before)
+            inputs = {'OPENCLAW_VERSION': '2026.9.5', 'OPENCLAW_EPHEMERAL_COMMIT': 'b'*40, 'HERMES_EPHEMERAL_COMMIT': 'c'*40}
+            core.write_text(''.join(key + '=old\n' for key in inputs))
+            selected_base = before.replace('@sha256:' + 'a'*64, ':45@sha256:' + 'd'*64)
+            snapshot = {'source_commit': 'e'*40, 'upgrade_build_deps': True,
+                        'versions': {'openclaw': {'current': '2026.9.4', 'latest': '2026.9.5'},
+                                     'hermes': {'current': '0.21.2', 'latest': '0.21.2'}},
+                        'build_dependencies_baseline': {'policy_sha256': 'f'*64}}
+            files = {foundation.relative_to(root): selected_base,
+                     prep.build_dependencies.CONF: 'DEPENDENCY=new\n', prep.build_dependencies.POLICY: '{}\n'}
+            runtime = SimpleNamespace(prepare=lambda name, version, path: {
+                'source': str(root / name), 'package': str(root / name), 'upstream_commit': 'a'*40})
+            def command(args, **kwargs):
+                return SimpleNamespace(stdout='e'*40 if 'rev-parse' in args else '')
+            stack.enter_context(patch.dict(prep.os.environ, {'GITHUB_ACTIONS': 'true'}))
+            for target, name, value in [
+                (prep, 'REPO', root), (prep, 'ROOT', root / 'upgrade-loop'),
+                (prep, 'validate_snapshot', Mock()), (prep, 'snapshot_build_inputs', Mock(return_value=inputs)),
+                (prep, 'run', Mock(side_effect=command)),
+                (prep.build_dependencies, 'plan', Mock(return_value=({'required': True}, files))),
+                (prep.importlib.util, 'spec_from_file_location', Mock(return_value=SimpleNamespace(loader=Mock()))),
+                (prep.importlib.util, 'module_from_spec', Mock(return_value=runtime)),
+            ]:
+                stack.enter_context(patch.object(target, name, value))
+            report = {}
+            prep.prepare(report, snapshot=snapshot, upgrade_build_deps=True)
+            self.assertEqual(report['status'], 'READY_FOR_BUILD')
+            self.assertEqual(foundation.read_text(), selected_base.replace('2026.9.4', '2026.9.5'))
+            self.assertIn('OPENCLAW_VERSION=2026.9.5', core.read_text())
+            self.assertEqual((root / prep.build_dependencies.CONF).read_text(), 'DEPENDENCY=new\n')
+
     def test_only_upstream_versions_open_gate(self):
         pins = {"openclaw": "2026.9.4", "hermes": "0.21.2"}
         self.assertFalse(prep.has_update(prep.select_versions(pins, pins)))

@@ -14,6 +14,9 @@ import urllib.parse
 ROOT = Path(__file__).resolve().parent.parent
 POLICY = Path('upgrade-loop/build-dependencies-whitelist.json')
 CONF = Path('fedora45-ai-core-pre/build.conf')
+MANIFEST_TYPES = ','.join(['application/vnd.oci.image.index.v1+json',
+    'application/vnd.docker.distribution.manifest.list.v2+json',
+    'application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json'])
 DEFINITIONS = {
     'solana': ('anza-xyz/agave', ['SOLANA_VERSION', 'SOLANA_SHA256']),
     'electrum': ('spesmilo/electrum', ['ELECTRUM_VERSION', 'ELECTRUM_SHA256', 'ELECTRUM_KEYS_COMMIT']),
@@ -160,7 +163,40 @@ def resolve(entry, get=github, read=fetch):
     return {'BIP39_VERSION': tag, 'BIP39_SHA256': asset_hash(repo, release, 'bip39-standalone.html', get, read)}
 
 
-def plan(root=ROOT, get=github, read=fetch):
+def image_digest(image, line):
+    """Read a public registry manifest, without pulling image layers."""
+    registry, repository = image.split('/', 1)
+    url = f'https://{registry}/v2/{repository}/manifests/{line}'
+    request = urllib.request.Request(url, headers={'Accept': MANIFEST_TYPES, 'User-Agent': 'safrano-build-inputs/1'})
+    with urllib.request.urlopen(request, timeout=60) as response:
+        payload = response.read(2 * 1024 * 1024 + 1)
+        if not payload or len(payload) > 2 * 1024 * 1024: raise ValueError('Invalid registry manifest size')
+        digest = 'sha256:' + hashlib.sha256(payload).hexdigest()
+        if response.headers.get('Docker-Content-Digest') != digest:
+            raise ValueError('Registry manifest checksum mismatch')
+        manifest = json.loads(payload)
+        if manifest.get('schemaVersion') != 2 or manifest.get('mediaType') not in MANIFEST_TYPES.split(','):
+            raise ValueError('Unsupported registry manifest')
+        return digest
+
+
+def base_binding(root, policy, entry):
+    image, line, digest = entry.get('image', ''), entry.get('release_line', ''), entry.get('digest', '')
+    path, stage = entry.get('containerfile', ''), entry.get('stage', '')
+    if not re.fullmatch(r'[a-z0-9.-]+\.[a-z]+/[a-z0-9_./-]+', image) or '..' in image.split('/'):
+        raise ValueError('Invalid configured base repository')
+    if not re.fullmatch(r'[A-Za-z0-9_][A-Za-z0-9_.-]*', line) or not re.fullmatch(r'sha256:[0-9a-f]{64}', digest):
+        raise ValueError('Invalid configured base release line or digest')
+    if path != policy['image'] + '/Containerfile' or not re.fullmatch(r'[a-z0-9][a-z0-9_.-]*', stage):
+        raise ValueError('Invalid configured base binding')
+    text = (root / path).read_text()
+    pattern = r'^FROM ' + re.escape(image) + r'(?::' + re.escape(line) + r')?@' + re.escape(digest) + r' AS ' + re.escape(stage) + r'$'
+    if len(re.findall(pattern, text, re.M)) != 1:
+        raise ValueError('Whitelist/Containerfile base pin drift: ' + entry['id'])
+    return Path(path), text, pattern
+
+
+def plan(root=ROOT, get=github, read=fetch, read_image=image_digest):
     policy_text, conf = (root / POLICY).read_text(), (root / CONF).read_text()
     policy = json.loads(policy_text)
     if policy.get('schema_version') != 1 or policy.get('image') != 'fedora45-ai-core-pre' or not policy.get('entries'):
@@ -195,9 +231,24 @@ def plan(root=ROOT, get=github, read=fetch):
             if count != 1:
                 raise ValueError('Missing or duplicate build pin')
         entry['pins'] = wanted
+    files = {CONF: after}
+    seen_bases = set()
+    for entry in updated.get('base_images', []):
+        if entry['id'] in seen_bases or entry['id'] in seen: raise ValueError('Duplicate base image dependency')
+        seen_bases.add(entry['id'])
+        path, text, pattern = base_binding(root, policy, entry)
+        wanted = read_image(entry['image'], entry['release_line'])
+        if not re.fullmatch(r'sha256:[0-9a-f]{64}', wanted): raise ValueError('Invalid resolved base digest')
+        selected.append({'id': entry['id'], 'release_line': entry['release_line'], 'digest': wanted})
+        if wanted != entry['digest']:
+            changes.append({'id': entry['id'], 'before': {'digest': entry['digest']}, 'after': {'digest': wanted}})
+            if path in files: raise ValueError('Multiple base updates to one Containerfile are unsupported')
+            replacement = f"FROM {entry['image']}:{entry['release_line']}@{wanted} AS {entry['stage']}"
+            files[path] = re.sub(pattern, replacement, text, flags=re.M)
+        entry['digest'] = wanted
     report = {'schema_version': 1, 'status': 'PASS', 'image': policy['image'], 'required': bool(changes),
               'policy_sha256': hashlib.sha256(policy_text.encode()).hexdigest(), 'selected': selected, 'changes': changes}
-    return report, {CONF: after, POLICY: json.dumps(updated, indent=2) + '\n'}
+    return report, {**files, POLICY: json.dumps(updated, indent=2) + '\n'}
 
 
 def main():
@@ -219,6 +270,7 @@ def main():
                 if re.findall(r'^' + key + r'=(.*)$', conf, re.M) != [value]:
                     raise ValueError('Whitelist/build.conf pin drift: ' + key)
                 print(key + '=' + value)
+        for entry in policy.get('base_images', []): base_binding(args.root, policy, entry)
         return
     report, files = plan(args.root)
     if args.apply:

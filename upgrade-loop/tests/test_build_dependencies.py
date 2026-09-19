@@ -1,6 +1,7 @@
 import base64
 import copy
 import json
+import io
 from pathlib import Path
 import re
 import subprocess
@@ -15,6 +16,53 @@ import build_dependencies as deps
 
 
 class BuildDependencyTests(unittest.TestCase):
+    def add_base(self, root, policy, digest='sha256:' + 'a'*64):
+        entry = {'id': 'fedora-base', 'image': 'quay.io/fedora/fedora', 'release_line': '45',
+                 'containerfile': 'fedora45-ai-core-pre/Containerfile', 'stage': 'ai-core-pre', 'digest': digest}
+        policy['base_images'] = [entry]
+        (root / deps.POLICY).write_text(json.dumps(policy, indent=2) + '\n')
+        (root / entry['containerfile']).write_text('FROM ' + entry['image'] + '@' + digest + ' AS ai-core-pre\nARG OPENCLAW_VERSION=2026.9.5\n')
+        return entry
+
+    def test_retired_base_digest_is_replaced_from_declared_line_without_pulling(self):
+        root, tool, policy = self.fixture()
+        base = self.add_base(root, policy)
+        before = (root / base['containerfile']).read_text()
+        with patch.object(deps, 'resolve', return_value=tool['pins']):
+            from unittest.mock import Mock
+            lookup = Mock(return_value='sha256:' + 'b'*64)
+            report, files = deps.plan(root, read_image=lookup)
+        lookup.assert_called_once_with('quay.io/fedora/fedora', '45')
+        self.assertTrue(report['required'])
+        self.assertEqual((root / base['containerfile']).read_text(), before)
+        self.assertEqual(files[Path(base['containerfile'])], 'FROM quay.io/fedora/fedora:45@sha256:' + 'b'*64 + ' AS ai-core-pre\nARG OPENCLAW_VERSION=2026.9.5\n')
+        self.assertEqual(json.loads(files[deps.POLICY])['base_images'][0]['digest'], 'sha256:'+'b'*64)
+
+    def test_unchanged_base_preserves_files_and_drift_blocks_before_registry_lookup(self):
+        root, tool, policy = self.fixture()
+        base = self.add_base(root, policy)
+        with patch.object(deps, 'resolve', return_value=tool['pins']):
+            report, files = deps.plan(root, read_image=lambda *args: base['digest'])
+        self.assertFalse(report['required'])
+        self.assertTrue(all((root / p).read_text() == value for p, value in files.items()))
+        (root / base['containerfile']).write_text('FROM unrelated/image:latest\n')
+        from unittest.mock import Mock
+        lookup = Mock()
+        with patch.object(deps, 'resolve', return_value=tool['pins']), self.assertRaisesRegex(ValueError, 'base pin drift'):
+            deps.plan(root, read_image=lookup)
+        lookup.assert_not_called()
+
+    def test_registry_manifest_must_match_publisher_digest(self):
+        payload = json.dumps({'schemaVersion': 2, 'mediaType': 'application/vnd.oci.image.index.v1+json', 'manifests': []}).encode()
+        digest = 'sha256:' + deps.hashlib.sha256(payload).hexdigest()
+        for header, valid in [(digest, True), ('sha256:'+'0'*64, False)]:
+            response = io.BytesIO(payload); response.headers = {'Docker-Content-Digest': header}
+            with patch.object(deps.urllib.request, 'urlopen', return_value=response) as request:
+                if valid: self.assertEqual(deps.image_digest('quay.io/fedora/fedora', '45'), digest)
+                else:
+                    with self.assertRaisesRegex(ValueError, 'checksum mismatch'): deps.image_digest('quay.io/fedora/fedora', '45')
+                self.assertEqual(request.call_args.args[0].full_url, 'https://quay.io/v2/fedora/fedora/manifests/45')
+
     def fixture(self, name='lnd'):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

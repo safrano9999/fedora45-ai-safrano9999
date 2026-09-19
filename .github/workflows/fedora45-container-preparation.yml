@@ -19,7 +19,7 @@ on:
         type: boolean
         default: false
       upgrade_build_deps:
-        description: "Refresh stable allowlisted third-party build pins; preserve Fedora base image"
+        description: "Refresh allowlisted build pins and JSON-configured base-image release lines"
         required: false
         type: boolean
         default: false

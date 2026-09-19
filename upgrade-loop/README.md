@@ -296,8 +296,12 @@ GitHub preparation Action. Read-only local inspection is `python3 upgrade-loop/b
 access. `--apply` is reserved for the GitHub runner; normal publication belongs to
 prepare-container.py's shared commit.
 
-The Fedora beta **base image digest is excluded**. OpenClaw and Hermes keep their
-existing release and compatibility checks. Safrano repositories keep their own
+The `base_images` JSON entries bind a repository and release line to one exact
+Containerfile stage. The Fedora base follows only `quay.io/fedora/fedora:45`; it
+does not advance to another Fedora release. Preparation reads registry metadata,
+verifies its digest and updates the policy and FROM pin in the same commit. A
+retired old digest can therefore be replaced without trying to pull it first.
+OpenClaw and Hermes keep their existing release and compatibility checks. Safrano repositories keep their own
 source-upgrade path. RPM/Python packages use the existing repository/requirements
 constraints on image build; this routine does not rewrite requirements in other
 repositories or enable `--pre`. Their transitive dependencies are not a new lockfile.
