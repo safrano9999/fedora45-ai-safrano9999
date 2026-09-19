@@ -89,6 +89,16 @@ test('latest release selection checks compatible assets and fails on invalid rel
   }
 });
 
+test('missing version-specific patch reports the required asset without selecting an older version', async () => {
+  const requested = 'openclaw-2026.9.5-deterministic.tar.gz';
+  const old = { tag_name: '2026.9.4-deterministic.2', assets: [
+    { name: 'openclaw-2026.9.4-deterministic.tar.gz', digest: 'sha256:' + 'a'.repeat(64) },
+  ] };
+  await assert.rejects(latestRelease(async url => url.endsWith('/latest') ? old : [old],
+    'safrano9999/openclaw-deterministic-latest', requested),
+  { message: 'No compatible latest release: safrano9999/openclaw-deterministic-latest (required asset: ' + requested + ')' });
+});
+
 test('repository CSV changes, @branch and deduplication are derived, never a hard-coded list', async () => {
   const conf = 'AI_CORE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core:latest\nEXTENSIONS="EXAMPLE@feature/topic"\nSTANDALONE="EXAMPLE@feature/topic,NEW_REPO"\n';
   const result = await inventory(await fixture({ 'fedora45-ai-base/build.conf': conf }), { target: 'fedora45-ai-base' });

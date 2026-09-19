@@ -37,7 +37,7 @@ async function latestRelease(get, repository, assetName) {
   }
   if (!stable(release)) throw new Error('Expected a stable release: ' + repository);
   if (assetName && !asset(release)) release = (await compatible())[0];
-  if (!release) throw new Error('No compatible latest release: ' + repository);
+  if (!release) throw new Error('No compatible latest release: ' + repository + ' (required asset: ' + assetName + ')');
   const digest = assetName ? asset(release).digest : null;
   if (assetName && !/^sha256:[0-9a-f]{64}$/.test(digest || '')) throw new Error('Missing asset checksum: ' + repository);
   if (assetName && release.tag_name === 'latest') {
