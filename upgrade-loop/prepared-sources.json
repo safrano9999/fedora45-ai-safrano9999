@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source_policy": "latest-resolved-once",
-  "source_commit": "c5d687327a86476a90149afcc6c024a230dec181",
+  "source_commit": "5e4e1ba2146f425123fcd102b91ff2a177f9a32c",
   "target": "fedora45-ai-safrano9999",
   "chain": [
     "fedora45-ai-core-pre",
@@ -10,10 +10,10 @@
     "fedora45-ai-kachelmann",
     "fedora45-ai-safrano9999"
   ],
-  "resolved_at": "2026-09-19T18:51:04.796Z",
+  "resolved_at": "2026-09-19T19:11:03.278Z",
   "versions": {
     "openclaw": {
-      "current": "2026.9.4",
+      "current": "2026.9.5",
       "latest": "2026.9.5"
     },
     "hermes": {
@@ -257,7 +257,7 @@
       "release": {
         "ref": "2026.9.5-deterministic.1",
         "asset": "openclaw-2026.9.5-deterministic.tar.gz",
-        "sha256": "38528fe9a13c27b32144f14d4c525aa24ad667926183993dced7958b05e13db5"
+        "sha256": "b97de7863771d97da6162ea65961b226c0412376a65f1c9719684ed57dffd6d5"
       }
     },
     {
@@ -346,7 +346,7 @@
         "repository": "safrano9999/fedora45-ai-safrano9999",
         "reason": "image-definition-changed",
         "before": "3253c16efdf59acf5469e8dab1cc938e408bf9e4",
-        "after": "c5d687327a86476a90149afcc6c024a230dec181"
+        "after": "5e4e1ba2146f425123fcd102b91ff2a177f9a32c"
       },
       {
         "image": "fedora45-ai-core",
@@ -367,7 +367,7 @@
         "repository": "safrano9999/fedora45-ai-safrano9999",
         "reason": "image-definition-changed",
         "before": "3253c16efdf59acf5469e8dab1cc938e408bf9e4",
-        "after": "c5d687327a86476a90149afcc6c024a230dec181"
+        "after": "5e4e1ba2146f425123fcd102b91ff2a177f9a32c"
       },
       {
         "image": "fedora45-ai-base",
@@ -388,7 +388,7 @@
         "repository": "safrano9999/fedora45-ai-safrano9999",
         "reason": "image-definition-changed",
         "before": "3253c16efdf59acf5469e8dab1cc938e408bf9e4",
-        "after": "c5d687327a86476a90149afcc6c024a230dec181"
+        "after": "5e4e1ba2146f425123fcd102b91ff2a177f9a32c"
       },
       {
         "image": "fedora45-ai-kachelmann",
@@ -409,7 +409,7 @@
         "repository": "safrano9999/fedora45-ai-safrano9999",
         "reason": "image-definition-changed",
         "before": "3253c16efdf59acf5469e8dab1cc938e408bf9e4",
-        "after": "c5d687327a86476a90149afcc6c024a230dec181"
+        "after": "5e4e1ba2146f425123fcd102b91ff2a177f9a32c"
       },
       {
         "image": "fedora45-ai-safrano9999",
@@ -430,7 +430,7 @@
         "repository": "safrano9999/fedora45-ai-safrano9999",
         "reason": "image-definition-changed",
         "before": "3253c16efdf59acf5469e8dab1cc938e408bf9e4",
-        "after": "c5d687327a86476a90149afcc6c024a230dec181"
+        "after": "5e4e1ba2146f425123fcd102b91ff2a177f9a32c"
       }
     ]
   },
