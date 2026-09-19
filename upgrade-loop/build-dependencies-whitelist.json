@@ -63,8 +63,8 @@
       "repository": "astral-sh/uv",
       "release_line": "stable",
       "pins": {
-        "UV_VERSION": "0.12.16",
-        "UV_INSTALLER_SHA256": "889a5745afddc78b389841caede74711003b782e2ec8c2f29b3c03cbd7b580a9"
+        "UV_VERSION": "0.12.17",
+        "UV_INSTALLER_SHA256": "37b82230b28617c6c24fa52364fa28aa37f2aa40c114809a623f6b064a9730e5"
       }
     },
     {
@@ -99,8 +99,8 @@
       "repository": "@openai/codex",
       "release_line": "stable",
       "pins": {
-        "CODEX_VERSION": "0.155.0",
-        "CODEX_SHA256": "be7ee5f16f4c37d3a90e4edce35079cc65b62e5d83bad40f3613a6f2b45efbac"
+        "CODEX_VERSION": "0.155.1",
+        "CODEX_SHA256": "fded5b71797aaaf9b1c3229c0e2747b53b39887ef25f36ec7196f6d511db1a66"
       }
     },
     {
@@ -108,8 +108,8 @@
       "repository": "@anthropic-ai/claude-code",
       "release_line": "stable",
       "pins": {
-        "CLAUDE_CODE_VERSION": "2.1.276",
-        "CLAUDE_CODE_SHA256": "c43e05703d37dd3299392b9a458a5e51b1bb22582917eb0afeea68f6d05c93c1"
+        "CLAUDE_CODE_VERSION": "2.1.278",
+        "CLAUDE_CODE_SHA256": "08c6dfcf3dafcfd30e09b2926c596e274f0fa20844a5801ada7f1c8e6227157e"
       }
     },
     {
