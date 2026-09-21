@@ -10,8 +10,18 @@ import sys
 sys.path.insert(0, "upgrade-loop")
 from source_snapshot import update_openclaw_source
 
-version = os.environ["OPENCLAW_VERSION"]
-upstream = os.environ["OPENCLAW_UPSTREAM_SHA"]
+foundation_text = Path("fedora45-ai-core-pre/Containerfile").read_text()
+versions = re.findall(r"^ARG OPENCLAW_VERSION=(\d+\.\d+\.\d+)$", foundation_text, re.M)
+overrides = re.findall(r"^ARG OPENCLAW_UPSTREAM_SHA=((?:[0-9a-f]{40})?)$", foundation_text, re.M)
+if len(versions) != 1 or len(overrides) != 1:
+    raise ValueError("Invalid Core-pre source of truth")
+version = versions[0]
+upstream = overrides[0] or json.loads(subprocess.check_output([
+    "gh", "api", f"repos/openclaw/openclaw/commits/v{version}",
+], text=True))["sha"]
+if (os.environ.get("OPENCLAW_VERSION", version) != version
+        or os.environ.get("OPENCLAW_UPSTREAM_SHA", upstream) != upstream):
+    raise ValueError("Runtime selection differs from Core-pre")
 tag = os.environ["RELEASE_TAG"]
 if not re.fullmatch(re.escape(version) + r"-deterministic\.\d+", tag):
     raise ValueError("Expected a version-pinned Deterministic release")

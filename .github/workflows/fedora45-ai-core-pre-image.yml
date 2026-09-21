@@ -50,7 +50,38 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  component-source:
+    runs-on: ubuntu-latest
+    outputs:
+      core_sha: ${{ steps.source.outputs.core_sha }}
+      patch_sha: ${{ steps.source.outputs.patch_sha }}
+    steps:
+      - id: source
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+          REQUESTED_BUILD_COMMIT: ${{ inputs.build_commit }}
+        run: |
+          set -euo pipefail
+          core_sha="${REQUESTED_BUILD_COMMIT:-$GITHUB_SHA}"
+          patch_sha=$(gh api repos/safrano9999/openclaw-deterministic-latest/commits/main --jq .sha)
+          [[ "$core_sha" =~ ^[0-9a-f]{40}$ && "$patch_sha" =~ ^[0-9a-f]{40}$ ]]
+          echo "core_sha=$core_sha" >> "$GITHUB_OUTPUT"
+          echo "patch_sha=$patch_sha" >> "$GITHUB_OUTPUT"
+
+  deterministic:
+    needs: component-source
+    permissions:
+      contents: write
+    uses: safrano9999/openclaw-deterministic-latest/.github/workflows/verify-and-release.yml@main
+    with:
+      core_source_commit: ${{ needs.component-source.outputs.core_sha }}
+      patch_source_commit: ${{ needs.component-source.outputs.patch_sha }}
+      publish: true
+    secrets:
+      source_token: ${{ secrets.GH_RELEASE_TOKEN }}
+
   build-and-push:
+    needs: deterministic
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -314,6 +345,7 @@ jobs:
       - name: Trigger Core cascade
         if: inputs.cascade && inputs.cascade_target != 'fedora45-ai-core-pre'
         env:
+          DETERMINISTIC_RELEASE: ${{ needs.deterministic.outputs.release_tag }}
           CASCADE_TARGET: ${{ inputs.cascade_target }}
           BUILD_COMMIT: ${{ steps.source.outputs.commit }}
           GH_TOKEN: ${{ github.token }}
@@ -329,6 +361,7 @@ jobs:
             -f "build_commit=$BUILD_COMMIT" \
             -f "image_tag=$IMAGE_TAG" \
             -f "core_pre_tag=$IMAGE_TAG" \
+            -f "deterministic_release=$DETERMINISTIC_RELEASE" \
             -f "push_stable=$PUSH_STABLE" \
             -f "push_latest=$PUSH_LATEST" \
             -f "cascade=true" \

@@ -14,6 +14,11 @@ on:
         description: "Fixed YYYY.M.N version. Empty selects the next monthly number."
         required: false
         default: ""
+      deterministic_release:
+        description: Exact verified runtime selected by the Core-pre workflow
+        required: false
+        default: ""
+        type: string
       core_pre_tag:
         description: "fedora45-ai-core-pre parent tag. Empty uses build.conf"
         required: false
@@ -100,6 +105,21 @@ jobs:
             python3 upgrade-loop/source_snapshot.py --manifest upgrade-loop/prepared-sources.json
             printf 'SAFRANO_SOURCE_MANIFEST=%s/upgrade-loop/prepared-sources.json\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
           fi
+
+      - name: Use the exact Deterministic result from Core-pre
+        if: inputs.deterministic_release != ''
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+          RELEASE_TAG: ${{ inputs.deterministic_release }}
+        run: |
+          set -euo pipefail
+          # Validate the prepared source pins before recording the build-derived artifact.
+          if [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ]; then
+            python3 upgrade-loop/source_snapshot.py --manifest "$SAFRANO_SOURCE_MANIFEST" --verify-core fedora45-ai-core/build.conf
+          fi
+          python3 .github/scripts/record-openclaw-release.py
+          # The selected release is now pinned locally; Core-pre version/source stay authoritative.
+          echo 'SAFRANO_SOURCE_MANIFEST=' >> "$GITHUB_ENV"
 
       - name: Test independent OpenClaw component installers
         run: python3 -m unittest discover -s fedora45-ai-core/tests -v
