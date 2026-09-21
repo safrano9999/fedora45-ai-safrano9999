@@ -1,9 +1,14 @@
 # Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
 name: OpenClaw components
+run-name: 'OpenClaw components [components:${{ inputs.run_id }}]'
 
 on:
   workflow_dispatch:
     inputs:
+      run_id:
+        description: Correlation ID for the invoking preparation run
+        type: string
+        default: manual
       publish:
         description: Publish changed, verified components and update Core pins (no image build)
         type: boolean

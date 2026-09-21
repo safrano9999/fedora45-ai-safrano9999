@@ -160,9 +160,26 @@ const custom=$json.upgrade_custom_images===true?{safrano_custom_images_request:{
 return [{json:{...$json,...upgrade,...custom,status:'NO_UPDATE',build_started:false,image_pulled:false,container_restarted:false}}];
 """, 1780, 300)
 code("Prepare request", """
-const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+3600000};
+const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+10800000};
 return [{json:request}];
 """, 1780)
+http("Dispatch Deterministic check", base + "/actions/workflows/openclaw-components.yml/dispatches", 1800, -420,
+     method="POST", sendBody=True, specifyBody="json",
+     jsonBody="={{ {ref:'main',inputs:{run_id:$json.run_id,publish:!$json.validate_only}} }}")
+node("Wait for Deterministic", "wait", {"resume":"timeInterval","amount":30,"unit":"seconds"}, 2020, -420, 1.1,
+     webhookId="655b2fc1-0e06-4b1b-b2c8-fcc59a265a65")
+http("Read Deterministic runs", "={{ '"+base+"/actions/workflows/openclaw-components.yml/runs?event=workflow_dispatch&per_page=100&created='+encodeURIComponent('>='+$('Prepare request').first().json.started_at) }}", 2240, -420)
+code("Match exact Deterministic run", """
+const request=$('Prepare request').first().json;
+if(Date.now()>request.deadline)throw new Error('Deterministic preparation timed out');
+if(!Array.isArray($json.workflow_runs))throw new Error('Missing component workflow runs');
+const runs=$json.workflow_runs.filter(r=>r.display_title===`OpenClaw components [components:${request.run_id}]`);
+if(runs.length>1)throw new Error('Ambiguous Deterministic run');
+const run=runs[0],completed=run?.status==='completed';
+if(completed&&run.conclusion!=='success')throw new Error('Deterministic '+run.conclusion+': '+run.html_url);
+return [{json:{...request,completed,deterministic_run:run?.id??null}}];
+""", 2460, -420)
+branch("Deterministic ready?", "={{ $json.completed }}", 2680, -420)
 resolve=node("Resolve latest sources once", "code", {"operation":"resolve"}, 1900, -180,
              credentials=source_credentials, retryOnFail=False,
              notes="After the release or explicit Safrano gate, resolve latest once and compare published images when requested. The same source snapshot binds preparation, depth-1 clones and image builds.")
@@ -253,7 +270,13 @@ sync["type"]="CUSTOM.fedora45Sources"
 for source,target in [("Manual preparation","Read request"),("Webhook - preparation or --check","Read request"),("Read request","Published version pins"),("Published version pins","Latest OpenClaw release"),("Latest OpenClaw release","Latest Hermes release"),("Latest Hermes release","Validate versions"),("Validate versions","Check only?"),("Check only?","Return two version lines"),("Webhook request?","Accept preparation"),("Accept preparation","Upstream update available?"),("Upstream update available?","Prepare request"),("Prepare request","Dispatch preparation Action"),("Dispatch preparation Action","Wait for preparation"),("Wait for preparation","Read preparation runs"),("Read preparation runs","Match exact preparation run"),("Match exact preparation run","Preparation finished?"),("Preparation finished?","Read preparation artifacts"),("Read preparation artifacts","Select evidence artifact"),("Select evidence artifact","Resolve evidence download"),("Resolve evidence download","Validate evidence URL"),("Validate evidence URL","Download preparation evidence"),("Download preparation evidence","Unpack evidence"),("Unpack evidence","Handoff to Hermes")]:link(source,target)
 for source,target in [("Check only?","Webhook request?"),("Webhook request?","Upstream update available?"),("Upstream update available?","No update"),("Preparation finished?","Wait for preparation")]:link(source,target,1)
 connections["Read request"]={"main":[[{"node":"Sources preview?","type":"main","index":0}]]}
-connections["Prepare request"]={"main":[[{"node":"Resolve latest sources once","type":"main","index":0}]]}
+connections["Prepare request"]={"main":[[{"node":"Dispatch Deterministic check","type":"main","index":0}]]}
+link("Dispatch Deterministic check","Wait for Deterministic")
+link("Wait for Deterministic","Read Deterministic runs")
+link("Read Deterministic runs","Match exact Deterministic run")
+link("Match exact Deterministic run","Deterministic ready?")
+link("Deterministic ready?","Resolve latest sources once")
+link("Deterministic ready?","Wait for Deterministic",1)
 branch("Sources require preparation?", "={{ $json.build_required }}", 2000, -180)
 link("Resolve latest sources once","Sources require preparation?")
 link("Sources require preparation?","Dispatch preparation Action")

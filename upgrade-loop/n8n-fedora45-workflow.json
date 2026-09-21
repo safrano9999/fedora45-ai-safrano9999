@@ -461,7 +461,150 @@
         0
       ],
       "parameters": {
-        "jsCode": "const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+3600000};\nreturn [{json:request}];"
+        "jsCode": "const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+10800000};\nreturn [{json:request}];"
+      }
+    },
+    {
+      "id": "f29c4234-2ae7-5506-b557-17fc32559790",
+      "name": "Dispatch Deterministic check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        -420
+      ],
+      "parameters": {
+        "url": "https://api.github.com/repos/safrano9999/fedora45-ai-safrano9999/actions/workflows/openclaw-components.yml/dispatches",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        },
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {ref:'main',inputs:{run_id:$json.run_id,publish:!$json.validate_only}} }}"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fedora45GitHubPreparation",
+          "name": "Fedora45 GitHub preparation"
+        }
+      },
+      "retryOnFail": false
+    },
+    {
+      "id": "6c47174b-5c31-5117-87e2-33cd3d3b0141",
+      "name": "Wait for Deterministic",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2020,
+        -420
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "webhookId": "655b2fc1-0e06-4b1b-b2c8-fcc59a265a65"
+    },
+    {
+      "id": "cf10beeb-8f24-5531-9a7a-928999593329",
+      "name": "Read Deterministic runs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        -420
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.github.com/repos/safrano9999/fedora45-ai-safrano9999/actions/workflows/openclaw-components.yml/runs?event=workflow_dispatch&per_page=100&created='+encodeURIComponent('>='+$('Prepare request').first().json.started_at) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fedora45GitHubPreparation",
+          "name": "Fedora45 GitHub preparation"
+        }
+      },
+      "retryOnFail": false
+    },
+    {
+      "id": "66118aa7-6020-5403-a713-d129f77543f1",
+      "name": "Match exact Deterministic run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2460,
+        -420
+      ],
+      "parameters": {
+        "jsCode": "const request=$('Prepare request').first().json;\nif(Date.now()>request.deadline)throw new Error('Deterministic preparation timed out');\nif(!Array.isArray($json.workflow_runs))throw new Error('Missing component workflow runs');\nconst runs=$json.workflow_runs.filter(r=>r.display_title===`OpenClaw components [components:${request.run_id}]`);\nif(runs.length>1)throw new Error('Ambiguous Deterministic run');\nconst run=runs[0],completed=run?.status==='completed';\nif(completed&&run.conclusion!=='success')throw new Error('Deterministic '+run.conclusion+': '+run.html_url);\nreturn [{json:{...request,completed,deterministic_run:run?.id??null}}];"
+      }
+    },
+    {
+      "id": "2b2304d1-e099-5a1b-a9b8-795a5b672bb7",
+      "name": "Deterministic ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2680,
+        -420
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Deterministic ready?",
+              "leftValue": "={{ $json.completed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
       }
     },
     {
@@ -1015,7 +1158,7 @@
       "main": [
         [
           {
-            "node": "Resolve latest sources once",
+            "node": "Dispatch Deterministic check",
             "type": "main",
             "index": 0
           }
@@ -1144,6 +1287,68 @@
         [
           {
             "node": "Handoff to Hermes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dispatch Deterministic check": {
+      "main": [
+        [
+          {
+            "node": "Wait for Deterministic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Deterministic": {
+      "main": [
+        [
+          {
+            "node": "Read Deterministic runs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Deterministic runs": {
+      "main": [
+        [
+          {
+            "node": "Match exact Deterministic run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match exact Deterministic run": {
+      "main": [
+        [
+          {
+            "node": "Deterministic ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deterministic ready?": {
+      "main": [
+        [
+          {
+            "node": "Resolve latest sources once",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for Deterministic",
             "type": "main",
             "index": 0
           }
