@@ -1,0 +1,23 @@
+# Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
+name: OpenClaw components
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the verified Deterministic runtime bundle (no image build)
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  components:
+    uses: safrano9999/openclaw-deterministic-latest/.github/workflows/verify-and-release.yml@5701d8523d41bfeae3c942d980f11723067aa744
+    with:
+      core_source_commit: ${{ github.sha }}
+      patch_source_commit: 5701d8523d41bfeae3c942d980f11723067aa744
+      publish: ${{ inputs.publish }}
+    secrets:
+      source_token: ${{ secrets.GH_RELEASE_TOKEN }}

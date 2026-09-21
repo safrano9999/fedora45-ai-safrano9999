@@ -44,7 +44,8 @@ with tempfile.TemporaryDirectory(prefix="openclaw-compatibility-") as scratch:
     fixture.write_text(json.dumps(config))
     (home / "cli.json").write_text("{}")
     env = {key: os.environ[key] for key in
-           ("PATH", "UPGRADE_TARGET_SOURCE", "UPGRADE_TARGET_PACKAGE", "UPGRADE_TARGET_VERSION")}
+           ("PATH", "UPGRADE_TARGET_SOURCE", "UPGRADE_TARGET_PACKAGE", "UPGRADE_TARGET_VERSION",
+            "UPGRADE_TARGET_CODEX_PACKAGE", "UPGRADE_TARGET_UPSTREAM_SHA")}
     env.update(injected, FIXTURE_API_KEY="fixture-model-secret",
                OPENCLAW_CONFIG_PATH=str(home / "cli.json"), OPENCLAW_STATE_DIR=str(home / "state"),
                UPGRADE_CONFIG_FIXTURE=str(fixture), NODE_NO_WARNINGS="1")

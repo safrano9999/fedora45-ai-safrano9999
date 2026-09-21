@@ -6,6 +6,24 @@ import re
 IMAGE_REPO = "safrano9999/fedora45-ai-safrano9999"
 
 
+def openclaw_override(containerfile, target_version):
+    versions = re.findall(r"^ARG OPENCLAW_VERSION=(\d+\.\d+\.\d+)$", containerfile, re.M)
+    overrides = re.findall(r"^ARG OPENCLAW_UPSTREAM_SHA=([0-9a-f]*)$", containerfile, re.M)
+    if len(versions) != 1 or len(overrides) != 1 or (overrides[0] and len(overrides[0]) != 40):
+        raise ValueError("Invalid OpenClaw source pins in Core-pre Containerfile")
+    if tuple(map(int, target_version.split('.'))) < tuple(map(int, versions[0].split('.'))):
+        raise ValueError("Cannot downgrade the Core-pre version")
+    return overrides[0] if target_version == versions[0] else ""
+
+
+def update_openclaw_source(containerfile, target_version):
+    override = openclaw_override(containerfile, target_version)
+    containerfile = re.sub(r"^ARG OPENCLAW_VERSION=.*$", "ARG OPENCLAW_VERSION=" + target_version,
+                           containerfile, flags=re.M)
+    return re.sub(r"^ARG OPENCLAW_UPSTREAM_SHA=.*$", "ARG OPENCLAW_UPSTREAM_SHA=" + override,
+                  containerfile, flags=re.M)
+
+
 def snapshot_id(snapshot):
     return hashlib.sha256(json.dumps(snapshot, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
 
@@ -42,6 +60,16 @@ def validate_snapshot(snapshot):
         version = snapshot.get("versions", {}).get(name, {})
         if any(not re.fullmatch(r"\d+\.\d+\.\d+", version.get(k, "")) for k in ("current", "latest")):
             raise ValueError("Missing snapshot versions")
+    selected = snapshot.get("openclaw_source")
+    if selected is not None:
+        versions = snapshot["versions"]["openclaw"]
+        override = selected.get("override_commit", "")
+        if (selected.get("version") != versions["latest"]
+                or not re.fullmatch(r"[0-9a-f]{40}", selected.get("commit", ""))
+                or (override and (not re.fullmatch(r"[0-9a-f]{40}", override)
+                                  or override != selected["commit"]))
+                or (versions["current"] != versions["latest"] and override)):
+            raise ValueError("Invalid Core-pre OpenClaw source selection")
     if snapshot.get("upgrade_safrano9999"):
         plan = snapshot.get("build_plan", {})
         chain = snapshot.get("chain", [])
@@ -84,8 +112,12 @@ def build_inputs(snapshot, core):
         if patch["asset"] != f"openclaw-{version}-deterministic.tar.gz" or note["asset"] != core["NOTE_RELEASE_ASSET"]:
             raise ValueError("Snapshot asset differs from target runtime")
         inputs.update(OPENCLAW_VERSION=version, OPENCLAW_DETERMINISTIC_TAG=patch["ref"],
+                      OPENCLAW_UPSTREAM_SHA=snapshot["openclaw_source"]["commit"],
                       OPENCLAW_DETERMINISTIC_SHA256=patch["sha256"], NOTE_RELEASE_TAG=note["ref"],
                       NOTE_RELEASE_SHA256=note["sha256"])
+        selected = snapshot.get("openclaw_source")
+        if selected and (selected["version"] != version or selected["commit"] != inputs["OPENCLAW_UPSTREAM_SHA"]):
+            raise ValueError("Deterministic release differs from the Core-pre source selection")
         return inputs
     except KeyError as error:
         raise ValueError("Incomplete shared source snapshot") from error

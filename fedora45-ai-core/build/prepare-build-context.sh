@@ -12,9 +12,31 @@ set +a
 
 OPENCLAW_DETERMINISTIC_REPOSITORY=safrano9999/openclaw-deterministic-latest
 : "${OPENCLAW_DETERMINISTIC_TAG:?Missing deterministic release tag in build.conf}"
+: "${OPENCLAW_UPSTREAM_SHA:?Missing exact OpenClaw source commit in build.conf}"
 OPENCLAW_DETERMINISTIC_ASSET="openclaw-${OPENCLAW_VERSION}-deterministic.tar.gz"
 OPENCLAW_EPHEMERAL_REPOSITORY=safrano9999/openclaw-ephemeral
 HERMES_EPHEMERAL_REPOSITORY=safrano9999/hermes-ephemeral
+
+# Core build.conf is a prepared artifact lock, never a second source selector.
+python3 - "$CONTEXT/../fedora45-ai-core-pre/Containerfile" <<'PY'
+import json
+import os
+from pathlib import Path
+import re
+import urllib.request
+text = Path(__import__('sys').argv[1]).read_text()
+versions = re.findall(r"^ARG OPENCLAW_VERSION=(\d+\.\d+\.\d+)$", text, re.M)
+overrides = re.findall(r"^ARG OPENCLAW_UPSTREAM_SHA=((?:[0-9a-f]{40})?)$", text, re.M)
+if versions != [os.environ['OPENCLAW_VERSION']] or len(overrides) != 1:
+    raise SystemExit('Prepare Core inputs for the Core-pre version first')
+expected = overrides[0]
+if not expected:
+    url = 'https://api.github.com/repos/openclaw/openclaw/commits/v' + versions[0]
+    with urllib.request.urlopen(url, timeout=30) as response:
+        expected = json.load(response)['sha']
+if expected != os.environ['OPENCLAW_UPSTREAM_SHA']:
+    raise SystemExit('Prepare the Deterministic artifact selected by Core-pre first')
+PY
 
 if [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ]; then
     python3 "${SAFRANO_SOURCE_MANIFEST%/*}/source_snapshot.py" \
@@ -119,6 +141,31 @@ if count == 0:
 print(f"  [{repository}] staged {count} runtime file(s)")
 PY
 }
+
+if [ -z "${OPENCLAW_DETERMINISTIC_SHA256:-}" ]; then
+    # Source publication can precede the explicitly requested runtime build.
+    # Resolve only this exact release asset; never fall back to an older release.
+    release_metadata="$vendor_stage/deterministic-release.json"
+    curl -fsSL --retry 3 --connect-timeout 15 \
+        "https://api.github.com/repos/${OPENCLAW_DETERMINISTIC_REPOSITORY}/releases/tags/${OPENCLAW_DETERMINISTIC_TAG}" \
+        -o "$release_metadata"
+    OPENCLAW_DETERMINISTIC_SHA256="$(python3 - "$release_metadata" "$OPENCLAW_DETERMINISTIC_ASSET" <<'PY'
+import json
+import re
+import sys
+with open(sys.argv[1]) as source:
+    release = json.load(source)
+matches = [asset for asset in release.get("assets", []) if asset["name"] == sys.argv[2]]
+if release.get("draft") or len(matches) != 1:
+    raise SystemExit("The exact Deterministic runtime bundle has not been published")
+digest = matches[0].get("digest", "")
+if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+    raise SystemExit("The Deterministic release asset has no SHA-256 digest")
+print(digest.removeprefix("sha256:"))
+PY
+    )"
+    rm -f "$release_metadata"
+fi
 
 stage_release_asset \
     "$OPENCLAW_DETERMINISTIC_REPOSITORY" \

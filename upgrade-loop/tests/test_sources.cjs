@@ -21,6 +21,13 @@ async function fixture(edits = {}) {
       try { files[name] = await fs.readFile(path.join(repoRoot, name), 'utf8'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
     }
   }
+  // These inventory fixtures own a fixed release independently of live build pins.
+  files['fedora45-ai-core/build.conf'] = files['fedora45-ai-core/build.conf']
+    .replace(/^OPENCLAW_VERSION=.*$/m, 'OPENCLAW_VERSION=2026.9.4')
+    .replace(/^OPENCLAW_DETERMINISTIC_TAG=.*$/m, 'OPENCLAW_DETERMINISTIC_TAG=2026.9.4-deterministic.2');
+  files['fedora45-ai-core-pre/Containerfile'] = files['fedora45-ai-core-pre/Containerfile']
+    .replace(/^ARG OPENCLAW_VERSION=.*$/m, 'ARG OPENCLAW_VERSION=2026.9.4')
+    .replace(/^ARG OPENCLAW_UPSTREAM_SHA=.*$/m, 'ARG OPENCLAW_UPSTREAM_SHA=' + '1'.repeat(40));
   Object.assign(files, edits);
   return async url => {
     if (url === '/repos/' + IMAGE_REPO + '/commits/main') return { sha: imageCommit };
@@ -75,8 +82,12 @@ test('latest preview refreshes every Git source and both release inputs instead 
     } else assert.equal(entry.ref, 'HEAD', entry.repository);
   }
   assert.match(preview.repositories.find(r => r.repository.endsWith('/hermes-ephemeral')).declared_ref, /^[a-f0-9]{40}$/);
-  const resolved = await resolveCommits(async url => ({ sha: url.endsWith('/' + imageCommit) ? imageCommit : 'b'.repeat(40) }), preview);
+  const resolved = await resolveCommits(async url => url.includes('/contents/build.conf?ref=') ? {
+    encoding: 'base64', content: Buffer.from('OPENCLAW_VERSION=2026.9.4\nOPENCLAW_UPSTREAM_SHA=' + '1'.repeat(40) +
+      '\nOPENCLAW_DETERMINISTIC_ASSET=openclaw-2026.9.4-deterministic.tar.gz\n').toString('base64'),
+  } : ({ sha: url.endsWith('/' + imageCommit) ? imageCommit : 'b'.repeat(40) }), preview);
   assert.ok(resolved.repositories.every(r => /^[a-f0-9]{40}$/.test(r.commit)));
+  assert.equal(resolved.openclaw_source.commit, '1'.repeat(40));
 });
 
 test('latest release selection checks compatible assets and fails on invalid release evidence', async () => {
@@ -123,6 +134,7 @@ test('every moving source ref is resolved once to a full commit before filesyste
   const source = await inventory(await fixture());
   const resolved = await resolveCommits(async url => ({ sha: /^[a-f0-9]{40}$/.test(url.split('/').at(-1)) ? url.split('/').at(-1) : 'b'.repeat(40) }), source);
   assert.ok(resolved.repositories.every(r => /^[a-f0-9]{40}$/.test(r.commit)));
+  assert.equal(resolved.openclaw_source.commit, '1'.repeat(40));
   await assert.rejects(resolveCommits(async () => ({ sha: 'main' }), source));
 });
 

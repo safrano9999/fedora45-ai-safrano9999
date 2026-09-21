@@ -160,11 +160,13 @@ class BuildDependencyTests(unittest.TestCase):
         spec = importlib.util.spec_from_file_location('dependency_preparation', deps.ROOT / 'upgrade-loop/prepare-container.py')
         prep = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(prep)
-        selected = json.loads((deps.ROOT / 'upgrade-loop/prepared-sources.json').read_text())
+        selected = json.loads((deps.ROOT / 'upgrade-loop/tests/fixtures/prepared-sources.json').read_text())
         selected.pop('upgrade_safrano9999', None)
         selected.pop('build_plan', None)
         pins = prep.current_versions((deps.ROOT / 'fedora45-ai-core-pre/Containerfile').read_text())
         selected['versions'] = {n: {'current': v, 'latest': v} for n, v in pins.items()}
+        override = prep.openclaw_override((deps.ROOT/'fedora45-ai-core-pre/Containerfile').read_text(), pins['openclaw'])
+        selected['openclaw_source'] = {'version':pins['openclaw'], 'override_commit':override, 'commit':override or '1'*40}
         policy = (deps.ROOT / deps.POLICY).read_text()
         selected['upgrade_build_deps'] = True
         selected['build_dependencies_baseline'] = {'revision': 'a' * 40, 'digest': 'sha256:' + 'b' * 64,

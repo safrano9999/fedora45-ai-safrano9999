@@ -225,6 +225,7 @@ if(report.status!=='NO_UPDATE'){
  for(const [repo,prefix] of [['openclaw-deterministic-latest','OPENCLAW_DETERMINISTIC'],['NOTE','NOTE_RELEASE']]){
   const release=entries['safrano9999/'+repo]?.release;
   if(!release||report.build_inputs?.[prefix+'_TAG']!==release.ref||report.build_inputs?.[prefix+'_SHA256']!==release.sha256)throw new Error('Release differs from n8n snapshot');
+  if(repo==='openclaw-deterministic-latest'&&report.build_inputs?.OPENCLAW_UPSTREAM_SHA!==report.source_snapshot.openclaw_source?.commit)throw new Error('OpenClaw source differs from n8n snapshot');
  }
  if(report.checks?.hermes_patch?.status!=='PASS')throw new Error('Missing patch evidence');
 }

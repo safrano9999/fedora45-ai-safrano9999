@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from source_snapshot import update_openclaw_source
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parent
@@ -196,13 +197,32 @@ for raw in sys.argv[2:]:
             if self.data["results"].get("repair-apply", {}).get("status") != "PASS" or self.data.get("repairRequest", {}).get("repository") != generator.name:
                 raise ValueError("Generator checkout differs from its recorded commit")
             command(["git", "apply", "--reverse", "--check", self.directory / "repair.patch"], cwd=generator)
-        target = json.loads(command(["python3", ROOT / "prepare-runtime.py", component, selected], timeout=900).stdout.splitlines()[-1])
+        arguments = ["python3", ROOT / "prepare-runtime.py", component, selected]
+        if component == "openclaw":
+            # Resolve through the same Core-pre selection used by container preparation.
+            spec = importlib.util.spec_from_file_location("component_preparation", ROOT / "prepare-container.py")
+            preparation = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(preparation)
+            core = dict(line.split("=", 1) for line in (REPO / "fedora45-ai-core/build.conf").read_text().splitlines()
+                        if re.match(r"^[A-Z_][A-Z0-9_]*=", line))
+            inputs = preparation.patch_inputs(selected, core,
+                gh("repos/safrano9999/openclaw-deterministic-latest/releases?per_page=100"),
+                gh("repos/safrano9999/openclaw-deterministic-latest/releases/latest"))
+            override = preparation.openclaw_override((REPO / "fedora45-ai-core-pre/Containerfile").read_text(), selected)
+            expected = override or gh(f"repos/openclaw/openclaw/commits/v{selected}")["sha"]
+            inputs["OPENCLAW_UPSTREAM_SHA"] = expected
+            selection = self.directory / "openclaw-source-inputs.json"
+            selection.write_text(json.dumps(inputs) + "\n")
+            arguments += ["--source-inputs", selection]
+        target = json.loads(command(arguments, timeout=900).stdout.splitlines()[-1])
         if selected == version["latest"]:
             self.data.setdefault("prepared_targets", {})[component] = target
         env = dict(os.environ, UPGRADE_TARGET_SOURCE=target["source"], UPGRADE_TARGET_VERSION=selected)
         env["PYTHONPATH"] = os.pathsep.join([str(REPO.parent / f"{component}-ephemeral"), target["source"]])
         if component == "openclaw":
             env["UPGRADE_TARGET_PACKAGE"] = target["package"]
+            env["UPGRADE_TARGET_CODEX_PACKAGE"] = target["codex_package"]
+            env["UPGRADE_TARGET_UPSTREAM_SHA"] = target["upstream_commit"]
         done = command(["python3", ROOT / f"probes/{component}_config.py"], env=env, timeout=180, check=False)
         return {"status": "PASS" if done.returncode == 0 else "FAIL", "completed": True,
                 "target_version": selected, "upstream_commit": target["upstream_commit"], "exit_code": done.returncode}
@@ -349,6 +369,7 @@ for raw in sys.argv[2:]:
         path = REPO / "fedora45-ai-core-pre/Containerfile"
         before = path.read_text()
         after = before
+        after = update_openclaw_source(after, self.data["versions"]["openclaw"]["latest"])
         for name, version in self.data["versions"].items():
             after, count = re.subn(r"^ARG " + name.upper() + r"_VERSION=.*$",
                                   f"ARG {name.upper()}_VERSION={version['latest']}", after, flags=re.M)
@@ -458,6 +479,9 @@ for raw in sys.argv[2:]:
                 if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
                     raise ValueError("Published patch artifact has no verified checksum")
                 inputs.update(OPENCLAW_VERSION=target, OPENCLAW_DETERMINISTIC_TAG=release["tag_name"], OPENCLAW_DETERMINISTIC_SHA256=digest[7:])
+                foundation = (REPO / "fedora45-ai-core-pre/Containerfile").read_text()
+                override = __import__("source_snapshot").openclaw_override(foundation, target)
+                inputs["OPENCLAW_UPSTREAM_SHA"] = override or gh(f"repos/openclaw/openclaw/commits/v{target}")["sha"]
             for component in ("openclaw", "hermes"):
                 version = self.data["versions"][component]
                 if version["current"] != version["latest"]:

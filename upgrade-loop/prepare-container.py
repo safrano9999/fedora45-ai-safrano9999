@@ -14,7 +14,8 @@ import tempfile
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parent
 sys.path.insert(0, str(ROOT))
-from source_snapshot import build_inputs as snapshot_build_inputs, snapshot_id, validate_snapshot
+from source_snapshot import (build_inputs as snapshot_build_inputs,
+                             openclaw_override, update_openclaw_source, snapshot_id, validate_snapshot)
 import build_dependencies
 COMPONENTS = {"openclaw": "openclaw/openclaw", "hermes": "NousResearch/hermes-agent"}
 
@@ -118,6 +119,7 @@ def patch_inputs(target, core, releases, latest=None):
         release = next((r for r, a in matches if r["tag_name"] != "latest"
                         and a.get("digest") == "sha256:" + digest), release)
     if (release["tag_name"] == core.get("OPENCLAW_DETERMINISTIC_TAG") != "latest"
+            and core.get("OPENCLAW_DETERMINISTIC_SHA256")
             and core.get("OPENCLAW_DETERMINISTIC_SHA256") != digest):
         raise ValueError("Published deterministic artifact differs from the existing pin")
     return {"OPENCLAW_VERSION": target, "OPENCLAW_DETERMINISTIC_TAG": release["tag_name"],
@@ -188,6 +190,16 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
         inputs.update(note_inputs(core, github(f"repos/{core['NOTE_REPOSITORY']}/releases/latest")))
         inputs.update({name.upper() + "_EPHEMERAL_COMMIT": sha for name, sha in commits.items()})
     report["ephemeral_commits"] = commits
+    override = openclaw_override(before_foundation, latest["openclaw"])
+    if snapshot is not None:
+        selected = snapshot.get("openclaw_source")
+        if selected is None or selected.get("override_commit") != override:
+            raise ValueError("Snapshot differs from the Core-pre source override")
+        expected_upstream = override or selected["commit"]
+    else:
+        expected_upstream = override or exact_commit(github(
+            f"repos/openclaw/openclaw/commits/v{latest['openclaw']}")["sha"])
+    inputs["OPENCLAW_UPSTREAM_SHA"] = expected_upstream
     report["build_inputs"] = inputs
     report["source_policy"] = "latest-resolved-once" if snapshot is not None else "latest-resolved-per-preparation"
     spec = importlib.util.spec_from_file_location("prepare_runtime", ROOT / "prepare-runtime.py")
@@ -196,7 +208,8 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
     report["checks"] = {}
     with tempfile.TemporaryDirectory(prefix="container-preparation-") as raw:
         scratch = Path(raw)
-        targets = {name: runtime.prepare(name, latest[name], scratch / "runtimes") for name in COMPONENTS}
+        targets = {name: runtime.prepare(name, latest[name], scratch / "runtimes",
+                    **({"source_inputs": inputs} if name == "openclaw" else {})) for name in COMPONENTS}
         # Install the selected Hermes release's declared runtime dependencies on the runner.
         run([sys.executable, "-m", "pip", "install", "-e", targets["hermes"]["source"]])
         for name in COMPONENTS:
@@ -211,6 +224,8 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
                        UPGRADE_TARGET_SOURCE=target["source"], UPGRADE_TARGET_VERSION=latest[name])
             if name == "openclaw":
                 env["UPGRADE_TARGET_PACKAGE"] = target["package"]
+                env["UPGRADE_TARGET_CODEX_PACKAGE"] = target["codex_package"]
+                env["UPGRADE_TARGET_UPSTREAM_SHA"] = target["upstream_commit"]
             run([sys.executable, ROOT / f"probes/{name}_config.py"], env=env, timeout=300)
             if run(["git", "-C", generator, "status", "--porcelain"], capture_output=True).stdout:
                 raise ValueError("Generator changed during compatibility check")
@@ -223,7 +238,8 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
     # version changes on the refreshed foundation so neither update is lost.
     after_foundation = dependency_files.pop(foundation.relative_to(REPO), before_foundation)
     after_core = before_core
-    for name in COMPONENTS:
+    after_foundation = update_openclaw_source(after_foundation, latest["openclaw"])
+    for name in ("hermes",):
         after_foundation = replace_pin(after_foundation, name.upper() + "_VERSION", latest[name], "ARG ")
     for key, value in inputs.items():
         after_core = replace_pin(after_core, key, value)

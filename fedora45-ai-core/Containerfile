@@ -2,6 +2,8 @@ ARG AI_CORE_PRE_IMAGE
 FROM ${AI_CORE_PRE_IMAGE} AS ai-core
 
 ARG OPENCLAW_VERSION
+ARG OPENCLAW_UPSTREAM_SHA
+ARG OPENCLAW_DETERMINISTIC_TAG
 ARG NOTE_REPOSITORY
 ARG NOTE_RELEASE_TAG
 ARG NOTE_RELEASE_ASSET
@@ -12,6 +14,9 @@ LABEL org.opencontainers.image.title="fedora45-ai-core" \
       org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
       io.safrano9999.parent="fedora45-ai-core-pre" \
       io.safrano9999.openclaw.version="${OPENCLAW_VERSION}" \
+      io.safrano9999.openclaw.build="${OPENCLAW_VERSION}-patched" \
+      io.safrano9999.openclaw.upstream-commit="${OPENCLAW_UPSTREAM_SHA}" \
+      io.safrano9999.openclaw.deterministic-release="${OPENCLAW_DETERMINISTIC_TAG}" \
       io.safrano9999.note.repository="${NOTE_REPOSITORY}" \
       io.safrano9999.note.release="${NOTE_RELEASE_TAG}"
 
@@ -27,35 +32,18 @@ ENV HOME=/root \
 
 RUN install -d -o root -g root -m 0700 "${OPENCLAW_CONFIG_DIR}"
 
-COPY build/vendor/openclaw-deterministic/openclaw-deterministic.tar.gz /tmp/openclaw-deterministic.tar.gz
-
-RUN set -euo pipefail; \
-    openclaw_root="$(npm root -g)/openclaw"; \
-    test "$(jq -r .version "$openclaw_root/package.json")" = "${OPENCLAW_VERSION}"; \
-    rm -rf "$openclaw_root/dist"; \
-    tar -xzf /tmp/openclaw-deterministic.tar.gz -C "$openclaw_root"; \
-    rm -f /tmp/openclaw-deterministic.tar.gz; \
-    test -s "$openclaw_root/dist/control-ui/index.html"; \
-    codex_root="$(openclaw plugins inspect codex --json | jq -er '.install.installPath')"; \
-    test -f "$codex_root/openclaw.plugin.json"; \
-    test -f "$codex_root/$(jq -er '.openclaw.runtimeExtensions[0] // .openclaw.extensions[0]' "$codex_root/package.json")"; \
-    node "$openclaw_root/openclaw.mjs" --version | grep -F "${OPENCLAW_VERSION}"
-
-COPY build/vendor/openclaw-ephemeral/openclaw_ephemeral/ /usr/local/lib/openclaw-ephemeral/openclaw_ephemeral/
-COPY build/vendor/openclaw-ephemeral/openclaw-ephemeral.py /usr/local/bin/openclaw-ephemeral.py
-COPY build/vendor/openclaw-ephemeral/runtime/yolo.sh /usr/local/bin/openclaw-ephemeral-yolo
-COPY build/vendor/openclaw-ephemeral/image/runtime/ /
-
-RUN chmod 0755 /usr/local/bin/openclaw-ephemeral.py \
-      /usr/local/bin/openclaw-ephemeral-yolo \
- && chown -R root:root /usr/local/lib/openclaw-ephemeral \
-      /usr/local/bin/openclaw-ephemeral.py \
-      /usr/local/bin/openclaw-ephemeral-yolo
+# Independent components, applied in order. Preparation owns their source pins
+# and checksums. Install the complete matching package and external Codex runtime.
+RUN --mount=type=bind,source=build,target=/tmp/core-build python3 /tmp/core-build/install-deterministic.py /tmp/core-build/vendor/openclaw-deterministic/openclaw-deterministic.tar.gz "$(npm root -g)/openclaw" "$OPENCLAW_VERSION" "$OPENCLAW_UPSTREAM_SHA" "$OPENCLAW_DETERMINISTIC_TAG"
+RUN --mount=type=bind,source=build,target=/tmp/core-build python3 /tmp/core-build/install-ephemeral.py /tmp/core-build/vendor/openclaw-ephemeral
 
 COPY build/vendor/note/note-latest.zip /tmp/note-latest.zip
 
 RUN set -euo pipefail; \
     openclaw_root="$(npm root -g)/openclaw"; \
+    codex_root="$(openclaw plugins inspect codex --json | jq -er '.install.installPath')"; \
+    test -f "$codex_root/openclaw.plugin.json"; \
+    test -f "$codex_root/$(jq -er '.openclaw.runtimeExtensions[0] // .openclaw.extensions[0]' "$codex_root/package.json")"; \
     printf '%s  %s\n' "${NOTE_RELEASE_SHA256}" /tmp/note-latest.zip | sha256sum -c -; \
     openclaw plugins install \
       --force \

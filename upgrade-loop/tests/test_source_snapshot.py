@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from source_snapshot import build_inputs, snapshot_id, validate_snapshot
+from source_snapshot import build_inputs, snapshot_id, validate_snapshot, openclaw_override, update_openclaw_source
 
 
 def snapshot(repository="safrano9999/FIXTURE", commit="a" * 40):
@@ -76,9 +76,12 @@ class SnapshotTests(unittest.TestCase):
         selected['repositories'] += [
             {'repository':'safrano9999/hermes-ephemeral','ref':'HEAD','commit':'b'*40},
             {'repository':'safrano9999/openclaw-deterministic-latest','ref':'patch','commit':'d'*40,
-             'release':{'ref':'patch','asset':f"openclaw-{current['openclaw']}-deterministic.tar.gz",'sha256':'e'*64}},
+             'release':{'ref':'patch','asset':f"openclaw-{current['openclaw']}-deterministic.tar.gz",'sha256':'e'*64,'upstream_commit':'1'*40}},
             {'repository':'safrano9999/NOTE','ref':'note','commit':'f'*40,
              'release':{'ref':'note','asset':'note-latest.zip','sha256':'a'*64}}]
+        override = openclaw_override((ROOT.parent/'fedora45-ai-core-pre/Containerfile').read_text(), current['openclaw'])
+        selected['openclaw_source'] = {'version':current['openclaw'], 'override_commit':override, 'commit':override or '1'*40}
+        selected['repositories'][2]['release']['upstream_commit'] = override or '1'*40
         report = {}
         with patch.dict(os.environ, {'GITHUB_ACTIONS':'true'}), patch.object(prep,'github',side_effect=AssertionError('must not resolve again')), patch.object(prep,'run',return_value=subprocess.CompletedProcess([],0,'c'*40+'\n')), patch.object(prep.importlib.util,'spec_from_file_location',side_effect=RuntimeError('inputs selected')):
             with self.assertRaisesRegex(RuntimeError,'inputs selected'): prep.prepare(report,snapshot=selected)
@@ -89,10 +92,16 @@ class SnapshotTests(unittest.TestCase):
     def test_explicit_source_upgrade_gate_and_earliest_stage_validation(self):
         spec = importlib.util.spec_from_file_location('source_upgrade_prep', ROOT/'prepare-container.py')
         prep = importlib.util.module_from_spec(spec); spec.loader.exec_module(prep)
-        selected = json.loads((ROOT/'prepared-sources.json').read_text())
+        selected = json.loads((ROOT/'tests/fixtures/prepared-sources.json').read_text())
         selected['source_commit'] = 'c' * 40
         pins = prep.current_versions((ROOT.parent/'fedora45-ai-core-pre/Containerfile').read_text())
         selected['versions'] = {n: {'current':v, 'latest':v} for n,v in pins.items()}
+        selected.pop('upgrade_build_deps', None)
+        override = openclaw_override((ROOT.parent/'fedora45-ai-core-pre/Containerfile').read_text(), pins['openclaw'])
+        selected['openclaw_source'] = {'version':pins['openclaw'], 'override_commit':override, 'commit':override or '1'*40}
+        for entry in selected['repositories']:
+            if entry['repository'].endswith('/openclaw-deterministic-latest'):
+                entry['release']['upstream_commit'] = override or '1'*40
         selected['upgrade_safrano9999'] = True
         selected['build_plan'] = {'schema_version':1,'required':True,'start_image':'fedora45-ai-core',
             'start_key':'fedora45_core','cascade':True,'target':selected['target'],

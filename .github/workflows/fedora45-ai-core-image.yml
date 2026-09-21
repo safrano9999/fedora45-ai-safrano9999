@@ -101,6 +101,9 @@ jobs:
             printf 'SAFRANO_SOURCE_MANIFEST=%s/upgrade-loop/prepared-sources.json\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
           fi
 
+      - name: Test independent OpenClaw component installers
+        run: python3 -m unittest discover -s fedora45-ai-core/tests -v
+
       - name: Free runner disk space
         run: .github/scripts/free-runner-disk-space.sh
 
@@ -146,7 +149,7 @@ jobs:
           set -a
           . ./build.conf
           set +a
-          for name in OPENCLAW_VERSION NOTE_REPOSITORY NOTE_RELEASE_TAG \
+          for name in OPENCLAW_VERSION OPENCLAW_UPSTREAM_SHA OPENCLAW_DETERMINISTIC_TAG NOTE_REPOSITORY NOTE_RELEASE_TAG \
             NOTE_RELEASE_ASSET NOTE_RELEASE_SHA256; do
             [ -n "${!name:-}" ] || {
               echo "Missing required build input: $name" >&2
@@ -213,6 +216,8 @@ jobs:
             echo "openclaw_version=$OPENCLAW_VERSION"
             echo "build_args<<EOF"
             echo "OPENCLAW_VERSION=$OPENCLAW_VERSION"
+            echo "OPENCLAW_UPSTREAM_SHA=$OPENCLAW_UPSTREAM_SHA"
+            echo "OPENCLAW_DETERMINISTIC_TAG=$OPENCLAW_DETERMINISTIC_TAG"
             echo "NOTE_REPOSITORY=$NOTE_REPOSITORY"
             echo "NOTE_RELEASE_TAG=$NOTE_RELEASE_TAG"
             echo "NOTE_RELEASE_ASSET=$NOTE_RELEASE_ASSET"

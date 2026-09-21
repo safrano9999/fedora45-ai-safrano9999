@@ -38,7 +38,7 @@ class Fedora45Sources {
       return [[{ json: { ...request, sources: synced, sources_ready: true } }]];
     }
     const get = async endpoint => {
-      if (!endpoint.startsWith('/repos/safrano9999/')) throw new Error('Repository outside Safrano scope');
+      if (!endpoint.startsWith('/repos/safrano9999/') && !/^\/repos\/openclaw\/openclaw\/commits\/v\d+\.\d+\.\d+$/.test(endpoint)) throw new Error('Repository outside Safrano scope');
       try {
         return await this.helpers.httpRequestWithAuthentication.call(this, 'httpHeaderAuth', {
           method: 'GET', url: 'https://api.github.com' + endpoint, json: true, timeout: 30000,

@@ -21,19 +21,20 @@ class PreparationTests(unittest.TestCase):
             foundation = root / 'fedora45-ai-core-pre/Containerfile'
             core = root / 'fedora45-ai-core/build.conf'
             foundation.parent.mkdir(); core.parent.mkdir(); (root / 'upgrade-loop').mkdir()
-            before = 'FROM quay.io/fedora/fedora@sha256:' + 'a'*64 + ' AS ai-core-pre\nARG OPENCLAW_VERSION=2026.9.4\nARG HERMES_VERSION=0.21.2\n'
+            before = 'FROM quay.io/fedora/fedora@sha256:' + 'a'*64 + ' AS ai-core-pre\nARG OPENCLAW_VERSION=2026.9.4\nARG OPENCLAW_UPSTREAM_SHA=\nARG HERMES_VERSION=0.21.2\n'
             foundation.write_text(before)
-            inputs = {'OPENCLAW_VERSION': '2026.9.5', 'OPENCLAW_EPHEMERAL_COMMIT': 'b'*40, 'HERMES_EPHEMERAL_COMMIT': 'c'*40}
+            inputs = {'OPENCLAW_UPSTREAM_SHA': 'a'*40, 'OPENCLAW_VERSION': '2026.9.5', 'OPENCLAW_EPHEMERAL_COMMIT': 'b'*40, 'HERMES_EPHEMERAL_COMMIT': 'c'*40}
             core.write_text(''.join(key + '=old\n' for key in inputs))
             selected_base = before.replace('@sha256:' + 'a'*64, ':45@sha256:' + 'd'*64)
             snapshot = {'source_commit': 'e'*40, 'upgrade_build_deps': True,
+                        'openclaw_source': {'version':'2026.9.5','override_commit':'','commit':'a'*40},
                         'versions': {'openclaw': {'current': '2026.9.4', 'latest': '2026.9.5'},
                                      'hermes': {'current': '0.21.2', 'latest': '0.21.2'}},
                         'build_dependencies_baseline': {'policy_sha256': 'f'*64}}
             files = {foundation.relative_to(root): selected_base,
                      prep.build_dependencies.CONF: 'DEPENDENCY=new\n', prep.build_dependencies.POLICY: '{}\n'}
-            runtime = SimpleNamespace(prepare=lambda name, version, path: {
-                'source': str(root / name), 'package': str(root / name), 'upstream_commit': 'a'*40})
+            runtime = SimpleNamespace(prepare=lambda name, version, path, **kwargs: {
+                'source': str(root / name), 'package': str(root / name), 'codex_package': str(root / name), 'upstream_commit': 'a'*40})
             def command(args, **kwargs):
                 return SimpleNamespace(stdout='e'*40 if 'rev-parse' in args else '')
             stack.enter_context(patch.dict(prep.os.environ, {'GITHUB_ACTIONS': 'true'}))
@@ -160,7 +161,8 @@ class PreparationTests(unittest.TestCase):
             note_release = {"tag_name": "2026.9.99", "draft": False, "prerelease": False,
                             "assets": [{"name": "note-latest.zip", "digest": "sha256:" + "d" * 64}]}
             replies = [{"tag_name": "v" + latest["openclaw"]}, {"name": "Hermes Agent v" + latest["hermes"]},
-                       {"sha": "a" * 40}, {"sha": "b" * 40}, [patch_release], patch_release, note_release]
+                       {"sha": "a" * 40}, {"sha": "b" * 40}, [patch_release], patch_release,
+                       note_release, *([{ "sha": "8" * 40 }] if changed == "openclaw" else [])]
             report = {}
             with self.subTest(changed=changed), patch.dict(prep.os.environ, {"GITHUB_ACTIONS": "true"}), patch.object(prep, "github", side_effect=replies) as gh, patch.object(prep.importlib.util, "spec_from_file_location", side_effect=RuntimeError('before runtime checks')):
                 with self.assertRaisesRegex(RuntimeError, 'before runtime checks'):
@@ -211,8 +213,8 @@ class PreparationTests(unittest.TestCase):
 const assert=require('node:assert/strict');
 const good={schema_version:1,status:'READY_FOR_BUILD',validate_only:false,build_started:false,image_pulled:false,container_restarted:false,build_commit:'c'.repeat(40),ephemeral_commits:{openclaw:'a'.repeat(40),hermes:'b'.repeat(40)},build_inputs:{OPENCLAW_EPHEMERAL_COMMIT:'a'.repeat(40),HERMES_EPHEMERAL_COMMIT:'b'.repeat(40)},checks:{openclaw:{status:'PASS',generator_commit:'a'.repeat(40)},hermes:{status:'PASS',generator_commit:'b'.repeat(40)},hermes_patch:{status:'PASS'}}};
 good.source_snapshot_id='d'.repeat(64);
-good.source_snapshot={repositories:[{repository:'safrano9999/openclaw-ephemeral',commit:'a'.repeat(40)},{repository:'safrano9999/hermes-ephemeral',commit:'b'.repeat(40)},{repository:'safrano9999/openclaw-deterministic-latest',release:{ref:'patch-release',sha256:'e'.repeat(64)}},{repository:'safrano9999/NOTE',release:{ref:'note-release',sha256:'f'.repeat(64)}}]};
-Object.assign(good.build_inputs,{OPENCLAW_DETERMINISTIC_TAG:'patch-release',OPENCLAW_DETERMINISTIC_SHA256:'e'.repeat(64),NOTE_RELEASE_TAG:'note-release',NOTE_RELEASE_SHA256:'f'.repeat(64)});
+good.source_snapshot={openclaw_source:{commit:'1'.repeat(40)},repositories:[{repository:'safrano9999/openclaw-ephemeral',commit:'a'.repeat(40)},{repository:'safrano9999/hermes-ephemeral',commit:'b'.repeat(40)},{repository:'safrano9999/openclaw-deterministic-latest',release:{ref:'patch-release',sha256:'e'.repeat(64),upstream_commit:'1'.repeat(40)}},{repository:'safrano9999/NOTE',release:{ref:'note-release',sha256:'f'.repeat(64)}}]};
+Object.assign(good.build_inputs,{OPENCLAW_UPSTREAM_SHA:'1'.repeat(40),OPENCLAW_DETERMINISTIC_TAG:'patch-release',OPENCLAW_DETERMINISTIC_SHA256:'e'.repeat(64),NOTE_RELEASE_TAG:'note-release',NOTE_RELEASE_SHA256:'f'.repeat(64)});
 const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
 async function check(report,validation=false,request={}){
  const f=new AsyncFunction('$','$input',code);
@@ -239,7 +241,7 @@ async function check(report,validation=false,request={}){
  assert.equal((await check(unchanged,false,{auto:true}))[0].json.safrano_build_request,undefined);
  assert.deepEqual((await check(unchanged,false,{auto:true,auto_upgrade:true,build_feedback:false}))[0].json.safrano_upgrade_request,{action:'auto-update',feedback:false});
 
- for(const mutate of [r=>delete r.checks.hermes,r=>r.build_inputs.HERMES_EPHEMERAL_COMMIT='f'.repeat(40),r=>r.checks.hermes_patch.status='NOT_TESTED',r=>r.container_restarted=true,r=>r.build_commit='',r=>r.status='BLOCKED',r=>r.source_snapshot_id='0'.repeat(64),r=>r.source_snapshot.repositories[0].commit='0'.repeat(40),r=>r.build_inputs.NOTE_RELEASE_SHA256='0'.repeat(64)]){
+ for(const mutate of [r=>delete r.checks.hermes,r=>r.build_inputs.HERMES_EPHEMERAL_COMMIT='f'.repeat(40),r=>r.checks.hermes_patch.status='NOT_TESTED',r=>r.container_restarted=true,r=>r.build_commit='',r=>r.status='BLOCKED',r=>r.source_snapshot_id='0'.repeat(64),r=>r.source_snapshot.repositories[0].commit='0'.repeat(40),r=>r.build_inputs.NOTE_RELEASE_SHA256='0'.repeat(64),r=>r.build_inputs.OPENCLAW_UPSTREAM_SHA='0'.repeat(40)]){
   const bad=structuredClone(good);mutate(bad);await assert.rejects(check(bad));
  }
  const validated={...good,status:'VALIDATED_ONLY',validate_only:true};delete validated.build_commit;

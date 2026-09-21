@@ -38,11 +38,19 @@ function validateSnapshot(snapshot, expectedId) {
     const v = snapshot.versions?.[name];
     if (!v || !/^\d+\.\d+\.\d+$/.test(v.current) || !/^\d+\.\d+\.\d+$/.test(v.latest)) throw new Error('Missing snapshot versions');
   }
+  const selected = snapshot.openclaw_source;
+  if (selected) {
+    const versions = snapshot.versions.openclaw;
+    if (selected.version !== versions.latest || !SHA.test(selected.commit || '') ||
+        (selected.override_commit && (!SHA.test(selected.override_commit) || selected.override_commit !== selected.commit)) ||
+        (versions.current !== versions.latest && selected.override_commit)) throw new Error('Invalid Core-pre OpenClaw source selection');
+  }
   return snapshot;
 }
 
 function makeSnapshot(manifest, versions) {
   const snapshot = { schema_version: 1, source_policy: 'latest-resolved-once',
+    ...(manifest.openclaw_source ? { openclaw_source: manifest.openclaw_source } : {}),
     source_commit: manifest.image_commit, target: manifest.target, chain: manifest.chain,
     resolved_at: manifest.resolved_at, versions,
     repositories: manifest.repositories.filter(e => e.repository !== IMAGE_REPO).map(e => ({

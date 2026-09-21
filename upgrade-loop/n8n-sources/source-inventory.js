@@ -71,12 +71,22 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
     repos.set(key, entry);
   }
   add(IMAGE_REPO, commit, target, 'Containerfile chain', 'image-definition');
-  let layer = target, externalBase;
+  let layer = target, externalBase, openclawSource;
   while (layer) {
     if (chain.includes(layer) || chain.length >= 16) throw new Error('Cyclic or excessive image chain');
     chain.push(layer);
     const cfPath = layer + '/Containerfile', confPath = layer + '/build.conf';
     const cf = await file(cfPath), conf = await file(confPath);
+    if (layer === 'fedora45-ai-core-pre') {
+      const current = cf.match(/^ARG OPENCLAW_VERSION=(\d+\.\d+\.\d+)$/m)?.[1];
+      const override = cf.match(/^ARG OPENCLAW_UPSTREAM_SHA=([0-9a-f]*)$/m)?.[1] ?? '';
+      if (/^ARG OPENCLAW_UPSTREAM_SHA=/m.test(cf) && !/^ARG OPENCLAW_UPSTREAM_SHA=(?:[0-9a-f]{40})?$/m.test(cf)) throw new Error('Invalid Core-pre source override');
+      if (!current || override === undefined || (override && !SHA.test(override))) {
+        throw new Error('Invalid OpenClaw source pins in Core-pre Containerfile');
+      }
+      const version = openclawVersion || current;
+      openclawSource = { version, override_commit: version === current ? override : '' };
+    }
     const helperPath = layer + '/build/prepare-build-context.sh';
     const declarations = [[confPath, conf]];
     if (paths.has(helperPath)) {
@@ -152,6 +162,7 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
     }
   }
   return { schema_version: 1, target, image_repository: IMAGE_REPO, image_commit: commit,
+    ...(openclawSource ? { openclaw_source: openclawSource } : {}),
     chain: chain.reverse(), external_base: externalBase, repositories: [...repos.values()],
     source_policy: latest ? 'latest-resolved-for-preview' : 'prepared-pins-and-current-branches',
     clone_depth: 1, clone_gate: 'READY_FOR_BUILD', local_build: false };
@@ -159,6 +170,12 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
 
 async function resolveCommits(get, manifest) {
   const repositories = [];
+  let source = manifest.openclaw_source;
+  if (source) {
+    const commit = source.override_commit || (await get('/repos/openclaw/openclaw/commits/v' + source.version)).sha;
+    if (!SHA.test(commit || '')) throw new Error('Invalid Core-pre selected source commit');
+    source = { ...source, commit };
+  }
   for (const entry of manifest.repositories) {
     const result = await get('/repos/' + entry.repository + '/commits/' + encodeURIComponent(entry.ref));
     if (!SHA.test(result.sha || '') || (SHA.test(entry.ref) && result.sha !== entry.ref)) {
@@ -166,7 +183,7 @@ async function resolveCommits(get, manifest) {
     }
     repositories.push({ ...entry, commit: result.sha });
   }
-  return { ...manifest, resolved_at: new Date().toISOString(), repositories };
+  return { ...manifest, ...(source ? { openclaw_source: source } : {}), resolved_at: new Date().toISOString(), repositories };
 }
 
 module.exports = { inventory, resolveCommits, latestRelease, DEFAULT_TARGET, IMAGE_REPO, SHA, literal, validRef };

@@ -257,7 +257,8 @@
       "release": {
         "ref": "2026.9.5-deterministic.2",
         "asset": "openclaw-2026.9.5-deterministic.tar.gz",
-        "sha256": "4eebda97634da4b7866118deb86bc0d93bf7a8e0f285986fda73f751e504a9d0"
+        "sha256": "4eebda97634da4b7866118deb86bc0d93bf7a8e0f285986fda73f751e504a9d0",
+        "upstream_commit": "ec9c1a13db8938e5a3eaa51fca2e981cde2395a9"
       }
     },
     {

@@ -29,6 +29,8 @@ async function fixture(target='fedora45-ai-base') {
   };
   const manifest=await inventory(get,{target});
   manifest.repositories=manifest.repositories.map(e=>({...e,commit:e.repository===IMAGE_REPO?current:'d'.repeat(40)}));
+  // This fixture represents an already published legacy snapshot.
+  delete manifest.openclaw_source;
   manifest.resolved_at='2026-09-17T00:00:00Z';
   state.snapshot=makeSnapshot(manifest,versions);state.snapshot.source_commit=old;
   const readImage=async layer=>state.images[layer]||({image:layer,revision:old,digest:digest(1),layers:manifest.chain.slice(0,manifest.chain.indexOf(layer)+1).map((_,i)=>digest(i+1))});

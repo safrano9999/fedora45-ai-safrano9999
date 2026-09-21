@@ -37,7 +37,8 @@ const { resolveCodexMcpToolOverridesForAgent } = await import(
 const config = JSON.parse(fs.readFileSync(process.env.UPGRADE_CONFIG_FIXTURE));
 
 test("exact upstream source and installed package versions", () => {
-  for (const directory of [source, installed]) {
+  assert.match(process.env.UPGRADE_TARGET_UPSTREAM_SHA, /^[0-9a-f]{40}$/);
+  for (const directory of [source, installed, process.env.UPGRADE_TARGET_CODEX_PACKAGE]) {
     assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "package.json"))).version,
                  process.env.UPGRADE_TARGET_VERSION);
   }
