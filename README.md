@@ -42,9 +42,10 @@ Core-pre's `OPENCLAW_VERSION` and optional `OPENCLAW_UPSTREAM_SHA` arguments
 select the source for Deterministic builds and Ephemeral compatibility tests.
 The override is preserved while the stable version is unchanged. An upstream
 version increase clears it, returning to that release's official source.
-`openclaw-components.yml` automatically checks Core-pre changes and every 30 minutes
-checks for Deterministic changes. It builds/tests/publishes only when the selected
-inputs differ from an existing successful release, then records the exact release
+`openclaw-components.yml` runs on schedule (every 30 minutes) or manual invocation,
+never on source changes. Each run checks the Core-pre selection and Deterministic
+inputs first; unchanged successful inputs skip the build. Changed inputs are
+built/tested/published, then the run records the exact release
 and checksum in Core. It uses `GH_RELEASE_TOKEN`; it never starts an image build.
 
 Core installs Deterministic and Ephemeral in two separate steps. Deterministic
