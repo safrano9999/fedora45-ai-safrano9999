@@ -2,22 +2,74 @@
 name: OpenClaw components
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - fedora45-ai-core-pre/Containerfile
+      - fedora45-ai-core/build.conf
+      - upgrade-loop/probes/openclaw*
+      - .github/workflows/openclaw-components.yml
+  schedule:
+    - cron: '17,47 * * * *'
   workflow_dispatch:
     inputs:
       publish:
-        description: Publish the verified Deterministic runtime bundle (no image build)
+        description: Publish changed, verified components and update Core pins (no image build)
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: write
 
+concurrency:
+  group: openclaw-components
+  cancel-in-progress: false
+
 jobs:
+  source:
+    runs-on: ubuntu-latest
+    outputs:
+      patch_sha: ${{ steps.source.outputs.patch_sha }}
+    steps:
+      - id: source
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+        run: |
+          sha=$(gh api repos/safrano9999/openclaw-deterministic-latest/commits/main --jq .sha)
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
+          echo "patch_sha=$sha" >> "$GITHUB_OUTPUT"
+
   components:
-    uses: safrano9999/openclaw-deterministic-latest/.github/workflows/verify-and-release.yml@5701d8523d41bfeae3c942d980f11723067aa744
+    needs: source
+    uses: safrano9999/openclaw-deterministic-latest/.github/workflows/verify-and-release.yml@main
     with:
       core_source_commit: ${{ github.sha }}
-      patch_source_commit: 5701d8523d41bfeae3c942d980f11723067aa744
-      publish: ${{ inputs.publish }}
+      patch_source_commit: ${{ needs.source.outputs.patch_sha }}
+      publish: ${{ github.event_name != 'workflow_dispatch' || inputs.publish }}
     secrets:
       source_token: ${{ secrets.GH_RELEASE_TOKEN }}
+
+  record:
+    needs: components
+    if: github.event_name != 'workflow_dispatch' || inputs.publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          token: ${{ secrets.GH_RELEASE_TOKEN }}
+      - name: Record the verified runtime without starting an image build
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+          RELEASE_TAG: ${{ needs.components.outputs.release_tag }}
+          OPENCLAW_VERSION: ${{ needs.components.outputs.version }}
+          OPENCLAW_UPSTREAM_SHA: ${{ needs.components.outputs.upstream_sha }}
+        run: |
+          python3 .github/scripts/record-openclaw-release.py
+          if git diff --quiet -- fedora45-ai-core/build.conf fedora45-ai-core-pre/Containerfile; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add fedora45-ai-core/build.conf fedora45-ai-core-pre/Containerfile
+          git commit -m 'Pin verified OpenClaw runtime [skip ci]'
+          # A concurrent Core edit must never be overwritten; the next run retries.
+          git push origin HEAD:main
