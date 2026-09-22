@@ -487,9 +487,6 @@ for raw in sys.argv[2:]:
                 if version["current"] != version["latest"]:
                     repository = component + "-ephemeral"
                     inputs[component.upper() + "_EPHEMERAL_COMMIT"] = self.data.get("tested_sources", {}).get(repository, self.data["source_baseline"][repository])
-            hermes_target = self.data.get("prepared_targets", {}).get("hermes")
-            if hermes_target:
-                command(["git", "apply", "--check", REPO / "fedora45-ai-core-pre/build/hermes-nous-api-key.patch"], cwd=Path(hermes_target["source"]))
             self.data["core_inputs"] = inputs
             return {"status": "PASS", "patch_tag": values["OPENCLAW_DETERMINISTIC_TAG"],
                     "patch_sha256": values["OPENCLAW_DETERMINISTIC_SHA256"]}

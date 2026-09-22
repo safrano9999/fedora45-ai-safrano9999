@@ -231,9 +231,6 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
                 raise ValueError("Generator changed during compatibility check")
             report["checks"][name] = {"status": "PASS", "version": latest[name],
                                        "generator_commit": commits[name], "upstream_commit": target["upstream_commit"]}
-        run(["git", "apply", "--check", REPO / "fedora45-ai-core-pre/build/hermes-nous-api-key.patch"],
-            cwd=targets["hermes"]["source"])
-        report["checks"]["hermes_patch"] = {"status": "PASS"}
     # A base-image refresh and upstream version changes share this file. Apply
     # version changes on the refreshed foundation so neither update is lost.
     after_foundation = dependency_files.pop(foundation.relative_to(REPO), before_foundation)

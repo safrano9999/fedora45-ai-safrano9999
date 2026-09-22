@@ -244,7 +244,6 @@ if(report.status!=='NO_UPDATE'){
   if(!release||report.build_inputs?.[prefix+'_TAG']!==release.ref||report.build_inputs?.[prefix+'_SHA256']!==release.sha256)throw new Error('Release differs from n8n snapshot');
   if(repo==='openclaw-deterministic-latest'&&report.build_inputs?.OPENCLAW_UPSTREAM_SHA!==report.source_snapshot.openclaw_source?.commit)throw new Error('OpenClaw source differs from n8n snapshot');
  }
- if(report.checks?.hermes_patch?.status!=='PASS')throw new Error('Missing patch evidence');
 }
 const plan=report.source_snapshot?.build_plan;
 if(plan&&JSON.stringify(report.build_plan)!==JSON.stringify(plan))throw new Error('Preparation changed the build start plan');

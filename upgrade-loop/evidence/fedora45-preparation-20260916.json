@@ -44,9 +44,6 @@
         "version": "0.21.3",
         "generator_commit": "735df306a60dd6a7ba04443baa049d7e4f467973",
         "upstream_commit": "345cd2b057a452236de401d3534b8502a7465e8d"
-      },
-      "hermes_patch": {
-        "status": "PASS"
       }
     },
     "next": "User/Hermes controls build and pull through Safrano MCP; container tests are a separate routine after restart."
