@@ -161,11 +161,12 @@ return [{json:{...$json,...upgrade,...custom,status:'NO_UPDATE',build_started:fa
 """, 1780, 300)
 code("Prepare request", """
 const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+10800000};
+request.dispatch_body=JSON.stringify({ref:'main',inputs:{run_id:request.run_id,publish:request.validate_only !== true}});
 return [{json:request}];
 """, 1780)
 http("Dispatch Deterministic check", base + "/actions/workflows/openclaw-components.yml/dispatches", 1800, -420,
      method="POST", sendBody=True, specifyBody="json",
-     jsonBody="={{ {ref:'main',inputs:{run_id:$json.run_id,publish:!$json.validate_only}} }}")
+     jsonBody="={{ $json.dispatch_body }}")
 node("Wait for Deterministic", "wait", {"resume":"timeInterval","amount":30,"unit":"seconds"}, 2020, -420, 1.1,
      webhookId="655b2fc1-0e06-4b1b-b2c8-fcc59a265a65")
 http("Read Deterministic runs", "={{ '"+base+"/actions/workflows/openclaw-components.yml/runs?event=workflow_dispatch&per_page=100&created='+encodeURIComponent('>='+$('Prepare request').first().json.started_at) }}", 2240, -420)

@@ -461,7 +461,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+10800000};\nreturn [{json:request}];"
+        "jsCode": "const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+10800000};\nrequest.dispatch_body=JSON.stringify({ref:'main',inputs:{run_id:request.run_id,publish:request.validate_only !== true}});\nreturn [{json:request}];"
       }
     },
     {
@@ -496,7 +496,7 @@
         "method": "POST",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {ref:'main',inputs:{run_id:$json.run_id,publish:!$json.validate_only}} }}"
+        "jsonBody": "={{ $json.dispatch_body }}"
       },
       "credentials": {
         "httpHeaderAuth": {
