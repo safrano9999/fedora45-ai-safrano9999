@@ -137,7 +137,7 @@
       "release_line": "45",
       "containerfile": "fedora45-ai-core-pre/Containerfile",
       "stage": "ai-core-pre",
-      "digest": "sha256:3cb0111983a2d40df0454edd823a2212a6fce1f93a1d7914959bbf5c21e0e9e9"
+      "digest": "sha256:0fd75fd933c10a04b6440550e48ea0d416d49ff99ca1c492e133e317e47e3eab"
     }
   ]
 }

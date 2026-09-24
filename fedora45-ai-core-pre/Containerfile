@@ -1,4 +1,4 @@
-FROM quay.io/fedora/fedora:45@sha256:3cb0111983a2d40df0454edd823a2212a6fce1f93a1d7914959bbf5c21e0e9e9 AS ai-core-pre
+FROM quay.io/fedora/fedora:45@sha256:0fd75fd933c10a04b6440550e48ea0d416d49ff99ca1c492e133e317e47e3eab AS ai-core-pre
 
 ARG WEBHOOK_VERSION
 ARG HERMES_VERSION=0.21.4
