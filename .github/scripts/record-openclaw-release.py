@@ -15,13 +15,26 @@ versions = re.findall(r"^ARG OPENCLAW_VERSION=(\d+\.\d+\.\d+)$", foundation_text
 overrides = re.findall(r"^ARG OPENCLAW_UPSTREAM_SHA=((?:[0-9a-f]{40})?)$", foundation_text, re.M)
 if len(versions) != 1 or len(overrides) != 1:
     raise ValueError("Invalid Core-pre source of truth")
-version = versions[0]
-upstream = overrides[0] or json.loads(subprocess.check_output([
-    "gh", "api", f"repos/openclaw/openclaw/commits/v{version}",
+source_version = versions[0]
+source_upstream = overrides[0] or json.loads(subprocess.check_output([
+    "gh", "api", f"repos/openclaw/openclaw/commits/v{source_version}",
 ], text=True))["sha"]
-if (os.environ.get("OPENCLAW_VERSION", version) != version
-        or os.environ.get("OPENCLAW_UPSTREAM_SHA", upstream) != upstream):
-    raise ValueError("Runtime selection differs from Core-pre")
+target_version = os.environ.get("TARGET_OPENCLAW_VERSION", "").strip()
+if target_version:
+    if not re.fullmatch(r"\d+\.\d+\.\d+", target_version):
+        raise ValueError("Invalid requested OpenClaw target version")
+    if tuple(map(int, target_version.split("."))) < tuple(map(int, source_version.split("."))):
+        raise ValueError("Cannot downgrade the Core-pre version")
+    version = target_version
+    upstream = os.environ.get("OPENCLAW_UPSTREAM_SHA", "")
+    if not re.fullmatch(r"[0-9a-f]{40}", upstream):
+        raise ValueError("Missing upstream commit for targeted runtime")
+else:
+    version = source_version
+    upstream = source_upstream
+    if (os.environ.get("OPENCLAW_VERSION", version) != version
+            or os.environ.get("OPENCLAW_UPSTREAM_SHA", upstream) != upstream):
+        raise ValueError("Runtime selection differs from Core-pre")
 tag = os.environ["RELEASE_TAG"]
 if not re.fullmatch(re.escape(version) + r"-deterministic\.\d+", tag):
     raise ValueError("Expected a version-pinned Deterministic release")

@@ -161,9 +161,20 @@ return [{json:{...$json,...upgrade,...custom,status:'NO_UPDATE',build_started:fa
 """, 1780, 300)
 code("Prepare request", """
 const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+10800000};
-request.dispatch_body=JSON.stringify({ref:'main',inputs:{run_id:request.run_id,publish:request.validate_only !== true}});
 return [{json:request}];
 """, 1780)
+branch("Deterministic build required?", "={{ $json.versions.openclaw.current !== $json.versions.openclaw.latest }}", 2000, -420)
+code("Prepare targeted Deterministic dispatch", """
+const request=$('Prepare request').first().json;
+const target=request.versions.openclaw.latest;
+request.dispatch_body=JSON.stringify({ref:'main',inputs:{run_id:request.run_id,publish:true,target_version:target}});
+return [{json:request}];
+""", 2220, -560)
+code("Prepare reuse Deterministic dispatch", """
+const request=$('Prepare request').first().json;
+request.dispatch_body=JSON.stringify({ref:'main',inputs:{run_id:request.run_id,publish:request.validate_only !== true}});
+return [{json:request}];
+""", 2220, -280)
 http("Dispatch Deterministic check", base + "/actions/workflows/openclaw-components.yml/dispatches", 1800, -420,
      method="POST", sendBody=True, specifyBody="json",
      jsonBody="={{ $json.dispatch_body }}")
@@ -270,7 +281,11 @@ sync["type"]="CUSTOM.fedora45Sources"
 for source,target in [("Manual preparation","Read request"),("Webhook - preparation or --check","Read request"),("Read request","Published version pins"),("Published version pins","Latest OpenClaw release"),("Latest OpenClaw release","Latest Hermes release"),("Latest Hermes release","Validate versions"),("Validate versions","Check only?"),("Check only?","Return two version lines"),("Webhook request?","Accept preparation"),("Accept preparation","Upstream update available?"),("Upstream update available?","Prepare request"),("Prepare request","Dispatch preparation Action"),("Dispatch preparation Action","Wait for preparation"),("Wait for preparation","Read preparation runs"),("Read preparation runs","Match exact preparation run"),("Match exact preparation run","Preparation finished?"),("Preparation finished?","Read preparation artifacts"),("Read preparation artifacts","Select evidence artifact"),("Select evidence artifact","Resolve evidence download"),("Resolve evidence download","Validate evidence URL"),("Validate evidence URL","Download preparation evidence"),("Download preparation evidence","Unpack evidence"),("Unpack evidence","Handoff to Hermes")]:link(source,target)
 for source,target in [("Check only?","Webhook request?"),("Webhook request?","Upstream update available?"),("Upstream update available?","No update"),("Preparation finished?","Wait for preparation")]:link(source,target,1)
 connections["Read request"]={"main":[[{"node":"Sources preview?","type":"main","index":0}]]}
-connections["Prepare request"]={"main":[[{"node":"Dispatch Deterministic check","type":"main","index":0}]]}
+connections["Prepare request"]={"main":[[{"node":"Deterministic build required?","type":"main","index":0}]]}
+link("Deterministic build required?","Prepare targeted Deterministic dispatch")
+link("Deterministic build required?","Prepare reuse Deterministic dispatch",1)
+link("Prepare targeted Deterministic dispatch","Dispatch Deterministic check")
+link("Prepare reuse Deterministic dispatch","Dispatch Deterministic check")
 link("Dispatch Deterministic check","Wait for Deterministic")
 link("Wait for Deterministic","Read Deterministic runs")
 link("Read Deterministic runs","Match exact Deterministic run")

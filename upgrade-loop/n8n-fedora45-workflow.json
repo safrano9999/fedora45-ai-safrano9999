@@ -461,7 +461,67 @@
         0
       ],
       "parameters": {
-        "jsCode": "const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+10800000};\nrequest.dispatch_body=JSON.stringify({ref:'main',inputs:{run_id:request.run_id,publish:request.validate_only !== true}});\nreturn [{json:request}];"
+        "jsCode": "const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+10800000};\nreturn [{json:request}];"
+      }
+    },
+    {
+      "id": "9a3c2b81-ccdf-54c2-b9d3-882ef83c44a5",
+      "name": "Deterministic build required?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2000,
+        -420
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "Deterministic build required?",
+              "leftValue": "={{ $json.versions.openclaw.current !== $json.versions.openclaw.latest }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "0eb2a4ee-9f10-52f5-841e-338ca9464598",
+      "name": "Prepare targeted Deterministic dispatch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        -560
+      ],
+      "parameters": {
+        "jsCode": "const request=$('Prepare request').first().json;\nconst target=request.versions.openclaw.latest;\nrequest.dispatch_body=JSON.stringify({ref:'main',inputs:{run_id:request.run_id,publish:true,target_version:target}});\nreturn [{json:request}];"
+      }
+    },
+    {
+      "id": "36d1c4c3-103c-54c2-b1a8-7f9953ccb719",
+      "name": "Prepare reuse Deterministic dispatch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        -280
+      ],
+      "parameters": {
+        "jsCode": "const request=$('Prepare request').first().json;\nrequest.dispatch_body=JSON.stringify({ref:'main',inputs:{run_id:request.run_id,publish:request.validate_only !== true}});\nreturn [{json:request}];"
       }
     },
     {
@@ -1158,7 +1218,7 @@
       "main": [
         [
           {
-            "node": "Dispatch Deterministic check",
+            "node": "Deterministic build required?",
             "type": "main",
             "index": 0
           }
@@ -1287,6 +1347,46 @@
         [
           {
             "node": "Handoff to Hermes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deterministic build required?": {
+      "main": [
+        [
+          {
+            "node": "Prepare targeted Deterministic dispatch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare reuse Deterministic dispatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare targeted Deterministic dispatch": {
+      "main": [
+        [
+          {
+            "node": "Dispatch Deterministic check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare reuse Deterministic dispatch": {
+      "main": [
+        [
+          {
+            "node": "Dispatch Deterministic check",
             "type": "main",
             "index": 0
           }

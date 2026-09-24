@@ -126,7 +126,11 @@ class SnapshotTests(unittest.TestCase):
         edges=workflow['connections']
         self.assertEqual(edges['Upstream update available?']['main'][1][0]['node'],'No update')
         self.assertEqual(edges['Upstream update available?']['main'][0][0]['node'],'Prepare request')
-        self.assertEqual(edges['Prepare request']['main'][0][0]['node'],'Resolve latest sources once')
+        self.assertEqual(edges['Prepare request']['main'][0][0]['node'],'Deterministic build required?')
+        self.assertEqual(edges['Deterministic build required?']['main'][0][0]['node'],'Prepare targeted Deterministic dispatch')
+        self.assertEqual(edges['Deterministic build required?']['main'][1][0]['node'],'Prepare reuse Deterministic dispatch')
+        self.assertEqual(edges['Prepare targeted Deterministic dispatch']['main'][0][0]['node'],'Dispatch Deterministic check')
+        self.assertEqual(edges['Prepare reuse Deterministic dispatch']['main'][0][0]['node'],'Dispatch Deterministic check')
         self.assertEqual(edges['Resolve latest sources once']['main'][0][0]['node'],'Sources require preparation?')
         self.assertEqual(edges['Sources require preparation?']['main'][0][0]['node'],'Dispatch preparation Action')
         self.assertEqual(edges['Sources require preparation?']['main'][1][0]['node'],'No update')

@@ -13,6 +13,11 @@ on:
         description: Publish changed, verified components and update Core pins (no image build)
         type: boolean
         default: true
+      target_version:
+        description: Optional OpenClaw version to build before Core-pre is updated
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -41,6 +46,7 @@ jobs:
     with:
       core_source_commit: ${{ github.sha }}
       patch_source_commit: ${{ needs.source.outputs.patch_sha }}
+      target_version: ${{ inputs.target_version }}
       publish: ${{ github.event_name != 'workflow_dispatch' || inputs.publish }}
     secrets:
       source_token: ${{ secrets.GH_RELEASE_TOKEN }}
@@ -60,6 +66,7 @@ jobs:
           RELEASE_TAG: ${{ needs.components.outputs.release_tag }}
           OPENCLAW_VERSION: ${{ needs.components.outputs.version }}
           OPENCLAW_UPSTREAM_SHA: ${{ needs.components.outputs.upstream_sha }}
+          TARGET_OPENCLAW_VERSION: ${{ inputs.target_version }}
         run: |
           python3 .github/scripts/record-openclaw-release.py
           if git diff --quiet -- fedora45-ai-core/build.conf fedora45-ai-core-pre/Containerfile; then exit 0; fi
