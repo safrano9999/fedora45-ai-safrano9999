@@ -209,24 +209,6 @@ RUN --mount=type=cache,target=/root/.npm \
     test -n "${OPENCLAW_BRAVE_PLUGIN_VERSION}" \
  && openclaw plugins install "@openclaw/brave-plugin@${OPENCLAW_BRAVE_PLUGIN_VERSION}"
 
-# Keep the Deterministic Codex dependency outside the dist tree replaced by Core.
-RUN --mount=type=cache,target=/root/.npm \
-    set -euo pipefail; \
-    openclaw plugins install "clawhub:@openclaw/codex@${OPENCLAW_VERSION}"; \
-    codex_root="$(openclaw plugins inspect codex --json | jq -er '.install.installPath')"; \
-    test -f "$codex_root/openclaw.plugin.json"; \
-    test -f "$codex_root/$(jq -er '.openclaw.runtimeExtensions[0] // .openclaw.extensions[0]' "$codex_root/package.json")"; \
-    openclaw_root="$(npm root -g)/openclaw"; \
-    toml_source="$codex_root/node_modules/smol-toml"; \
-    toml_version="$(jq -er .version "$toml_source/package.json")"; \
-    toml_root="$openclaw_root/node_modules/.pnpm/smol-toml@$toml_version/node_modules/smol-toml"; \
-    if [ ! -f "$toml_root/package.json" ]; then \
-      mkdir -p "$(dirname "$toml_root")"; \
-      cp -a "$toml_source" "$toml_root"; \
-    fi; \
-    test "$(jq -r .version "$toml_root/package.json")" = "$toml_version"; \
-    node -e 'require(process.argv[1])' "$toml_root"
-
 RUN test -n "${CLOUDFLARED_VERSION}" \
  && test -n "${CLOUDFLARED_SHA256}" \
  && curl -fsSL --retry 3 \
