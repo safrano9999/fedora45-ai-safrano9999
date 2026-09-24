@@ -1,0 +1,18 @@
+[Unit]
+Description=OpenCode API server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=HOME=/root
+PassEnvironment=OPENCODE_START OPENCODE_API_HOST OPENCODE_API_PORT OPENCODE_API_KEY
+ExecCondition=/bin/bash -c '[ "$${OPENCODE_START:-1}" = "1" ] && [ -n "$${OPENCODE_API_KEY:-}" ]'
+ExecStart=/bin/bash -lc 'exec /usr/local/bin/opencode serve --hostname "$${OPENCODE_API_HOST:-0.0.0.0}" --port "$${OPENCODE_API_PORT:-4096}"'
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

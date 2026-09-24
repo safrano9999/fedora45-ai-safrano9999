@@ -34,13 +34,20 @@ ARG CLAUDE_CODE_SHA256
 ARG VDITOR_SHA256
 ARG NPM_VERSION
 ARG NPM_SHA256
+ARG OPENCODE_VERSION=1.18.32
+ARG OPENCODE_TELEGRAM_VERSION=0.25.3
 
 LABEL org.opencontainers.image.title="fedora45-ai-core-pre" \
       org.opencontainers.image.description="Heavy generic Fedora 45 AI toolchain foundation without Safrano project content or ephemeral runtime configuration." \
       org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
       io.safrano9999.openclaw.version="${OPENCLAW_VERSION}"
 
-ENV NODE_EXTRA_CA_CERTS=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+ENV NODE_EXTRA_CA_CERTS=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    OPENCODE_API_HOST=0.0.0.0 \
+    OPENCODE_API_PORT=4096 \
+    OPENCODE_MODEL_PROVIDER=opencode \
+    OPENCODE_MODEL_ID=mimo-v2.6-flash-free \
+    OPENCODE_START=1
 
 # Keep the package set and order aligned with the existing fedora45-ai image.
 RUN --mount=type=cache,target=/var/cache/dnf \
@@ -70,6 +77,27 @@ RUN curl -fsSL --retry 3 "https://registry.npmjs.org/npm/-/npm-${NPM_VERSION}.tg
  && node --version && npm --version \
  && rpm -qf "$(readlink -f "$(command -v node)")" \
  && node -e 'if (Number(process.versions.node.split(".")[0]) < 26) process.exit(1)'
+
+# OpenCode is a generic core tool. The Telegram bridge is installed here, but
+# its systemd unit only starts when a runtime token and chat/user ID are given.
+# No credentials are baked into the image.
+RUN --mount=type=cache,target=/root/.npm \
+    set -euo pipefail; \
+    case "$(uname -m)" in \
+      x86_64) OPENCODE_NATIVE_PACKAGE=opencode-linux-x64 ;; \
+      aarch64|arm64) OPENCODE_NATIVE_PACKAGE=opencode-linux-arm64 ;; \
+      *) echo "Unsupported OpenCode architecture: $(uname -m)" >&2; exit 1 ;; \
+    esac; \
+    npm install -g --include=optional \
+      --allow-scripts=opencode-ai \
+      "opencode-ai@${OPENCODE_VERSION}" \
+      "${OPENCODE_NATIVE_PACKAGE}@${OPENCODE_VERSION}" \
+      "@grinev/opencode-telegram-bot@${OPENCODE_TELEGRAM_VERSION}"; \
+    test "$(jq -r .version "$(npm root -g)/opencode-ai/package.json")" = "${OPENCODE_VERSION}"; \
+    test "$(jq -r .version "$(npm root -g)/${OPENCODE_NATIVE_PACKAGE}/package.json")" = "${OPENCODE_VERSION}"; \
+    test "$(jq -r .version "$(npm root -g)/@grinev/opencode-telegram-bot/package.json")" = "${OPENCODE_TELEGRAM_VERSION}"; \
+    opencode --version; \
+    command -v opencode-telegram
 
 RUN set -euo pipefail; \
     HERMES_COMMIT="$(curl -fsSL --retry 3 "https://api.github.com/repos/NousResearch/hermes-agent/commits/$(curl -fsSL --compressed --retry 3 'https://api.github.com/repos/NousResearch/hermes-agent/releases?per_page=100' | jq -er --arg v "$HERMES_VERSION" 'map(select(.draft == false and (.name | startswith("Hermes Agent v" + $v + " ")))) | select(length == 1) | .[0].tag_name')" | jq -er '.sha | select(test("^[0-9a-f]{40}$"))')"; \
@@ -122,6 +150,8 @@ RUN chmod 0755 /usr/local/bin/tailscale-state-up.sh \
       cloudflared.service \
       cockpit.service \
       bip39.service \
+      opencode.service \
+      opencode-telegram.service \
  && systemctl mask cockpit.socket \
  && sed -i '1i auth       sufficient   pam_permit.so' /etc/pam.d/cockpit
 

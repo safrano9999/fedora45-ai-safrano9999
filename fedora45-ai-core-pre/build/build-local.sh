@@ -33,7 +33,7 @@ set +a
 for name in HERMES_VERSION ELECTRUM_VERSION \
     LND_VERSION GETH_VERSION GETH_COMMIT WEBHOOK_VERSION VDITOR_VERSION \
     OPENCLAW_VERSION FEDORA45_AI_CORE_PRE_IMAGE PERSISTAINER_REPOSITORY \
-    PERSISTAINER_REF; do
+    PERSISTAINER_REF OPENCODE_VERSION OPENCODE_TELEGRAM_VERSION; do
     [ -n "${!name:-}" ] || {
         echo "Missing $name in build.conf" >&2
         exit 1
@@ -52,6 +52,8 @@ BUILD_ARGS=(
     --build-arg "GETH_COMMIT=$GETH_COMMIT"
     --build-arg "WEBHOOK_VERSION=$WEBHOOK_VERSION"
     --build-arg "VDITOR_VERSION=$VDITOR_VERSION"
+    --build-arg "OPENCODE_VERSION=$OPENCODE_VERSION"
+    --build-arg "OPENCODE_TELEGRAM_VERSION=$OPENCODE_TELEGRAM_VERSION"
 )
 while IFS='=' read -r key value; do
     [[ "$key" =~ ^[A-Z][A-Z0-9_]*$ ]] || {
