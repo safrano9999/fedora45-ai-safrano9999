@@ -16,6 +16,7 @@ OPENCLAW_DETERMINISTIC_REPOSITORY=safrano9999/openclaw-deterministic-latest
 OPENCLAW_DETERMINISTIC_ASSET="openclaw-${OPENCLAW_VERSION}-deterministic.tar.gz"
 OPENCLAW_EPHEMERAL_REPOSITORY=safrano9999/openclaw-ephemeral
 HERMES_EPHEMERAL_REPOSITORY=safrano9999/hermes-ephemeral
+OPENCODE_EPHEMERAL_REPOSITORY=safrano9999/opencode-ephemeral
 
 # Core build.conf is a prepared artifact lock, never a second source selector.
 python3 - "$CONTEXT/../fedora45-ai-core-pre/Containerfile" <<'PY'
@@ -226,6 +227,32 @@ stage_runtime_overlay \
     "$vendor_stage/hermes-ephemeral/image/runtime" \
     "$HERMES_EPHEMERAL_REPOSITORY"
 rm -rf -- "$hermes_checkout"
+
+opencode_checkout="$vendor_stage/.opencode-ephemeral-checkout"
+checkout_source "$OPENCODE_EPHEMERAL_REPOSITORY" "$opencode_checkout" "${OPENCODE_EPHEMERAL_COMMIT:-}"
+opencode_files=(
+    opencode-ephemeral.py
+    opencode_ephemeral/__init__.py
+    opencode_ephemeral/cli.py
+    opencode_ephemeral/configuration.py
+    opencode_ephemeral/environment.py
+    opencode_ephemeral/mcp.py
+)
+for relative in "${opencode_files[@]}"; do
+    [ -f "$opencode_checkout/$relative" ] || {
+        echo "Missing OpenCode Ephemeral runtime file on main: $relative" >&2
+        exit 1
+    }
+    install -D -m 0644 \
+        "$opencode_checkout/$relative" \
+        "$vendor_stage/opencode-ephemeral/$relative"
+done
+chmod 0755 "$vendor_stage/opencode-ephemeral/opencode-ephemeral.py"
+stage_runtime_overlay \
+    "$opencode_checkout/image/runtime" \
+    "$vendor_stage/opencode-ephemeral/image/runtime" \
+    "$OPENCODE_EPHEMERAL_REPOSITORY"
+rm -rf -- "$opencode_checkout"
 
 rm -rf -- "$BUILD/vendor"
 mv -- "$vendor_stage" "$BUILD/vendor"

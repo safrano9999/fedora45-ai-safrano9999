@@ -36,6 +36,7 @@ RUN install -d -o root -g root -m 0700 "${OPENCLAW_CONFIG_DIR}"
 # and checksums. Install the complete matching package and external Codex runtime.
 RUN --mount=type=bind,source=build,target=/tmp/core-build python3 /tmp/core-build/install-deterministic.py /tmp/core-build/vendor/openclaw-deterministic/openclaw-deterministic.tar.gz "$(npm root -g)/openclaw" "$OPENCLAW_VERSION" "$OPENCLAW_UPSTREAM_SHA" "$OPENCLAW_DETERMINISTIC_TAG"
 RUN --mount=type=bind,source=build,target=/tmp/core-build python3 /tmp/core-build/install-ephemeral.py /tmp/core-build/vendor/openclaw-ephemeral
+RUN --mount=type=bind,source=build,target=/tmp/core-build python3 /tmp/core-build/install-opencode-ephemeral.py /tmp/core-build/vendor/opencode-ephemeral
 
 COPY build/vendor/note/note-latest.zip /tmp/note-latest.zip
 
@@ -98,6 +99,7 @@ RUN chmod 0755 \
       openclaw-config.service \
       openclaw.service \
       openclaw-ephemeral-schedule.service \
+      opencode-config.service \
       hermes-config.service \
       hermes.service \
       hermes-dashboard.service

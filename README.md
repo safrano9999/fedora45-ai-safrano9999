@@ -34,6 +34,7 @@ of truth; layer setup defaults to the matching GHCR image with the `latest` tag.
 - [openclaw-deterministic-latest](https://github.com/safrano9999/openclaw-deterministic-latest).
 - [openclaw-ephemeral](https://github.com/safrano9999/openclaw-ephemeral).
 - [hermes-ephemeral](https://github.com/safrano9999/hermes-ephemeral).
+- [opencode-ephemeral](https://github.com/safrano9999/opencode-ephemeral).
 - Additional package pins: [build.conf](fedora45-ai-core-pre/build.conf).
 - Foundation build: [Containerfile](fedora45-ai-core-pre/Containerfile).
 - Core integration: [Containerfile](fedora45-ai-core/Containerfile).
