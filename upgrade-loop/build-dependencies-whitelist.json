@@ -107,8 +107,8 @@
       "repository": "@anthropic-ai/claude-code",
       "release_line": "stable",
       "pins": {
-        "CLAUDE_CODE_VERSION": "2.1.281",
-        "CLAUDE_CODE_SHA256": "58d682b98a81d6a23bee2bffd98f1654c4bf7bbe444873f521a75471de6d9299"
+        "CLAUDE_CODE_VERSION": "2.1.282",
+        "CLAUDE_CODE_SHA256": "12f908bd7bf3bc3a7c1edfcb50d017d526ebe76b4f59847c3334e70ac5d84893"
       }
     },
     {
