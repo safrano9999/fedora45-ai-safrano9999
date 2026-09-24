@@ -162,7 +162,7 @@ class PreparationTests(unittest.TestCase):
                             "assets": [{"name": "note-latest.zip", "digest": "sha256:" + "d" * 64}]}
             replies = [{"tag_name": "v" + latest["openclaw"]}, {"name": "Hermes Agent v" + latest["hermes"]},
                        {"sha": "a" * 40}, {"sha": "b" * 40}, [patch_release], patch_release,
-                       note_release, *([{ "sha": "8" * 40 }] if changed == "openclaw" else [])]
+                       note_release, {"sha": "8" * 40}]
             report = {}
             with self.subTest(changed=changed), patch.dict(prep.os.environ, {"GITHUB_ACTIONS": "true"}), patch.object(prep, "github", side_effect=replies) as gh, patch.object(prep.importlib.util, "spec_from_file_location", side_effect=RuntimeError('before runtime checks')):
                 with self.assertRaisesRegex(RuntimeError, 'before runtime checks'):

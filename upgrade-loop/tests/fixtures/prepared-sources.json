@@ -13,12 +13,12 @@
   "resolved_at": "2026-09-19T22:34:50.303Z",
   "versions": {
     "openclaw": {
-      "current": "2026.9.5",
-      "latest": "2026.9.5"
+      "current": "2026.9.6",
+      "latest": "2026.9.6"
     },
     "hermes": {
-      "current": "0.21.3",
-      "latest": "0.21.3"
+      "current": "0.21.4",
+      "latest": "0.21.4"
     }
   },
   "repositories": [
@@ -245,7 +245,7 @@
     },
     {
       "repository": "safrano9999/openclaw-deterministic-latest",
-      "ref": "2026.9.5-deterministic.2",
+      "ref": "2026.9.6-deterministic.1",
       "commit": "ea04bfd8355df88096a08403a3854c7da76963cf",
       "sources": [
         {
@@ -255,10 +255,10 @@
         }
       ],
       "release": {
-        "ref": "2026.9.5-deterministic.2",
-        "asset": "openclaw-2026.9.5-deterministic.tar.gz",
-        "sha256": "4eebda97634da4b7866118deb86bc0d93bf7a8e0f285986fda73f751e504a9d0",
-        "upstream_commit": "ec9c1a13db8938e5a3eaa51fca2e981cde2395a9"
+        "ref": "2026.9.6-deterministic.1",
+        "asset": "openclaw-2026.9.6-deterministic.tar.gz",
+        "sha256": "0428ebe6b1044f88ccde08a2f0839276cd9cd3aebdae6cad53481c8dc2a8e907",
+        "upstream_commit": "eb377ac59e6c9fd6c7705028034812becf00271b"
       }
     },
     {
