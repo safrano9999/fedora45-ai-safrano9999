@@ -102,14 +102,20 @@ RUN find /root/.openclaw -maxdepth 1 -name 'openclaw.json*' -delete
 
 # Refresh Hermes Agent on top of the pinned base. The latest public release is
 # deliberately resolved at build time rather than represented by a stale pin.
-RUN set -euo pipefail; \
+RUN --mount=type=secret,id=GITHUB_TOKEN \
+    set -euo pipefail; \
     release_json=/tmp/hermes-release.json; \
+    github_api_auth=(-H 'Accept: application/vnd.github+json' \
+      -H 'X-GitHub-Api-Version: 2022-11-28' \
+      -H "Authorization: Bearer $(cat /run/secrets/GITHUB_TOKEN)"); \
     curl -fsSL --retry 3 --connect-timeout 15 \
+      "${github_api_auth[@]}" \
       https://api.github.com/repos/NousResearch/hermes-agent/releases/latest \
       -o "$release_json"; \
     hermes_tag="$(jq -er '.tag_name | select(test("^v"))' "$release_json")"; \
     hermes_version="$(jq -er '.name | capture("^Hermes Agent v(?<version>[^ ]+)").version' "$release_json")"; \
     hermes_commit="$(curl -fsSL --retry 3 --connect-timeout 15 \
+      "${github_api_auth[@]}" \
       "https://api.github.com/repos/NousResearch/hermes-agent/commits/${hermes_tag}" \
       | jq -er '.sha | select(test("^[0-9a-f]{40}$"))')"; \
     curl -fsSL --retry 3 \

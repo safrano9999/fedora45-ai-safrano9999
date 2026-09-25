@@ -113,6 +113,8 @@ jobs:
           tags: ${{ steps.refs.outputs.tags }}
           build-args: |
             OPENCODE_EPHEMERAL_COMMIT=${{ env.OPENCODE_EPHEMERAL_COMMIT }}
+          secrets: |
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
 
       - name: Reclaim runner space
         run: .github/scripts/prune-container-build-space.sh
