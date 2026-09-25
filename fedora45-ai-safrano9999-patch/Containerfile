@@ -57,10 +57,8 @@ RUN set -euo pipefail; \
     chmod 0755 /usr/local/bin/opencode-ephemeral; \
     rm -rf /tmp/install-opencode-ephemeral.py /tmp/opencode-ephemeral
 
-# Core-pre owns the pinned OpenCode runtime units; overlay those units here
-# together with the already installed OpenCode and Telegram binaries.
+# Core-pre owns the pinned OpenCode runtime unit; overlay only that unit here.
 COPY fedora45-ai-core-pre/image/runtime/etc/systemd/system/opencode.service /etc/systemd/system/opencode.service
-COPY fedora45-ai-core-pre/image/runtime/etc/systemd/system/opencode-telegram.service /etc/systemd/system/opencode-telegram.service
 
 # Keep plugin versions floating intentionally. The base image's OpenClaw runtime
 # and all non-plugin inputs remain pinned; these are refreshed at image build.
