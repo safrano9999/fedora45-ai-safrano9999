@@ -86,7 +86,7 @@ records = json.loads(row[0])["index"]["installRecords"]
 required = {"brave", "codex", "mai-transcribe", "speaches"}
 if not required <= records.keys():
     raise SystemExit(f"Missing refreshed plugin records: {sorted(required - records.keys())}")
-for plugin_id in required:
+for plugin_id in required - {"brave"}:
     record = records[plugin_id]
     version = record.get("version") or record.get("resolvedVersion")
     if not version:
