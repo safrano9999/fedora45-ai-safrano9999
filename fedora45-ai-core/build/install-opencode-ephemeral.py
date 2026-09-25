@@ -10,7 +10,7 @@ def install(source: Path, destination: Path) -> None:
     library = destination / "usr/local/lib/opencode-ephemeral/opencode_ephemeral"
     shutil.copytree(source / "opencode_ephemeral", library, dirs_exist_ok=True)
 
-    launcher = destination / "usr/local/bin/opencode-ephemeral.py"
+    launcher = destination / "usr/local/bin/opencode-ephemeral"
     launcher.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(source / "opencode-ephemeral.py", launcher)
     launcher.chmod(0o755)
