@@ -120,7 +120,7 @@ RUN --mount=type=secret,id=GITHUB_TOKEN \
       | jq -er '.sha | select(test("^[0-9a-f]{40}$"))')"; \
     curl -fsSL --retry 3 \
       "https://raw.githubusercontent.com/NousResearch/hermes-agent/${hermes_commit}/scripts/install.sh" \
-      | bash -s -- --skip-setup --branch main --commit "${hermes_commit}"; \
+      | bash -s -- --skip-setup --branch main --commit "${hermes_commit}" --force-commit; \
     grep -q "__version__ = \"${hermes_version}\"" \
       /usr/local/lib/hermes-agent/hermes_cli/__init__.py; \
     npm --prefix /usr/local/lib/hermes-agent run build --workspace web; \
