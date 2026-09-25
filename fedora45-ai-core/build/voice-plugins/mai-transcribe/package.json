@@ -1,0 +1,9 @@
+{
+  "name": "openclaw-mai-transcribe-plugin",
+  "version": "0.1.1",
+  "private": false,
+  "description": "MAI-Transcribe-1 speech-to-text plugin for OpenClaw using Azure Speech",
+  "main": "index.js",
+  "license": "MIT",
+  "openclaw": { "extensions": ["./index.js"] }
+}

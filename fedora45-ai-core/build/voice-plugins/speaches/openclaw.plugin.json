@@ -1,0 +1,8 @@
+{
+  "id": "speaches",
+  "name": "Speaches",
+  "description": "Local no-auth Speaches transcription provider.",
+  "activation": { "onStartup": true },
+  "contracts": { "mediaUnderstandingProviders": ["speaches"], "speechProviders": ["speaches"] },
+  "configSchema": { "type": "object", "additionalProperties": false, "properties": {} }
+}

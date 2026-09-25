@@ -50,11 +50,12 @@ release is passed to Core in the cascade. MCP does not manage this dependency.
 There is no source-change or scheduled component trigger; the standalone
 `openclaw-components.yml` entry point remains available for manual use.
 
-Core installs Deterministic and Ephemeral in two separate steps. Deterministic
-installs the complete matching OpenClaw npm package and Codex plugin, including
-their dependencies and exports. Ephemeral supplies configuration and startup code
-and discovers optional local models even without API keys. The prepared inputs
-in `fedora45-ai-core/build.conf` are checked against Core-pre's source selection.
+Core installs Deterministic, the official npm Codex plugin, the pinned local
+voice plugins, and Ephemeral in separate steps. Deterministic installs the
+complete matching OpenClaw npm package; Core then installs Codex and the voice
+plugins in later layers. Ephemeral supplies configuration and startup code and
+discovers optional local models even without API keys. The prepared inputs in
+`fedora45-ai-core/build.conf` are checked against Core-pre's source selection.
 The old prepared snapshot is retained as a test fixture; a fresh snapshot must
 be prepared once the new runtime bundle has been built and published.
 

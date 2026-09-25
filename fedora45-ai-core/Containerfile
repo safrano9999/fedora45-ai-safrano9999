@@ -33,8 +33,20 @@ ENV HOME=/root \
 RUN install -d -o root -g root -m 0700 "${OPENCLAW_CONFIG_DIR}"
 
 # Independent components, applied in order. Preparation owns their source pins
-# and checksums. Install the complete matching package and external Codex runtime.
+# and checksums. Deterministic supplies OpenClaw; Codex is installed from its
+# official npm package so OpenClaw records trusted npm provenance.
 RUN --mount=type=bind,source=build,target=/tmp/core-build python3 /tmp/core-build/install-deterministic.py /tmp/core-build/vendor/openclaw-deterministic/openclaw-deterministic.tar.gz "$(npm root -g)/openclaw" "$OPENCLAW_VERSION" "$OPENCLAW_UPSTREAM_SHA" "$OPENCLAW_DETERMINISTIC_TAG"
+RUN --mount=type=cache,target=/root/.npm \
+    openclaw plugins install \
+      --force \
+      --accept-capabilities \
+      --pin \
+      "npm:@openclaw/codex@${OPENCLAW_VERSION}"
+RUN --mount=type=bind,source=build,target=/tmp/core-build \
+    openclaw plugins install --force --accept-capabilities \
+      /tmp/core-build/voice-plugins/mai-transcribe \
+ && openclaw plugins install --force --accept-capabilities \
+      /tmp/core-build/voice-plugins/speaches
 RUN --mount=type=bind,source=build,target=/tmp/core-build python3 /tmp/core-build/install-ephemeral.py /tmp/core-build/vendor/openclaw-ephemeral
 RUN --mount=type=bind,source=build,target=/tmp/core-build python3 /tmp/core-build/install-opencode-ephemeral.py /tmp/core-build/vendor/opencode-ephemeral
 

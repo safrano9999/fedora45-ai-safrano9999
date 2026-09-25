@@ -89,27 +89,26 @@ def prepare(component, version, cache, source_inputs=None):
         packed.mkdir(exist_ok=True)
         with tarfile.open(bundle) as payload:
             members = payload.getmembers()
-            if (len(members) != 3 or {m.name for m in members} != {"manifest.json", "openclaw.tgz", "codex.tgz"}
+            if (len(members) != 2 or {m.name for m in members} != {"manifest.json", "openclaw.tgz"}
                     or not all(m.isfile() for m in members)):
-                raise ValueError("Expected a complete Deterministic runtime bundle")
+                raise ValueError("Expected a Deterministic OpenClaw runtime bundle")
             payload.extractall(packed, filter="data")
         manifest = json.loads((packed / "manifest.json").read_text())
         if (manifest.get("schemaVersion") != 1 or manifest.get("version") != version
                 or manifest.get("upstreamCommit") != commit or manifest.get("releaseTag") != release):
             raise ValueError("Runtime bundle differs from Core-pre source selection")
-        for filename in ("openclaw.tgz", "codex.tgz"):
+        for filename in ("openclaw.tgz",):
             if hashlib.sha256((packed / filename).read_bytes()).hexdigest() != manifest["artifacts"][filename]:
                 raise ValueError("Invalid selected package checksum")
         prefix = cache / "selected-runtime"
         subprocess.run(["npm", "install", "--prefix", str(prefix), "--ignore-scripts", "--omit=dev",
-                        "--no-audit", "--no-fund", str(packed / "openclaw.tgz"), str(packed / "codex.tgz")], check=True)
+                        "--no-audit", "--no-fund", str(packed / "openclaw.tgz")], check=True)
         installed = prefix / "node_modules/openclaw"
-        codex = prefix / "node_modules/@openclaw/codex"
-        for directory in (source, installed, codex):
+        for directory in (source, installed):
             if json.loads((directory / "package.json").read_text())["version"] != version:
                 raise ValueError("Selected source and runtime versions differ")
         (installed / "deterministic-build.json").write_text(json.dumps(manifest) + "\n")
-        result.update(package=str(installed), codex_package=str(codex),
+        result.update(package=str(installed),
                       artifact_sha256=source_inputs["OPENCLAW_DETERMINISTIC_SHA256"])
     temporary = evidence.with_suffix(".json.tmp")
     temporary.write_text(json.dumps(result, indent=2) + "\n")

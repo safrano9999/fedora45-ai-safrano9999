@@ -224,7 +224,6 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
                        UPGRADE_TARGET_SOURCE=target["source"], UPGRADE_TARGET_VERSION=latest[name])
             if name == "openclaw":
                 env["UPGRADE_TARGET_PACKAGE"] = target["package"]
-                env["UPGRADE_TARGET_CODEX_PACKAGE"] = target["codex_package"]
                 env["UPGRADE_TARGET_UPSTREAM_SHA"] = target["upstream_commit"]
             run([sys.executable, ROOT / f"probes/{name}_config.py"], env=env, timeout=300)
             if run(["git", "-C", generator, "status", "--porcelain"], capture_output=True).stdout:

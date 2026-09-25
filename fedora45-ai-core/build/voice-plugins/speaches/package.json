@@ -1,0 +1,8 @@
+{
+  "name": "openclaw-speaches-live",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {},
+  "openclaw": { "extensions": ["./index.js"] }
+}

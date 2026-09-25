@@ -75,19 +75,12 @@ class ComponentTests(unittest.TestCase):
             "package/dist/control-ui/index.html": "UI",
             "package/dist/deterministic-gateway-replies.txt": "dummy reply",
         }, link=link)
-        codex = self.root / "codex.tgz"
-        write_tar(codex, {
-            "package/package.json": json.dumps({"name": "@openclaw/codex", "version": VERSION,
-                "openclaw": {"runtimeExtensions": ["./runtime/index.js"]}}),
-            "package/openclaw.plugin.json": json.dumps({"id": "codex"}),
-            "package/runtime/index.js": "export {};\n",
-        })
-        artifacts = {"openclaw.tgz": runtime.read_bytes(), "codex.tgz": codex.read_bytes()}
+        artifacts = {"openclaw.tgz": runtime.read_bytes()}
         self.manifest = {"schemaVersion": 1, "version": VERSION, "displayVersion": VERSION + "-patched",
                          "upstreamCommit": commit, "releaseTag": RELEASE,
                          "artifacts": {name: hashlib.sha256(data).hexdigest() for name, data in artifacts.items()}}
         if tampered:
-            artifacts["codex.tgz"] += b"modified"
+            artifacts["openclaw.tgz"] += b"modified"
         write_tar(self.archive, {**artifacts, "manifest.json": json.dumps(self.manifest)})
 
     def run_installer(self, *args):
@@ -110,9 +103,7 @@ class ComponentTests(unittest.TestCase):
         self.assertEqual(dependency["version"], "2.0.0")
         self.assertFalse((self.package / "dist/old.js").exists())
         self.assertFalse((self.package / "node_modules/old-dependency.txt").exists())
-        receipt = json.loads((self.root / "plugin-install.json").read_text())
-        self.assertEqual(receipt[:4], ["plugins", "install", "--force", "--accept-capabilities"])
-        self.assertTrue(receipt[-1].endswith("/codex.tgz"))
+        self.assertFalse((self.root / "plugin-install.json").exists())
         self.assertEqual(json.loads((self.package / "deterministic-build.json").read_text()), self.manifest)
 
     def test_hollow_bedrock_link_is_rejected_before_install(self):
@@ -130,7 +121,7 @@ class ComponentTests(unittest.TestCase):
         self.assertIn("version/identity mismatch", result.stderr)
         self.assert_original_intact()
 
-    def test_wrong_source_or_tampered_plugin_is_rejected_before_install(self):
+    def test_wrong_source_or_tampered_runtime_is_rejected_before_install(self):
         for options in ({"commit": "a" * 40}, {"tampered": True}):
             with self.subTest(options=options):
                 self.make_archive(**options)

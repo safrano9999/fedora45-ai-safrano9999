@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install OpenClaw and Codex built together from the pinned Deterministic source."""
+"""Install OpenClaw from the pinned Deterministic source."""
 
 import argparse
 import hashlib
@@ -33,12 +33,6 @@ def validate_package(root: Path, name: str, version: str) -> None:
         required = ("openclaw.mjs", "dist/control-ui/index.html", "dist/deterministic-gateway-replies.txt")
         if not any((root / "dist" / entry).is_file() for entry in ("index.js", "index.mjs")):
             raise ValueError("Missing OpenClaw runtime entry point")
-    else:
-        required = ("openclaw.plugin.json",)
-        extensions = package.get("openclaw", {}).get("runtimeExtensions", [])
-        if not extensions:
-            raise ValueError("Codex package is missing its compiled runtime declaration")
-        required += tuple(extensions)
     for relative in required:
         target = (root / relative).resolve()
         if not target.is_relative_to(root.resolve()) or not target.is_file():
@@ -53,7 +47,7 @@ def install(archive: Path, package_root: Path, version: str, upstream_sha: str, 
         raise ValueError(f"OpenClaw version mismatch: expected {version}, found {installed}")
     with tempfile.TemporaryDirectory(prefix="openclaw-deterministic-") as scratch:
         staged = Path(scratch)
-        expected = {"manifest.json", "openclaw.tgz", "codex.tgz"}
+        expected = {"manifest.json", "openclaw.tgz"}
         with tarfile.open(archive) as payload:
             members = payload.getmembers()
             if ({m.name for m in members} != expected or len(members) != len(expected)
@@ -66,12 +60,11 @@ def install(archive: Path, package_root: Path, version: str, upstream_sha: str, 
                 or manifest.get("releaseTag") != release
                 or manifest.get("displayVersion") != f"{version}-patched"):
             raise ValueError("Deterministic provenance differs from the Containerfile pins")
-        for filename, name in (("openclaw.tgz", "openclaw"), ("codex.tgz", "@openclaw/codex")):
-            artifact = staged / filename
-            if hashlib.sha256(artifact.read_bytes()).hexdigest() != manifest["artifacts"].get(filename):
-                raise ValueError(f"Deterministic artifact checksum mismatch: {filename}")
-            root = extract_package(artifact, staged / filename.removesuffix(".tgz"))
-            validate_package(root, name, version)
+        artifact = staged / "openclaw.tgz"
+        if hashlib.sha256(artifact.read_bytes()).hexdigest() != manifest["artifacts"].get("openclaw.tgz"):
+            raise ValueError("Deterministic artifact checksum mismatch: openclaw.tgz")
+        root = extract_package(artifact, staged / "openclaw")
+        validate_package(root, "openclaw", version)
 
         # npm installs the matching manifest, exports, bundled workspaces and
         # dependencies. A same-version local tarball still replaces the package.
@@ -82,10 +75,6 @@ def install(archive: Path, package_root: Path, version: str, upstream_sha: str, 
         ], check=True)
         if json.loads((package_root / "package.json").read_text())["version"] != version:
             raise ValueError("Installed OpenClaw does not match the update baseline")
-        subprocess.run([
-            "openclaw", "plugins", "install", "--force", "--accept-capabilities",
-            str(staged / "codex.tgz"),
-        ], check=True)
         # Display/provenance are separate from package.json and dist/build-info.json.
         (package_root / "deterministic-build.json").write_text(
             json.dumps(manifest, sort_keys=True, indent=2) + "\n")

@@ -34,7 +34,7 @@ class PreparationTests(unittest.TestCase):
             files = {foundation.relative_to(root): selected_base,
                      prep.build_dependencies.CONF: 'DEPENDENCY=new\n', prep.build_dependencies.POLICY: '{}\n'}
             runtime = SimpleNamespace(prepare=lambda name, version, path, **kwargs: {
-                'source': str(root / name), 'package': str(root / name), 'codex_package': str(root / name), 'upstream_commit': 'a'*40})
+                'source': str(root / name), 'package': str(root / name), 'upstream_commit': 'a'*40})
             def command(args, **kwargs):
                 return SimpleNamespace(stdout='e'*40 if 'rev-parse' in args else '')
             stack.enter_context(patch.dict(prep.os.environ, {'GITHUB_ACTIONS': 'true'}))

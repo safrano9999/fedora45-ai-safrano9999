@@ -1,0 +1,22 @@
+{
+  "id": "mai-transcribe",
+  "name": "MAI Transcribe",
+  "version": "0.1.1",
+  "description": "Speech-to-text transcription using Azure MAI-Transcribe.",
+  "activation": { "onStartup": true },
+  "contracts": { "mediaUnderstandingProviders": ["mai-transcribe"], "tools": ["mai_transcribe"] },
+  "mediaUnderstandingProviderMetadata": { "mai-transcribe": { "capabilities": ["audio"], "defaultModels": { "audio": "MAI-Transcribe-2" } } },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "region": { "type": "string", "description": "Azure Speech resource region" },
+      "apiKey": { "type": "string", "description": "Azure Speech API key (or __KEYVAULT__ placeholder)" },
+      "model": { "type": "string", "description": "Speech model to use" },
+      "apiVersion": { "type": "string", "description": "Speech API version" },
+      "maxFileSize": { "type": "integer", "description": "Maximum audio file size in bytes (default 25 MB)" },
+      "configPath": { "type": "string", "description": "Path to the persistent JSON configuration file." }
+    }
+  },
+  "uiHints": { "region": { "label": "Speech Region", "placeholder": "eastus" }, "apiKey": { "label": "Speech API Key", "sensitive": true }, "model": { "label": "Model Name", "placeholder": "MAI-Transcribe-2" } }
+}

@@ -221,7 +221,6 @@ for raw in sys.argv[2:]:
         env["PYTHONPATH"] = os.pathsep.join([str(REPO.parent / f"{component}-ephemeral"), target["source"]])
         if component == "openclaw":
             env["UPGRADE_TARGET_PACKAGE"] = target["package"]
-            env["UPGRADE_TARGET_CODEX_PACKAGE"] = target["codex_package"]
             env["UPGRADE_TARGET_UPSTREAM_SHA"] = target["upstream_commit"]
         done = command(["python3", ROOT / f"probes/{component}_config.py"], env=env, timeout=180, check=False)
         return {"status": "PASS" if done.returncode == 0 else "FAIL", "completed": True,
