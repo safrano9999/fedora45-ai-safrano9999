@@ -53,12 +53,17 @@ jobs:
         run: |
           set -euo pipefail
           target="$GITHUB_WORKSPACE/fedora45-ai-safrano9999-patch/build/vendor/opencode-ephemeral"
+          archive="$RUNNER_TEMP/opencode-ephemeral.tar.gz"
           stage="$RUNNER_TEMP/opencode-ephemeral"
-          git init -q "$stage"
-          git -C "$stage" remote add origin https://github.com/safrano9999/opencode-ephemeral.git
-          GIT_TERMINAL_PROMPT=0 git -C "$stage" fetch -q --no-tags --depth=1 origin "$OPENCODE_EPHEMERAL_COMMIT"
-          git -C "$stage" checkout -q --detach FETCH_HEAD
-          test "$(git -C "$stage" rev-parse HEAD)" = "$OPENCODE_EPHEMERAL_COMMIT"
+          resolved_commit="$(gh api \
+            "repos/safrano9999/opencode-ephemeral/commits/$OPENCODE_EPHEMERAL_COMMIT" \
+            --jq .sha)"
+          test "$resolved_commit" = "$OPENCODE_EPHEMERAL_COMMIT"
+          gh api \
+            "repos/safrano9999/opencode-ephemeral/tarball/$OPENCODE_EPHEMERAL_COMMIT" \
+            > "$archive"
+          mkdir -p "$stage"
+          tar -xzf "$archive" -C "$stage" --strip-components=1
           mkdir -p "$target"
           cp -a "$stage/opencode-ephemeral.py" "$target/"
           cp -a "$stage/opencode_ephemeral" "$target/"
