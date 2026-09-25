@@ -111,8 +111,7 @@ RUN set -euo pipefail; \
       | bash -s -- --skip-setup --branch main --commit "${HERMES_COMMIT}" --force-commit; \
     grep -q "__version__ = \"${HERMES_VERSION}\"" \
       /usr/local/lib/hermes-agent/hermes_cli/__init__.py; \
-    npm --prefix /usr/local/lib/hermes-agent run build --workspace web; \
-    rm -f "$release_json"
+    npm --prefix /usr/local/lib/hermes-agent run build --workspace web
 
 RUN python3 /usr/local/libexec/openclaw-tts-provider-order.py \
  && systemctl enable \
