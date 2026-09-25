@@ -3,6 +3,9 @@ FROM ghcr.io/safrano9999/fedora45-ai-safrano9999:2026.9.17@sha256:5c723da958f93f
 ARG OPENCODE_VERSION=1.18.32
 ARG OPENCODE_TELEGRAM_VERSION=0.25.3
 ARG OPENCODE_EPHEMERAL_COMMIT=7c094db60dbf88d57f9ba415713ae4f94de9c3d4
+ARG HERMES_TAG=v2026.9.24
+ARG HERMES_VERSION=0.21.5
+ARG HERMES_COMMIT=f97608f178d1ffeca59860195ab7da295f7c8e5f
 
 LABEL org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
       org.opencontainers.image.title="fedora45-ai-safrano9999-2026.9.17.2" \
@@ -12,7 +15,8 @@ LABEL org.opencontainers.image.source="https://github.com/safrano9999/fedora45-a
       io.safrano9999.opencode.version="${OPENCODE_VERSION}" \
       io.safrano9999.opencode.telegram.version="${OPENCODE_TELEGRAM_VERSION}" \
       io.safrano9999.opencode.ephemeral.commit="${OPENCODE_EPHEMERAL_COMMIT}" \
-      io.safrano9999.hermes.source="NousResearch/hermes-agent:latest-release" \
+      io.safrano9999.hermes.source="NousResearch/hermes-agent:${HERMES_TAG}" \
+      io.safrano9999.hermes.commit="${HERMES_COMMIT}" \
       io.safrano9999.plugins.source="npm-latest-and-core-voice-plugins"
 
 USER root
@@ -100,28 +104,12 @@ destination.write_text(json.dumps({"schemaVersion": 1, "installRecords": records
 PY
 RUN find /root/.openclaw -maxdepth 1 -name 'openclaw.json*' -delete
 
-# Refresh Hermes Agent on top of the pinned base. The latest public release is
-# deliberately resolved at build time rather than represented by a stale pin.
-RUN --mount=type=secret,id=GITHUB_TOKEN \
-    set -euo pipefail; \
-    release_json=/tmp/hermes-release.json; \
-    github_api_auth=(-H 'Accept: application/vnd.github+json' \
-      -H 'X-GitHub-Api-Version: 2022-11-28' \
-      -H "Authorization: Bearer $(cat /run/secrets/GITHUB_TOKEN)"); \
-    curl -fsSL --retry 3 --connect-timeout 15 \
-      "${github_api_auth[@]}" \
-      https://api.github.com/repos/NousResearch/hermes-agent/releases/latest \
-      -o "$release_json"; \
-    hermes_tag="$(jq -er '.tag_name | select(test("^v"))' "$release_json")"; \
-    hermes_version="$(jq -er '.name | capture("^Hermes Agent v(?<version>[^ ]+)").version' "$release_json")"; \
-    hermes_commit="$(curl -fsSL --retry 3 --connect-timeout 15 \
-      "${github_api_auth[@]}" \
-      "https://api.github.com/repos/NousResearch/hermes-agent/commits/${hermes_tag}" \
-      | jq -er '.sha | select(test("^[0-9a-f]{40}$"))')"; \
+# Refresh the current verified Hermes Agent release on top of the pinned base.
+RUN set -euo pipefail; \
     curl -fsSL --retry 3 \
-      "https://raw.githubusercontent.com/NousResearch/hermes-agent/${hermes_commit}/scripts/install.sh" \
-      | bash -s -- --skip-setup --branch main --commit "${hermes_commit}" --force-commit; \
-    grep -q "__version__ = \"${hermes_version}\"" \
+      "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_COMMIT}/scripts/install.sh" \
+      | bash -s -- --skip-setup --branch main --commit "${HERMES_COMMIT}" --force-commit; \
+    grep -q "__version__ = \"${HERMES_VERSION}\"" \
       /usr/local/lib/hermes-agent/hermes_cli/__init__.py; \
     npm --prefix /usr/local/lib/hermes-agent run build --workspace web; \
     rm -f "$release_json"
