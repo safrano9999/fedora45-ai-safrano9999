@@ -1,0 +1,134 @@
+FROM ghcr.io/safrano9999/fedora45-ai-safrano9999:2026.9.17@sha256:5c723da958f93f434cef1f67f11ae9bfcd50485bf838a50e3422e6b202d0e975 AS ai-safrano9999-patch
+
+ARG OPENCODE_VERSION=1.18.32
+ARG OPENCODE_TELEGRAM_VERSION=0.25.3
+ARG OPENCODE_EPHEMERAL_COMMIT=7c094db60dbf88d57f9ba415713ae4f94de9c3d4
+
+LABEL org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
+      org.opencontainers.image.title="fedora45-ai-safrano9999-2026.9.17.2" \
+      org.opencontainers.image.description="Pinned OpenCode layer with current OpenClaw plugins and the latest Hermes Agent." \
+      io.safrano9999.parent="fedora45-ai-safrano9999" \
+      io.safrano9999.base="ghcr.io/safrano9999/fedora45-ai-safrano9999:2026.9.17" \
+      io.safrano9999.opencode.version="${OPENCODE_VERSION}" \
+      io.safrano9999.opencode.telegram.version="${OPENCODE_TELEGRAM_VERSION}" \
+      io.safrano9999.opencode.ephemeral.commit="${OPENCODE_EPHEMERAL_COMMIT}" \
+      io.safrano9999.hermes.source="NousResearch/hermes-agent:latest-release" \
+      io.safrano9999.plugins.source="npm-latest-and-core-voice-plugins"
+
+USER root
+
+ENV NODE_EXTRA_CA_CERTS=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    HOME=/root \
+    OPENCODE_API_HOST=0.0.0.0 \
+    OPENCODE_API_PORT=4096 \
+    OPENCODE_MODEL_PROVIDER=opencode \
+    OPENCODE_MODEL_ID=mimo-v2.6-flash-free \
+    OPENCODE_START=1 \
+    PYTHONPATH=/usr/local/lib/openclaw-ephemeral:/usr/local/lib/hermes-ephemeral:/usr/local/lib/opencode-ephemeral
+
+# The npm OpenCode binary and the Telegram bridge stay on the known Core-pre pins.
+RUN --mount=type=cache,target=/root/.npm \
+    set -euo pipefail; \
+    case "$(uname -m)" in \
+      x86_64) OPENCODE_NATIVE_PACKAGE=opencode-linux-x64 ;; \
+      aarch64|arm64) OPENCODE_NATIVE_PACKAGE=opencode-linux-arm64 ;; \
+      *) echo "Unsupported OpenCode architecture: $(uname -m)" >&2; exit 1 ;; \
+    esac; \
+    npm install -g --include=optional \
+      --allow-scripts=opencode-ai \
+      "opencode-ai@${OPENCODE_VERSION}" \
+      "${OPENCODE_NATIVE_PACKAGE}@${OPENCODE_VERSION}" \
+      "@grinev/opencode-telegram-bot@${OPENCODE_TELEGRAM_VERSION}"; \
+    test "$(jq -r .version "$(npm root -g)/opencode-ai/package.json")" = "${OPENCODE_VERSION}"; \
+    test "$(jq -r .version "$(npm root -g)/${OPENCODE_NATIVE_PACKAGE}/package.json")" = "${OPENCODE_VERSION}"; \
+    test "$(jq -r .version "$(npm root -g)/@grinev/opencode-telegram-bot/package.json")" = "${OPENCODE_TELEGRAM_VERSION}"; \
+    opencode --version; \
+    command -v opencode-telegram
+
+# Overlay the pinned OpenCode ephemeral configurator and its systemd drop-in.
+COPY fedora45-ai-core/build/install-opencode-ephemeral.py /tmp/install-opencode-ephemeral.py
+COPY fedora45-ai-safrano9999-patch/build/vendor/opencode-ephemeral/ /tmp/opencode-ephemeral/
+RUN set -euo pipefail; \
+    python3 /tmp/install-opencode-ephemeral.py /tmp/opencode-ephemeral /; \
+    chmod 0755 /usr/local/bin/opencode-ephemeral; \
+    rm -rf /tmp/install-opencode-ephemeral.py /tmp/opencode-ephemeral
+
+# Keep plugin versions floating intentionally. The base image's OpenClaw runtime
+# and all non-plugin inputs remain pinned; these are refreshed at image build.
+COPY fedora45-ai-core/build/voice-plugins/ /tmp/voice-plugins/
+RUN --mount=type=cache,target=/root/.npm \
+    set -euo pipefail; \
+    openclaw plugins install --force --accept-capabilities \
+      @openclaw/brave-plugin; \
+    openclaw plugins install --force --accept-capabilities \
+      npm:@openclaw/codex; \
+    openclaw plugins install --force --accept-capabilities \
+      /tmp/voice-plugins/mai-transcribe; \
+    openclaw plugins install --force --accept-capabilities \
+      /tmp/voice-plugins/speaches; \
+    rm -rf /tmp/voice-plugins
+
+# Keep the image-side install ledger in sync with the refreshed plugin files.
+RUN python3 - <<'PY'
+import json
+import sqlite3
+from pathlib import Path
+
+database_path = Path("/root/.openclaw/state/openclaw.sqlite")
+with sqlite3.connect(database_path.as_uri() + "?mode=ro", uri=True) as database:
+    row = database.execute(
+        "SELECT value_json FROM config_machine_state WHERE state_key = ?",
+        ("plugins.installedIndex",),
+    ).fetchone()
+if row is None:
+    raise SystemExit("OpenClaw plugin install ledger is missing")
+records = json.loads(row[0])["index"]["installRecords"]
+required = {"brave", "codex", "mai-transcribe", "speaches"}
+if not required <= records.keys():
+    raise SystemExit(f"Missing refreshed plugin records: {sorted(required - records.keys())}")
+for record in records.values():
+    package = json.loads((Path(record["installPath"]) / "package.json").read_text())
+    if package["version"] != record["version"]:
+        raise SystemExit(f"Plugin record version mismatch: {record.get('id', 'unknown')}")
+destination = Path("/usr/local/share/openclaw/image-plugin-installs.json")
+destination.parent.mkdir(parents=True, exist_ok=True)
+destination.write_text(json.dumps({"schemaVersion": 1, "installRecords": records}) + "\n")
+PY
+RUN find /root/.openclaw -maxdepth 1 -name 'openclaw.json*' -delete
+
+# Refresh Hermes Agent on top of the pinned base. The latest public release is
+# deliberately resolved at build time rather than represented by a stale pin.
+RUN set -euo pipefail; \
+    release_json=/tmp/hermes-release.json; \
+    curl -fsSL --retry 3 --connect-timeout 15 \
+      https://api.github.com/repos/NousResearch/hermes-agent/releases/latest \
+      -o "$release_json"; \
+    hermes_tag="$(jq -er '.tag_name | select(test("^v"))' "$release_json")"; \
+    hermes_version="$(jq -er '.name | capture("^Hermes Agent v(?<version>[^ ]+)").version' "$release_json")"; \
+    hermes_commit="$(curl -fsSL --retry 3 --connect-timeout 15 \
+      "https://api.github.com/repos/NousResearch/hermes-agent/commits/${hermes_tag}" \
+      | jq -er '.sha | select(test("^[0-9a-f]{40}$"))')"; \
+    curl -fsSL --retry 3 \
+      "https://raw.githubusercontent.com/NousResearch/hermes-agent/${hermes_commit}/scripts/install.sh" \
+      | bash -s -- --skip-setup --branch main --commit "${hermes_commit}"; \
+    grep -q "__version__ = \"${hermes_version}\"" \
+      /usr/local/lib/hermes-agent/hermes_cli/__init__.py; \
+    npm --prefix /usr/local/lib/hermes-agent run build --workspace web; \
+    rm -f "$release_json"
+
+RUN python3 /usr/local/libexec/openclaw-tts-provider-order.py \
+ && systemctl enable \
+      opencode-config.service \
+      opencode.service \
+      opencode-telegram.service \
+      hermes-config.service \
+      hermes.service \
+      hermes-dashboard.service \
+ && test -x /usr/local/bin/opencode-ephemeral \
+ && test -f /etc/systemd/system/opencode-config.service \
+ && test -f /usr/local/lib/hermes-agent/hermes_cli/__init__.py
+
+USER root
+WORKDIR /root
+STOPSIGNAL SIGRTMIN+3
+CMD ["/sbin/init"]

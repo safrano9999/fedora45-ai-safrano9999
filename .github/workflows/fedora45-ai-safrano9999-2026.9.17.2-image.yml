@@ -1,0 +1,139 @@
+# Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
+name: fedora45-ai-safrano9999 2026.9.17.2 patch image
+run-name: ${{ inputs.monitor_id != '' && format('{0} [monitor:{1}:{2}]', github.workflow, inputs.monitor_id, inputs.monitor_final) || github.workflow }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      push_latest:
+        description: Also advance the mutable latest tag after the fixed patch tag passes
+        required: true
+        type: boolean
+        default: false
+      monitor_id:
+        description: Optional event-monitor correlation id
+        required: false
+        default: ''
+        type: string
+      monitor_final:
+        description: This run is the final monitored stage
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: fedora45-ai-safrano9999-2026.9.17.2
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      DOCKER_BUILD_RECORD_UPLOAD: 'false'
+      IMAGE: ghcr.io/safrano9999/fedora45-ai-safrano9999
+      FIXED_TAG: 2026.9.17.2
+      OPENCODE_EPHEMERAL_COMMIT: 7c094db60dbf88d57f9ba415713ae4f94de9c3d4
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure private repository access
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        run: gh auth setup-git
+
+      - name: Stage pinned OpenCode ephemeral source
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$GITHUB_WORKSPACE/fedora45-ai-safrano9999-patch/build/vendor/opencode-ephemeral"
+          stage="$RUNNER_TEMP/opencode-ephemeral"
+          git init -q "$stage"
+          git -C "$stage" remote add origin https://github.com/safrano9999/opencode-ephemeral.git
+          GIT_TERMINAL_PROMPT=0 git -C "$stage" fetch -q --no-tags --depth=1 origin "$OPENCODE_EPHEMERAL_COMMIT"
+          git -C "$stage" checkout -q --detach FETCH_HEAD
+          test "$(git -C "$stage" rev-parse HEAD)" = "$OPENCODE_EPHEMERAL_COMMIT"
+          mkdir -p "$target"
+          cp -a "$stage/opencode-ephemeral.py" "$target/"
+          cp -a "$stage/opencode_ephemeral" "$target/"
+          cp -a "$stage/image/runtime" "$target/"
+          test -s "$target/opencode-ephemeral.py"
+          test -f "$target/image/runtime/etc/systemd/system/opencode-config.service"
+          printf 'OpenCode ephemeral: %s\n' "$OPENCODE_EPHEMERAL_COMMIT" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          cache-binary: false
+          keep-state: false
+          cleanup: true
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve output tags
+        id: refs
+        shell: bash
+        env:
+          PUSH_LATEST: ${{ inputs.push_latest }}
+        run: |
+          set -euo pipefail
+          {
+            echo 'tags<<EOF'
+            echo "$IMAGE:$FIXED_TAG"
+            [ "$PUSH_LATEST" != true ] || echo "$IMAGE:latest"
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push patch layer remotely
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./fedora45-ai-safrano9999-patch/Containerfile
+          target: ai-safrano9999-patch
+          platforms: linux/amd64
+          pull: true
+          no-cache: true
+          push: true
+          tags: ${{ steps.refs.outputs.tags }}
+          build-args: |
+            OPENCODE_EPHEMERAL_COMMIT=${{ env.OPENCODE_EPHEMERAL_COMMIT }}
+
+      - name: Reclaim runner space
+        run: .github/scripts/prune-container-build-space.sh
+
+      - name: Test published patch layer
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="$IMAGE:$FIXED_TAG"
+          docker pull "$image"
+          docker run --rm --entrypoint bash "$image" -lc '
+            set -euo pipefail
+            test "$(jq -r .version "$(npm root -g)/opencode-ai/package.json")" = 1.18.32
+            test "$(jq -r .version "$(npm root -g)/@grinev/opencode-telegram-bot/package.json")" = 0.25.3
+            command -v opencode
+            command -v opencode-telegram
+            test -x /usr/local/bin/opencode-ephemeral
+            test -x /usr/local/bin/hermes
+            openclaw plugins inspect codex --json >/dev/null
+            openclaw plugins inspect brave --json >/dev/null
+            openclaw plugins inspect mai-transcribe --json >/dev/null
+            openclaw plugins inspect speaches --json >/dev/null
+            systemctl is-enabled opencode-config.service opencode.service \
+              opencode-telegram.service hermes-config.service hermes.service \
+              hermes-dashboard.service
+          '
+          test "$(docker image inspect --format '{{ index .Config.Labels "io.safrano9999.parent" }}' "$image")" = fedora45-ai-safrano9999
+          test "$(docker image inspect --format '{{json .Config.Cmd}}' "$image")" = '["/sbin/init"]'
+          docker buildx imagetools inspect "$image" >/dev/null
