@@ -67,7 +67,7 @@ jobs:
           mkdir -p "$target"
           cp -a "$stage/opencode-ephemeral.py" "$target/"
           cp -a "$stage/opencode_ephemeral" "$target/"
-          cp -a "$stage/image/runtime" "$target/"
+          cp -a "$stage/image" "$target/"
           test -s "$target/opencode-ephemeral.py"
           test -f "$target/image/runtime/etc/systemd/system/opencode-config.service"
           printf 'OpenCode ephemeral: %s\n' "$OPENCODE_EPHEMERAL_COMMIT" >> "$GITHUB_STEP_SUMMARY"
