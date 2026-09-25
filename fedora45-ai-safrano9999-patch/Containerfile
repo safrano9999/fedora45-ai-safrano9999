@@ -86,10 +86,14 @@ records = json.loads(row[0])["index"]["installRecords"]
 required = {"brave", "codex", "mai-transcribe", "speaches"}
 if not required <= records.keys():
     raise SystemExit(f"Missing refreshed plugin records: {sorted(required - records.keys())}")
-for record in records.values():
+for plugin_id in required:
+    record = records[plugin_id]
+    version = record.get("version") or record.get("resolvedVersion")
+    if not version:
+        raise SystemExit(f"Missing refreshed plugin version: {plugin_id}")
     package = json.loads((Path(record["installPath"]) / "package.json").read_text())
-    if package["version"] != record["version"]:
-        raise SystemExit(f"Plugin record version mismatch: {record.get('id', 'unknown')}")
+    if package["version"] != version:
+        raise SystemExit(f"Plugin record version mismatch: {plugin_id}")
 destination = Path("/usr/local/share/openclaw/image-plugin-installs.json")
 destination.parent.mkdir(parents=True, exist_ok=True)
 destination.write_text(json.dumps({"schemaVersion": 1, "installRecords": records}) + "\n")
