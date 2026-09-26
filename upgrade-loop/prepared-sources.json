@@ -268,7 +268,7 @@
     {
       "repository": "safrano9999/openclaw-ephemeral",
       "ref": "HEAD",
-      "commit": "b43472b04848e4178ef7d76ea23b7ee407220a87",
+      "commit": "d89aa4d246481e95c577e0165b6ee4b7ed7d59cc",
       "sources": [
         {
           "layer": "fedora45-ai-core",
@@ -363,7 +363,7 @@
         "repository": "safrano9999/openclaw-ephemeral",
         "reason": "source-changed",
         "before": "10d2c4c0aaa2fd47ca6067eaa7f98bca853a877f",
-        "after": "b43472b04848e4178ef7d76ea23b7ee407220a87"
+        "after": "d89aa4d246481e95c577e0165b6ee4b7ed7d59cc"
       },
       {
         "image": "fedora45-ai-core",
@@ -391,7 +391,7 @@
         "repository": "safrano9999/openclaw-ephemeral",
         "reason": "source-changed",
         "before": "10d2c4c0aaa2fd47ca6067eaa7f98bca853a877f",
-        "after": "b43472b04848e4178ef7d76ea23b7ee407220a87"
+        "after": "d89aa4d246481e95c577e0165b6ee4b7ed7d59cc"
       },
       {
         "image": "fedora45-ai-base",
@@ -419,7 +419,7 @@
         "repository": "safrano9999/openclaw-ephemeral",
         "reason": "source-changed",
         "before": "10d2c4c0aaa2fd47ca6067eaa7f98bca853a877f",
-        "after": "b43472b04848e4178ef7d76ea23b7ee407220a87"
+        "after": "d89aa4d246481e95c577e0165b6ee4b7ed7d59cc"
       },
       {
         "image": "fedora45-ai-kachelmann",
@@ -447,7 +447,7 @@
         "repository": "safrano9999/openclaw-ephemeral",
         "reason": "source-changed",
         "before": "10d2c4c0aaa2fd47ca6067eaa7f98bca853a877f",
-        "after": "b43472b04848e4178ef7d76ea23b7ee407220a87"
+        "after": "d89aa4d246481e95c577e0165b6ee4b7ed7d59cc"
       },
       {
         "image": "fedora45-ai-safrano9999",
