@@ -6,18 +6,19 @@ import re
 IMAGE_REPO = "safrano9999/fedora45-ai-safrano9999"
 
 
-def openclaw_override(containerfile, target_version):
+def openclaw_override(containerfile, target_version, allow_downgrade=False):
     versions = re.findall(r"^ARG OPENCLAW_VERSION=(\d+\.\d+\.\d+)$", containerfile, re.M)
     overrides = re.findall(r"^ARG OPENCLAW_UPSTREAM_SHA=([0-9a-f]*)$", containerfile, re.M)
     if len(versions) != 1 or len(overrides) != 1 or (overrides[0] and len(overrides[0]) != 40):
         raise ValueError("Invalid OpenClaw source pins in Core-pre Containerfile")
-    if tuple(map(int, target_version.split('.'))) < tuple(map(int, versions[0].split('.'))):
+    if (not allow_downgrade
+            and tuple(map(int, target_version.split('.'))) < tuple(map(int, versions[0].split('.')))):
         raise ValueError("Cannot downgrade the Core-pre version")
     return overrides[0] if target_version == versions[0] else ""
 
 
-def update_openclaw_source(containerfile, target_version):
-    override = openclaw_override(containerfile, target_version)
+def update_openclaw_source(containerfile, target_version, allow_downgrade=False):
+    override = openclaw_override(containerfile, target_version, allow_downgrade=allow_downgrade)
     containerfile = re.sub(r"^ARG OPENCLAW_VERSION=.*$", "ARG OPENCLAW_VERSION=" + target_version,
                            containerfile, flags=re.M)
     return re.sub(r"^ARG OPENCLAW_UPSTREAM_SHA=.*$", "ARG OPENCLAW_UPSTREAM_SHA=" + override,

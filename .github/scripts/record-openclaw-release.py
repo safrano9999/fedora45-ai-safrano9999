@@ -20,10 +20,12 @@ source_upstream = overrides[0] or json.loads(subprocess.check_output([
     "gh", "api", f"repos/openclaw/openclaw/commits/v{source_version}",
 ], text=True))["sha"]
 target_version = os.environ.get("TARGET_OPENCLAW_VERSION", "").strip()
+allow_downgrade = os.environ.get("ALLOW_OPENCLAW_DOWNGRADE", "").lower() == "true"
 if target_version:
     if not re.fullmatch(r"\d+\.\d+\.\d+", target_version):
         raise ValueError("Invalid requested OpenClaw target version")
-    if tuple(map(int, target_version.split("."))) < tuple(map(int, source_version.split("."))):
+    if (not allow_downgrade
+            and tuple(map(int, target_version.split("."))) < tuple(map(int, source_version.split(".")))):
         raise ValueError("Cannot downgrade the Core-pre version")
     version = target_version
     upstream = os.environ.get("OPENCLAW_UPSTREAM_SHA", "")
@@ -56,6 +58,6 @@ for key, value in {"OPENCLAW_VERSION": version, "OPENCLAW_UPSTREAM_SHA": upstrea
         raise ValueError("Missing or duplicate Core pin: " + key)
 text = text.replace("# The runtime bundle has not been built yet. Preparation resolves its published\n# SHA-256 from the exact release asset and verifies it before installation.\n", "")
 foundation = Path("fedora45-ai-core-pre/Containerfile")
-updated = update_openclaw_source(foundation.read_text(), version)
+updated = update_openclaw_source(foundation.read_text(), version, allow_downgrade=allow_downgrade)
 path.write_text(text)
 foundation.write_text(updated)

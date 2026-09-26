@@ -18,6 +18,10 @@ on:
         type: string
         required: false
         default: ''
+      allow_downgrade:
+        description: Explicitly allow a manually requested Core-pre downgrade
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -67,6 +71,7 @@ jobs:
           OPENCLAW_VERSION: ${{ needs.components.outputs.version }}
           OPENCLAW_UPSTREAM_SHA: ${{ needs.components.outputs.upstream_sha }}
           TARGET_OPENCLAW_VERSION: ${{ inputs.target_version }}
+          ALLOW_OPENCLAW_DOWNGRADE: ${{ inputs.allow_downgrade }}
         run: |
           python3 .github/scripts/record-openclaw-release.py
           if git diff --quiet -- fedora45-ai-core/build.conf fedora45-ai-core-pre/Containerfile; then exit 0; fi
