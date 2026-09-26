@@ -1,5 +1,5 @@
 # Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
-name: fedora45-ai-safrano9999 2026.9.17.2 patch image
+name: fedora45-ai-safrano9999 2026.9.17.3 patch image
 run-name: ${{ inputs.monitor_id != '' && format('{0} [monitor:{1}:{2}]', github.workflow, inputs.monitor_id, inputs.monitor_final) || github.workflow }}
 
 on:
@@ -22,7 +22,7 @@ on:
         type: boolean
 
 concurrency:
-  group: fedora45-ai-safrano9999-2026.9.17.2
+  group: fedora45-ai-safrano9999-2026.9.17.3
   cancel-in-progress: false
 
 jobs:
@@ -34,8 +34,8 @@ jobs:
     env:
       DOCKER_BUILD_RECORD_UPLOAD: 'false'
       IMAGE: ghcr.io/safrano9999/fedora45-ai-safrano9999
-      FIXED_TAG: 2026.9.17.2
-      OPENCODE_EPHEMERAL_COMMIT: 7c094db60dbf88d57f9ba415713ae4f94de9c3d4
+      FIXED_TAG: 2026.9.17.3
+      OPENCODE_EPHEMERAL_COMMIT: 7cfc06d0ef71b070c4c2bb7940d71a07e6a46e7d
 
     steps:
       - name: Checkout

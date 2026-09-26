@@ -2,13 +2,13 @@ FROM ghcr.io/safrano9999/fedora45-ai-safrano9999:2026.9.17@sha256:5c723da958f93f
 
 ARG OPENCODE_VERSION=1.18.32
 ARG OPENCODE_TELEGRAM_VERSION=0.25.3
-ARG OPENCODE_EPHEMERAL_COMMIT=7c094db60dbf88d57f9ba415713ae4f94de9c3d4
+ARG OPENCODE_EPHEMERAL_COMMIT=7cfc06d0ef71b070c4c2bb7940d71a07e6a46e7d
 ARG HERMES_TAG=v2026.9.24
 ARG HERMES_VERSION=0.21.5
 ARG HERMES_COMMIT=f97608f178d1ffeca59860195ab7da295f7c8e5f
 
 LABEL org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
-      org.opencontainers.image.title="fedora45-ai-safrano9999-2026.9.17.2" \
+      org.opencontainers.image.title="fedora45-ai-safrano9999-2026.9.17.3" \
       org.opencontainers.image.description="Pinned OpenCode layer with current OpenClaw plugins and the latest Hermes Agent." \
       io.safrano9999.parent="fedora45-ai-safrano9999" \
       io.safrano9999.base="ghcr.io/safrano9999/fedora45-ai-safrano9999:2026.9.17" \
@@ -25,8 +25,6 @@ ENV NODE_EXTRA_CA_CERTS=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     HOME=/root \
     OPENCODE_API_HOST=0.0.0.0 \
     OPENCODE_API_PORT=4096 \
-    OPENCODE_MODEL_PROVIDER=opencode \
-    OPENCODE_MODEL_ID=mimo-v2.6-flash-free \
     OPENCODE_START=1 \
     PYTHONPATH=/usr/local/lib/openclaw-ephemeral:/usr/local/lib/hermes-ephemeral:/usr/local/lib/opencode-ephemeral
 
