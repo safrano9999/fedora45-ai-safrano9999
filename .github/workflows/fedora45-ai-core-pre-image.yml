@@ -11,7 +11,7 @@ on:
         default: ""
         type: string
       image_tag:
-        description: "Fixed YYYY.M.N version. Empty selects the next monthly number."
+        description: "Fixed YYYY.M.N or YYYY.M.N.P version. Empty selects the next monthly number."
         required: false
         default: ""
       push_latest:

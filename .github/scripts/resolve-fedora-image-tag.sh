@@ -2,7 +2,7 @@
 # Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
 set -euo pipefail
 
-image="${1:?Usage: resolve-fedora-image-tag.sh IMAGE [YYYY.M.N]}"
+image="${1:?Usage: resolve-fedora-image-tag.sh IMAGE [YYYY.M.N[.P]]}"
 version="${2:-}"
 [[ "$image" =~ ^ghcr.io/([^/]+)/(fedora45-ai-(core-pre|core|base|kachelmann|safrano9999(-full)?))$ ]] || {
     echo "Unsupported Fedora image: $image" >&2; exit 1;
@@ -36,8 +36,8 @@ if [[ -z "$version" ]]; then
         "$temporary/all")"
     version="$month.$next"
 fi
-[[ "$version" =~ ^[0-9]{4}\.([1-9]|1[0-2])\.[1-9][0-9]*$ ]] || {
-    echo "Image version must use YYYY.M.N: $version" >&2; exit 1;
+[[ "$version" =~ ^[0-9]{4}\.([1-9]|1[0-2])\.[1-9][0-9]*(\.[1-9][0-9]*)?$ ]] || {
+    echo "Image version must use YYYY.M.N or YYYY.M.N.P: $version" >&2; exit 1;
 }
 if grep -Fxq "$version" "$temporary/current"; then
     echo "Refusing to overwrite existing image version: $image:$version" >&2; exit 1

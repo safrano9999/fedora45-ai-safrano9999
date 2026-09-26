@@ -326,8 +326,8 @@ for raw in sys.argv[2:]:
         identity = self.checks.identity()
         info = json.loads(self.checks.command("image", "inspect", identity["image"]))[0]
         version = info["Labels"]["org.opencontainers.image.version"]
-        if not re.fullmatch(r"[0-9]{4}\.[1-9][0-9]?\.[1-9][0-9]*", version):
-            raise ValueError("Running image has no fixed YYYY.M.N version")
+        if not re.fullmatch(r"[0-9]{4}\.[1-9][0-9]?\.[1-9][0-9]*(?:\.[1-9][0-9]*)?", version):
+            raise ValueError("Running image has no fixed YYYY.M.N or YYYY.M.N.P version")
         sources = {image: self.manifest(image + ":" + version) for image in IMAGES}
         # The running container must match the frozen deployment image, not a moving tag.
         expected = json.loads(self.checks.command("image", "inspect", self.config["image"] + "@" + sources[self.config["image"]]))[0]
