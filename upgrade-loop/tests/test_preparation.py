@@ -194,7 +194,8 @@ class PreparationTests(unittest.TestCase):
                     self.assertIn('https://api.github.com/', node['parameters']['url'])
                     if node['parameters'].get('method', 'GET') != 'GET':
                         self.assertEqual(node['parameters']['method'], 'POST')
-                        self.assertTrue(node['parameters']['url'].endswith('/fedora45-container-preparation.yml/dispatches'))
+                        self.assertTrue(node['parameters']['url'].endswith(('/fedora45-container-preparation.yml/dispatches',
+                                                                            '/openclaw-components.yml/dispatches')))
 
     def test_source_sync_is_after_validated_handoff_only(self):
         workflow = json.loads((prep.ROOT / 'n8n-fedora45-workflow.json').read_text())

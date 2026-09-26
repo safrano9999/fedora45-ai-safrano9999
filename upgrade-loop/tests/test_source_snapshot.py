@@ -102,6 +102,7 @@ class SnapshotTests(unittest.TestCase):
         for entry in selected['repositories']:
             if entry['repository'].endswith('/openclaw-deterministic-latest'):
                 entry['release']['upstream_commit'] = override or '1'*40
+                entry['release']['asset'] = f"openclaw-{pins['openclaw']}-deterministic.tar.gz"
         selected['upgrade_safrano9999'] = True
         selected['build_plan'] = {'schema_version':1,'required':True,'start_image':'fedora45-ai-core',
             'start_key':'fedora45_core','cascade':True,'target':selected['target'],
@@ -126,11 +127,12 @@ class SnapshotTests(unittest.TestCase):
         edges=workflow['connections']
         self.assertEqual(edges['Upstream update available?']['main'][1][0]['node'],'No update')
         self.assertEqual(edges['Upstream update available?']['main'][0][0]['node'],'Prepare request')
-        self.assertEqual(edges['Prepare request']['main'][0][0]['node'],'Deterministic build required?')
-        self.assertEqual(edges['Deterministic build required?']['main'][0][0]['node'],'Prepare targeted Deterministic dispatch')
-        self.assertEqual(edges['Deterministic build required?']['main'][1][0]['node'],'Prepare reuse Deterministic dispatch')
-        self.assertEqual(edges['Prepare targeted Deterministic dispatch']['main'][0][0]['node'],'Dispatch Deterministic check')
-        self.assertEqual(edges['Prepare reuse Deterministic dispatch']['main'][0][0]['node'],'Dispatch Deterministic check')
+        self.assertEqual(edges['Prepare request']['main'][0][0]['node'],'OpenClaw lock present?')
+        self.assertEqual(edges['OpenClaw lock present?']['main'][0][0]['node'],'Read Deterministic releases')
+        self.assertEqual(edges['OpenClaw lock present?']['main'][1][0]['node'],'Resolve latest sources once')
+        self.assertEqual(edges['Deterministic release present?']['main'][0][0]['node'],'Resolve latest sources once')
+        self.assertEqual(edges['Deterministic release present?']['main'][1][0]['node'],'Dispatch Deterministic when missing')
+        self.assertEqual(edges['Dispatch Deterministic when missing']['main'][0][0]['node'],'Resolve latest sources once')
         self.assertEqual(edges['Resolve latest sources once']['main'][0][0]['node'],'Sources require preparation?')
         self.assertEqual(edges['Sources require preparation?']['main'][0][0]['node'],'Dispatch preparation Action')
         self.assertEqual(edges['Sources require preparation?']['main'][1][0]['node'],'No update')

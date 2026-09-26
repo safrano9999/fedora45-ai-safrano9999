@@ -105,9 +105,9 @@
           -430
         ],
         "parameters": {
-          "content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nOpenClaw is hard-pinned to 2026.9.4; newer upstream OpenClaw releases never change that pin. This flow never dispatches the standalone Deterministic workflow. A new Hermes release opens the default gate. Explicit mode upgrade-safrano9999 also checks consumed Safrano sources against published :latest image revisions and selects the earliest affected stage. Without source changes, no preparation or clones, except an explicit upgrade-build-deps check which runs on the GitHub runner. Dependency changes select Core-pre; no dependency changes return NO_UPDATE unless other requested inputs changed. Resolve latest Safrano sources ONCE after this gate. Share the same snapshot with preparation, depth-1 clones and builds. Test BOTH selected Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.",
+          "content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nOpenClaw is hard-pinned to 2026.9.4; newer upstream OpenClaw releases never change that pin. When OPENCLAW is present in versions.lock, n8n checks for the matching Deterministic release and fire-and-forgets the standalone component workflow only when that release is missing. The image build workflows never run Deterministic. A new Hermes release opens the default gate. Explicit mode upgrade-safrano9999 also checks consumed Safrano sources against published :latest image revisions and selects the earliest affected stage. Without source changes, no preparation or clones, except an explicit upgrade-build-deps check which runs on the GitHub runner. Dependency changes select Core-pre; no dependency changes return NO_UPDATE unless other requested inputs changed. Resolve latest Safrano sources ONCE after this gate. Share the same snapshot with preparation, depth-1 clones and builds. Test BOTH selected Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.",
           "width": 1600,
-          "height": 260
+          "height": 300
         }
       },
       {
@@ -501,6 +501,167 @@
         "parameters": {
           "jsCode": "const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+10800000};\nreturn [{json:request}];"
         }
+      },
+      {
+        "id": "670f8c55-ff35-5fd1-a3f9-c2aeab38e301",
+        "name": "OpenClaw lock present?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          2000,
+          -300
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "OpenClaw lock present?",
+                "leftValue": "={{ Boolean($json.version_locks?.openclaw) }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "c6fc0ae8-db9b-5bcd-8970-c3b034fccdaf",
+        "name": "Read Deterministic releases",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2220,
+          -460
+        ],
+        "parameters": {
+          "url": "https://api.github.com/repos/safrano9999/openclaw-deterministic-latest/releases?per_page=100",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Accept",
+                "value": "application/vnd.github+json"
+              },
+              {
+                "name": "X-GitHub-Api-Version",
+                "value": "2022-11-28"
+              }
+            ]
+          },
+          "options": {
+            "timeout": 30000
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "fedora45GitHubPreparation",
+            "name": "Fedora45 GitHub preparation"
+          }
+        },
+        "retryOnFail": false
+      },
+      {
+        "id": "afbe6d78-520f-5a4c-a9a4-df5be35eb4bd",
+        "name": "Check Deterministic release",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2440,
+          -460
+        ],
+        "parameters": {
+          "jsCode": "const request=$('Prepare request').first().json;\nconst version=request.version_locks?.openclaw;\nconst releases=Array.isArray($json)?$json:[];\nconst asset=`openclaw-${version}-deterministic.tar.gz`;\nconst ready=releases.some(release=>!release.draft&&!release.prerelease&&\n  typeof release.tag_name==='string'&&release.tag_name.startsWith(`${version}-deterministic.`)&&\n  release.assets?.some(item=>item.name===asset&&/^sha256:[0-9a-f]{64}$/.test(item.digest??'')));\nreturn [{json:{...request,deterministic_ready:ready,deterministic_version:version}}];"
+        }
+      },
+      {
+        "id": "54d552cf-df7e-5108-80f2-9b1e7a499cff",
+        "name": "Deterministic release present?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          2660,
+          -460
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "Deterministic release present?",
+                "leftValue": "={{ $json.deterministic_ready === true }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ]
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "489f6cfa-07bb-5189-9ef4-90e9744f30ba",
+        "name": "Dispatch Deterministic when missing",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2880,
+          -620
+        ],
+        "parameters": {
+          "url": "https://api.github.com/repos/safrano9999/fedora45-ai-safrano9999/actions/workflows/openclaw-components.yml/dispatches",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Accept",
+                "value": "application/vnd.github+json"
+              },
+              {
+                "name": "X-GitHub-Api-Version",
+                "value": "2022-11-28"
+              }
+            ]
+          },
+          "options": {
+            "timeout": 30000
+          },
+          "method": "POST",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ {ref:'main',inputs:{run_id:$json.run_id,publish:true,target_version:$json.deterministic_version}} }}"
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "fedora45GitHubPreparation",
+            "name": "Fedora45 GitHub preparation"
+          }
+        },
+        "retryOnFail": false
       },
       {
         "id": "a8fad7eb-6e9c-501e-b92a-98db6001a1a5",
@@ -1167,6 +1328,75 @@
         ]
       },
       "Prepare request": {
+        "main": [
+          [
+            {
+              "node": "OpenClaw lock present?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenClaw lock present?": {
+        "main": [
+          [
+            {
+              "node": "Read Deterministic releases",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Resolve latest sources once",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read Deterministic releases": {
+        "main": [
+          [
+            {
+              "node": "Check Deterministic release",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Check Deterministic release": {
+        "main": [
+          [
+            {
+              "node": "Deterministic release present?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Deterministic release present?": {
+        "main": [
+          [
+            {
+              "node": "Resolve latest sources once",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Dispatch Deterministic when missing",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Dispatch Deterministic when missing": {
         "main": [
           [
             {
