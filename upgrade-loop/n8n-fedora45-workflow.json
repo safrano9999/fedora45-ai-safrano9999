@@ -29,7 +29,7 @@
         -430
       ],
       "parameters": {
-        "content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nA new OpenClaw OR Hermes release opens the default gate. Explicit mode upgrade-safrano9999 also checks consumed Safrano sources against published :latest image revisions and selects the earliest affected stage. Without source changes, no preparation or clones, except an explicit upgrade-build-deps check which runs on the GitHub runner. Dependency changes select Core-pre; no dependency changes return NO_UPDATE unless other requested inputs changed. Resolve latest Safrano sources ONCE after this gate. Share the same snapshot with preparation, depth-1 clones and builds. Test BOTH selected Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.",
+        "content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nOpenClaw is hard-pinned to 2026.9.4; newer upstream OpenClaw releases never change that pin. This flow never dispatches the standalone Deterministic workflow. A new Hermes release opens the default gate. Explicit mode upgrade-safrano9999 also checks consumed Safrano sources against published :latest image revisions and selects the earliest affected stage. Without source changes, no preparation or clones, except an explicit upgrade-build-deps check which runs on the GitHub runner. Dependency changes select Core-pre; no dependency changes return NO_UPDATE unless other requested inputs changed. Resolve latest Safrano sources ONCE after this gate. Share the same snapshot with preparation, depth-1 clones and builds. Test BOTH selected Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.",
         "width": 1600,
         "height": 260
       }
@@ -206,50 +206,12 @@
       "retryOnFail": false
     },
     {
-      "id": "289efb72-d86a-537f-ba16-59af3ae429e9",
-      "name": "Latest OpenClaw release",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        240,
-        0
-      ],
-      "parameters": {
-        "url": "https://api.github.com/repos/openclaw/openclaw/releases/latest",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Accept",
-              "value": "application/vnd.github+json"
-            },
-            {
-              "name": "X-GitHub-Api-Version",
-              "value": "2022-11-28"
-            }
-          ]
-        },
-        "options": {
-          "timeout": 30000
-        }
-      },
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "fedora45GitHubPreparation",
-          "name": "Fedora45 GitHub preparation"
-        }
-      },
-      "retryOnFail": false
-    },
-    {
       "id": "4f639a53-5850-570f-aeab-44c8948e6489",
       "name": "Latest Hermes release",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        460,
+        240,
         0
       ],
       "parameters": {
@@ -291,7 +253,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const pin=$('Published version pins').first().json;\nif(pin.encoding!=='base64') throw new Error('Unexpected GitHub content encoding');\nconst text=Buffer.from(pin.content,'base64').toString('utf8');\nconst release={openclaw:$('Latest OpenClaw release').first().json,hermes:$json};\nconst versions={};\nconst parse=v=>{if(!/^\\d+\\.\\d+\\.\\d+$/.test(v))throw new Error('Invalid release version');return v.split('.').map(Number);};\nfor(const name of ['openclaw','hermes']){\n const matches=[...text.matchAll(new RegExp('^ARG '+name.toUpperCase()+'_VERSION=(\\\\S+)$','gm'))];\n if(matches.length!==1) throw new Error('Missing or duplicate version pin: '+name);\n const r=release[name];if(r.draft||r.prerelease)throw new Error('Expected stable release');\n const latest=name==='openclaw'?r.tag_name.replace(/^v/,''):r.name.match(/^Hermes Agent v(\\d+\\.\\d+\\.\\d+)(?:\\s|$)/)?.[1];\n const current=matches[0][1],a=parse(current),b=parse(latest??'');\n const first=a.findIndex((v,i)=>v!==b[i]);if(first>=0&&b[first]<a[first])throw new Error('Upstream release older than pin');\n versions[name]={current,latest};\n}\nconst update=Object.values(versions).some(v=>v.current!==v.latest);\nconst stdout=['openclaw','hermes'].map(n=>{const v=versions[n],label=n==='openclaw'?'OpenClaw':'Hermes';return v.current===v.latest?`✅ ${label} version ${v.current} is actual`:`🟡 ${label}: New version available! actual ${v.current}, latest ${v.latest}`;}).join('\\n');\nreturn [{json:{...$('Read request').first().json,versions,update,stdout,baseline:'GitHub main version pins'}}];"
+        "jsCode": "const pin=$('Published version pins').first().json;\nif(pin.encoding!=='base64') throw new Error('Unexpected GitHub content encoding');\nconst text=Buffer.from(pin.content,'base64').toString('utf8');\nconst release={hermes:$('Latest Hermes release').first().json};\nconst locks={\"openclaw\":\"2026.9.4\"};\nconst versions={};\nconst parse=v=>{if(!/^\\d+\\.\\d+\\.\\d+$/.test(v))throw new Error('Invalid release version');return v.split('.').map(Number);};\nfor(const name of ['openclaw','hermes']){\n const matches=[...text.matchAll(new RegExp('^ARG '+name.toUpperCase()+'_VERSION=(\\\\S+)$','gm'))];\n if(matches.length!==1) throw new Error('Missing or duplicate version pin: '+name);\n const current=matches[0][1],locked=locks[name];\n if(locked){if(current!==locked)throw new Error(name+' pin mismatch: expected '+locked+', found '+current);versions[name]={current,latest:locked};continue;}\n const r=release[name];if(!r||r.draft||r.prerelease)throw new Error('Expected stable release: '+name);\n const latest=name==='openclaw'?r.tag_name.replace(/^v/,''):r.name.match(/^Hermes Agent v(\\d+\\.\\d+\\.\\d+)(?:\\s|$)/)?.[1];\n const a=parse(current),b=parse(latest??'');\n const first=a.findIndex((v,i)=>v!==b[i]);if(first>=0&&b[first]<a[first])throw new Error('Upstream release older than pin');\n versions[name]={current,latest};\n}\nconst update=Object.values(versions).some(v=>v.current!==v.latest);\nconst stdout=['openclaw','hermes'].map(n=>{const v=versions[n],label=n==='openclaw'?'OpenClaw':'Hermes';return v.current===v.latest?`✅ ${label} version ${v.current} is actual`:`🟡 ${label}: New version available! actual ${v.current}, latest ${v.latest}`;}).join('\\n');\nreturn [{json:{...$('Read request').first().json,versions,update,stdout,baseline:'GitHub main version pins',version_locks:locks}}];"
       }
     },
     {
@@ -462,209 +424,6 @@
       ],
       "parameters": {
         "jsCode": "const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+10800000};\nreturn [{json:request}];"
-      }
-    },
-    {
-      "id": "9a3c2b81-ccdf-54c2-b9d3-882ef83c44a5",
-      "name": "Deterministic build required?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        2000,
-        -420
-      ],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "id": "Deterministic build required?",
-              "leftValue": "={{ $json.versions.openclaw.current !== $json.versions.openclaw.latest }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "0eb2a4ee-9f10-52f5-841e-338ca9464598",
-      "name": "Prepare targeted Deterministic dispatch",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2220,
-        -560
-      ],
-      "parameters": {
-        "jsCode": "const request=$('Prepare request').first().json;\nconst target=request.versions.openclaw.latest;\nrequest.dispatch_body=JSON.stringify({ref:'main',inputs:{run_id:request.run_id,publish:true,target_version:target}});\nreturn [{json:request}];"
-      }
-    },
-    {
-      "id": "36d1c4c3-103c-54c2-b1a8-7f9953ccb719",
-      "name": "Prepare reuse Deterministic dispatch",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2220,
-        -280
-      ],
-      "parameters": {
-        "jsCode": "const request=$('Prepare request').first().json;\nrequest.dispatch_body=JSON.stringify({ref:'main',inputs:{run_id:request.run_id,publish:request.validate_only !== true}});\nreturn [{json:request}];"
-      }
-    },
-    {
-      "id": "f29c4234-2ae7-5506-b557-17fc32559790",
-      "name": "Dispatch Deterministic check",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1800,
-        -420
-      ],
-      "parameters": {
-        "url": "https://api.github.com/repos/safrano9999/fedora45-ai-safrano9999/actions/workflows/openclaw-components.yml/dispatches",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Accept",
-              "value": "application/vnd.github+json"
-            },
-            {
-              "name": "X-GitHub-Api-Version",
-              "value": "2022-11-28"
-            }
-          ]
-        },
-        "options": {
-          "timeout": 30000
-        },
-        "method": "POST",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json.dispatch_body }}"
-      },
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "fedora45GitHubPreparation",
-          "name": "Fedora45 GitHub preparation"
-        }
-      },
-      "retryOnFail": false
-    },
-    {
-      "id": "6c47174b-5c31-5117-87e2-33cd3d3b0141",
-      "name": "Wait for Deterministic",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "position": [
-        2020,
-        -420
-      ],
-      "parameters": {
-        "resume": "timeInterval",
-        "amount": 30,
-        "unit": "seconds"
-      },
-      "webhookId": "655b2fc1-0e06-4b1b-b2c8-fcc59a265a65"
-    },
-    {
-      "id": "cf10beeb-8f24-5531-9a7a-928999593329",
-      "name": "Read Deterministic runs",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        2240,
-        -420
-      ],
-      "parameters": {
-        "url": "={{ 'https://api.github.com/repos/safrano9999/fedora45-ai-safrano9999/actions/workflows/openclaw-components.yml/runs?event=workflow_dispatch&per_page=100&created='+encodeURIComponent('>='+$('Prepare request').first().json.started_at) }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Accept",
-              "value": "application/vnd.github+json"
-            },
-            {
-              "name": "X-GitHub-Api-Version",
-              "value": "2022-11-28"
-            }
-          ]
-        },
-        "options": {
-          "timeout": 30000
-        }
-      },
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "fedora45GitHubPreparation",
-          "name": "Fedora45 GitHub preparation"
-        }
-      },
-      "retryOnFail": false
-    },
-    {
-      "id": "66118aa7-6020-5403-a713-d129f77543f1",
-      "name": "Match exact Deterministic run",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2460,
-        -420
-      ],
-      "parameters": {
-        "jsCode": "const request=$('Prepare request').first().json;\nif(Date.now()>request.deadline)throw new Error('Deterministic preparation timed out');\nif(!Array.isArray($json.workflow_runs))throw new Error('Missing component workflow runs');\nconst runs=$json.workflow_runs.filter(r=>r.display_title===`OpenClaw components [components:${request.run_id}]`);\nif(runs.length>1)throw new Error('Ambiguous Deterministic run');\nconst run=runs[0],completed=run?.status==='completed';\nif(completed&&run.conclusion!=='success')throw new Error('Deterministic '+run.conclusion+': '+run.html_url);\nreturn [{json:{...request,completed,deterministic_run:run?.id??null}}];"
-      }
-    },
-    {
-      "id": "2b2304d1-e099-5a1b-a9b8-795a5b672bb7",
-      "name": "Deterministic ready?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        2680,
-        -420
-      ],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "id": "Deterministic ready?",
-              "leftValue": "={{ $json.completed }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ]
-        },
-        "options": {}
       }
     },
     {
@@ -1109,17 +868,6 @@
       "main": [
         [
           {
-            "node": "Latest OpenClaw release",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Latest OpenClaw release": {
-      "main": [
-        [
-          {
             "node": "Latest Hermes release",
             "type": "main",
             "index": 0
@@ -1208,17 +956,6 @@
         [
           {
             "node": "No update",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare request": {
-      "main": [
-        [
-          {
-            "node": "Deterministic build required?",
             "type": "main",
             "index": 0
           }
@@ -1353,102 +1090,11 @@
         ]
       ]
     },
-    "Deterministic build required?": {
-      "main": [
-        [
-          {
-            "node": "Prepare targeted Deterministic dispatch",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Prepare reuse Deterministic dispatch",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare targeted Deterministic dispatch": {
-      "main": [
-        [
-          {
-            "node": "Dispatch Deterministic check",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare reuse Deterministic dispatch": {
-      "main": [
-        [
-          {
-            "node": "Dispatch Deterministic check",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Dispatch Deterministic check": {
-      "main": [
-        [
-          {
-            "node": "Wait for Deterministic",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait for Deterministic": {
-      "main": [
-        [
-          {
-            "node": "Read Deterministic runs",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Read Deterministic runs": {
-      "main": [
-        [
-          {
-            "node": "Match exact Deterministic run",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Match exact Deterministic run": {
-      "main": [
-        [
-          {
-            "node": "Deterministic ready?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Deterministic ready?": {
+    "Prepare request": {
       "main": [
         [
           {
             "node": "Resolve latest sources once",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Wait for Deterministic",
             "type": "main",
             "index": 0
           }

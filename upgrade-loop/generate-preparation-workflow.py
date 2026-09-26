@@ -2,6 +2,7 @@
 """Generate the GitHub-only n8n container preparation graph and retire host graphs."""
 import json
 from pathlib import Path
+import re
 import uuid
 
 ROOT = Path(__file__).resolve().parent
@@ -42,9 +43,19 @@ def http(name, url, x, y=0, **parameters):
 
 
 base = "https://api.github.com/repos/safrano9999/fedora45-ai-safrano9999"
+LOCK_FILE = ROOT / "n8n-sources" / "versions.lock"
+VERSION_LOCKS = {}
+for line in LOCK_FILE.read_text().splitlines():
+    line = line.strip()
+    if not line or line.startswith('#'):
+        continue
+    match = re.fullmatch(r"([A-Z][A-Z0-9_]*)=(\d+\.\d+\.\d+)", line)
+    if not match or match[1] in VERSION_LOCKS:
+        raise ValueError(f"Invalid or duplicate version lock entry: {line}")
+    VERSION_LOCKS[match[1]] = match[2]
 client_description = "Feuer den maximalen Loop: body.mode=maximal selects Safrano sources, stable build deps, custom images and auto-upgrade. Pass returned requests to Safrano MCP. End turn; wait for feedback, do not poll. n8n has no host access."
 node("MCP start and completion feedback", "stickyNote", {"content": "## MCP client instructions\nBefore execute_workflow, read this workflow's details. For the user's command 'Feuer den maximalen Loop' (also 'maximal loop'), execute this workflow once with webhookData.body.mode=maximal. This is the preset for upgrade-safrano9999 + upgrade-build-deps + auto-upgrade, selecting both source checks, automatic Safrano builds/pulls and the whitelist image upgrade, with saved webhook feedback by default. maximal also returns safrano_custom_images_request for Safrano MCP upgrade_custom_images. Pass that request unchanged in addition to the Fedora/whitelist request; these independent scopes can be dispatched together before ending the turn. An already_running response reuses the active custom upgrade; never force a duplicate. Custom upgrades preserve owner patches and skip incompatible images, with tests and builds only on GitHub Actions. Outside maximal, opt in with body.upgrade_custom_images=true. No additional mode flags are needed; explicit feedback=false is respected. On READY_FOR_BUILD pass safrano_build_request unchanged to Safrano MCP build_images. On NO_UPDATE pass the returned safrano_upgrade_request to podman_smart1 if present. Do not start another preparation when continuing a completed run. Optional upgrade-build-deps checks all allowlisted third-party build pins on GitHub Actions, preferring stable releases; Base image digests refresh only within their JSON-configured release lines. Combine mode=upgrade-safrano9999+upgrade-build-deps+auto-upgrade (or JSON upgrade_build_deps:true). Changes require a build from core-pre. Runtime requirements keep their existing constraints. Optional body.mode=upgrade-safrano9999 checks consumed Safrano sources against published latest images and returns the earliest build start key. Use body.mode=upgrade-safrano9999+auto-upgrade for the maximum sequence, also updating whitelist image digests/services after build/pull success. NO_UPDATE then returns safrano_upgrade_request for podman_smart1 auto-update. Use body.mode=upgrade-safrano9999+auto (or auto:true) for the authorized build-and-pull sequence: on READY_FOR_BUILD pass safrano_build_request unchanged to Safrano MCP build_images. It includes auto_pull:true and feedback:true using the saved Safrano destination; explicit feedback:false is respected. Without auto-upgrade, NO_UPDATE ends the sequence. Without this option the release gate is unchanged. Use executionMode=production and inputs.type=webhook, webhookData.method=POST. For feedback, set webhookData.body.callback_url (plus callback_secret when required), or body.feedback=true for the saved Hermes hook. Set feedback=false to disable.\nAfter the tool returns its execution ID, END THIS TURN and return control to the user. Do not poll, sleep or wait for completion. The hook receives only {} after success, failure or cancellation; fetch status/evidence then or when the user explicitly asks. A deliver-only Hermes hook posts an outgoing Telegram message and does not wake an agent turn. In that setup wait for the user to say weiter, then read the completed execution and continue its authorized Safrano request without rerunning preparation. This preset does not change Hermes webhook routing.\nOnly webhook feedback is supported here. Do not pass herdr_target: this container has no host/Herdr access. Delivery uses mcp-rendezvous from npm.", "width": 800, "height": 440}, -900, 420)
-node("Scope", "stickyNote", {"content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nA new OpenClaw OR Hermes release opens the default gate. Explicit mode upgrade-safrano9999 also checks consumed Safrano sources against published :latest image revisions and selects the earliest affected stage. Without source changes, no preparation or clones, except an explicit upgrade-build-deps check which runs on the GitHub runner. Dependency changes select Core-pre; no dependency changes return NO_UPDATE unless other requested inputs changed. Resolve latest Safrano sources ONCE after this gate. Share the same snapshot with preparation, depth-1 clones and builds. Test BOTH selected Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.", "width": 1600, "height": 260}, 0, -430)
+node("Scope", "stickyNote", {"content": "## Container preparation only\nGitHub API + GitHub Actions. No host access. No image build, pull, tagging, restart or live-container tests.\nOpenClaw is hard-pinned to 2026.9.4; newer upstream OpenClaw releases never change that pin. This flow never dispatches the standalone Deterministic workflow. A new Hermes release opens the default gate. Explicit mode upgrade-safrano9999 also checks consumed Safrano sources against published :latest image revisions and selects the earliest affected stage. Without source changes, no preparation or clones, except an explicit upgrade-build-deps check which runs on the GitHub runner. Dependency changes select Core-pre; no dependency changes return NO_UPDATE unless other requested inputs changed. Resolve latest Safrano sources ONCE after this gate. Share the same snapshot with preparation, depth-1 clones and builds. Test BOTH selected Ephemeral commits.\nReturn READY_FOR_BUILD and its commit to Hermes. Further steps belong to the user/Hermes. Compatibility failures stop; source repairs require explicit Go.", "width": 1600, "height": 260}, 0, -430)
 node("Manual preparation", "manualTrigger", {}, -440, -120)
 node("Webhook - preparation or --check", "webhook", {"httpMethod": "POST", "path": "fedora45-update-loop", "authentication": "headerAuth", "responseMode": "responseNode", "options": {"rawBody": True}}, -440, 120, 2,
      webhookId="851b669a-1ae5-4167-bac0-59e3d2e6555a", credentials={"httpHeaderAuth": {"id": "fedora45WebhookBearer", "name": "Fedora45 webhook bearer"}})
@@ -127,28 +138,38 @@ preview=node("Discover source repositories", "code", {"operation":"inventory"}, 
 preview["type"]="CUSTOM.fedora45Sources"
 node("Return source inventory", "respondToWebhook", {"respondWith":"json","responseBody":"={{ $json }}","options":{"responseCode":200}}, 240, -180, 1.4)
 http("Published version pins", base + "/contents/fedora45-ai-core-pre/Containerfile?ref=main", 20)
-http("Latest OpenClaw release", "https://api.github.com/repos/openclaw/openclaw/releases/latest", 240)
-http("Latest Hermes release", "https://api.github.com/repos/NousResearch/hermes-agent/releases/latest", 460)
+release_nodes = []
+for component, url in (("openclaw", "https://api.github.com/repos/openclaw/openclaw/releases/latest"),
+                       ("hermes", "https://api.github.com/repos/NousResearch/hermes-agent/releases/latest")):
+    if component.upper() not in VERSION_LOCKS:
+        title = "Latest " + ("OpenClaw" if component == "openclaw" else "Hermes") + " release"
+        http(title, url, 240 + 220 * len(release_nodes))
+        release_nodes.append((component, title))
+lock_json = json.dumps({name.lower(): value for name, value in VERSION_LOCKS.items()}, separators=(",", ":"))
+release_json = "{" + ",".join(f"{name}:$('{'Latest ' + ('OpenClaw' if name == 'openclaw' else 'Hermes')} release').first().json" for name, _ in release_nodes) + "}"
 code("Validate versions", """
 const pin=$('Published version pins').first().json;
 if(pin.encoding!=='base64') throw new Error('Unexpected GitHub content encoding');
 const text=Buffer.from(pin.content,'base64').toString('utf8');
-const release={openclaw:$('Latest OpenClaw release').first().json,hermes:$json};
+const release=__RELEASE_JSON__;
+const locks=__LOCK_JSON__;
 const versions={};
 const parse=v=>{if(!/^\\d+\\.\\d+\\.\\d+$/.test(v))throw new Error('Invalid release version');return v.split('.').map(Number);};
 for(const name of ['openclaw','hermes']){
  const matches=[...text.matchAll(new RegExp('^ARG '+name.toUpperCase()+'_VERSION=(\\\\S+)$','gm'))];
  if(matches.length!==1) throw new Error('Missing or duplicate version pin: '+name);
- const r=release[name];if(r.draft||r.prerelease)throw new Error('Expected stable release');
+ const current=matches[0][1],locked=locks[name];
+ if(locked){if(current!==locked)throw new Error(name+' pin mismatch: expected '+locked+', found '+current);versions[name]={current,latest:locked};continue;}
+ const r=release[name];if(!r||r.draft||r.prerelease)throw new Error('Expected stable release: '+name);
  const latest=name==='openclaw'?r.tag_name.replace(/^v/,''):r.name.match(/^Hermes Agent v(\\d+\\.\\d+\\.\\d+)(?:\\s|$)/)?.[1];
- const current=matches[0][1],a=parse(current),b=parse(latest??'');
+ const a=parse(current),b=parse(latest??'');
  const first=a.findIndex((v,i)=>v!==b[i]);if(first>=0&&b[first]<a[first])throw new Error('Upstream release older than pin');
  versions[name]={current,latest};
 }
 const update=Object.values(versions).some(v=>v.current!==v.latest);
 const stdout=['openclaw','hermes'].map(n=>{const v=versions[n],label=n==='openclaw'?'OpenClaw':'Hermes';return v.current===v.latest?`✅ ${label} version ${v.current} is actual`:`🟡 ${label}: New version available! actual ${v.current}, latest ${v.latest}`;}).join('\\n');
-return [{json:{...$('Read request').first().json,versions,update,stdout,baseline:'GitHub main version pins'}}];
-""", 680)
+return [{json:{...$('Read request').first().json,versions,update,stdout,baseline:'GitHub main version pins',version_locks:locks}}];
+""".replace('__RELEASE_JSON__', release_json).replace('__LOCK_JSON__', lock_json), 680)
 branch("Check only?", "={{ $json.check }}", 900)
 node("Return two version lines", "respondToWebhook", {"respondWith": "text", "responseBody": "={{ $json.stdout }}", "options": {"responseCode": 200, "responseHeaders": {"entries": [{"name": "Content-Type", "value": "text/plain; charset=utf-8"}]}}}, 1120, -160, 1.4)
 branch("Webhook request?", "={{ $json.webhook }}", 1120, 100)
@@ -163,35 +184,6 @@ code("Prepare request", """
 const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+10800000};
 return [{json:request}];
 """, 1780)
-branch("Deterministic build required?", "={{ $json.versions.openclaw.current !== $json.versions.openclaw.latest }}", 2000, -420)
-code("Prepare targeted Deterministic dispatch", """
-const request=$('Prepare request').first().json;
-const target=request.versions.openclaw.latest;
-request.dispatch_body=JSON.stringify({ref:'main',inputs:{run_id:request.run_id,publish:true,target_version:target}});
-return [{json:request}];
-""", 2220, -560)
-code("Prepare reuse Deterministic dispatch", """
-const request=$('Prepare request').first().json;
-request.dispatch_body=JSON.stringify({ref:'main',inputs:{run_id:request.run_id,publish:request.validate_only !== true}});
-return [{json:request}];
-""", 2220, -280)
-http("Dispatch Deterministic check", base + "/actions/workflows/openclaw-components.yml/dispatches", 1800, -420,
-     method="POST", sendBody=True, specifyBody="json",
-     jsonBody="={{ $json.dispatch_body }}")
-node("Wait for Deterministic", "wait", {"resume":"timeInterval","amount":30,"unit":"seconds"}, 2020, -420, 1.1,
-     webhookId="655b2fc1-0e06-4b1b-b2c8-fcc59a265a65")
-http("Read Deterministic runs", "={{ '"+base+"/actions/workflows/openclaw-components.yml/runs?event=workflow_dispatch&per_page=100&created='+encodeURIComponent('>='+$('Prepare request').first().json.started_at) }}", 2240, -420)
-code("Match exact Deterministic run", """
-const request=$('Prepare request').first().json;
-if(Date.now()>request.deadline)throw new Error('Deterministic preparation timed out');
-if(!Array.isArray($json.workflow_runs))throw new Error('Missing component workflow runs');
-const runs=$json.workflow_runs.filter(r=>r.display_title===`OpenClaw components [components:${request.run_id}]`);
-if(runs.length>1)throw new Error('Ambiguous Deterministic run');
-const run=runs[0],completed=run?.status==='completed';
-if(completed&&run.conclusion!=='success')throw new Error('Deterministic '+run.conclusion+': '+run.html_url);
-return [{json:{...request,completed,deterministic_run:run?.id??null}}];
-""", 2460, -420)
-branch("Deterministic ready?", "={{ $json.completed }}", 2680, -420)
 resolve=node("Resolve latest sources once", "code", {"operation":"resolve"}, 1900, -180,
              credentials=source_credentials, retryOnFail=False,
              notes="After the release or explicit Safrano gate, resolve latest once and compare published images when requested. The same source snapshot binds preparation, depth-1 clones and image builds.")
@@ -278,20 +270,16 @@ sync=node("Sync sources for ready build", "code", {"operation":"sync"}, 4640,
           notes="Only READY_FOR_BUILD clones/updates depth-1 sources inside the existing n8n volume. No image build or repository scripts.")
 sync["type"]="CUSTOM.fedora45Sources"
 
-for source,target in [("Manual preparation","Read request"),("Webhook - preparation or --check","Read request"),("Read request","Published version pins"),("Published version pins","Latest OpenClaw release"),("Latest OpenClaw release","Latest Hermes release"),("Latest Hermes release","Validate versions"),("Validate versions","Check only?"),("Check only?","Return two version lines"),("Webhook request?","Accept preparation"),("Accept preparation","Upstream update available?"),("Upstream update available?","Prepare request"),("Prepare request","Dispatch preparation Action"),("Dispatch preparation Action","Wait for preparation"),("Wait for preparation","Read preparation runs"),("Read preparation runs","Match exact preparation run"),("Match exact preparation run","Preparation finished?"),("Preparation finished?","Read preparation artifacts"),("Read preparation artifacts","Select evidence artifact"),("Select evidence artifact","Resolve evidence download"),("Resolve evidence download","Validate evidence URL"),("Validate evidence URL","Download preparation evidence"),("Download preparation evidence","Unpack evidence"),("Unpack evidence","Handoff to Hermes")]:link(source,target)
+version_edges = [("Read request", "Published version pins")]
+version_tail = "Published version pins"
+for _, title in release_nodes:
+    version_edges.append((version_tail, title))
+    version_tail = title
+version_edges.append((version_tail, "Validate versions"))
+for source,target in [("Manual preparation","Read request"),("Webhook - preparation or --check","Read request"),*version_edges,("Validate versions","Check only?"),("Check only?","Return two version lines"),("Webhook request?","Accept preparation"),("Accept preparation","Upstream update available?"),("Upstream update available?","Prepare request"),("Dispatch preparation Action","Wait for preparation"),("Wait for preparation","Read preparation runs"),("Read preparation runs","Match exact preparation run"),("Match exact preparation run","Preparation finished?"),("Preparation finished?","Read preparation artifacts"),("Read preparation artifacts","Select evidence artifact"),("Select evidence artifact","Resolve evidence download"),("Resolve evidence download","Validate evidence URL"),("Validate evidence URL","Download preparation evidence"),("Download preparation evidence","Unpack evidence"),("Unpack evidence","Handoff to Hermes")]:link(source,target)
 for source,target in [("Check only?","Webhook request?"),("Webhook request?","Upstream update available?"),("Upstream update available?","No update"),("Preparation finished?","Wait for preparation")]:link(source,target,1)
 connections["Read request"]={"main":[[{"node":"Sources preview?","type":"main","index":0}]]}
-connections["Prepare request"]={"main":[[{"node":"Deterministic build required?","type":"main","index":0}]]}
-link("Deterministic build required?","Prepare targeted Deterministic dispatch")
-link("Deterministic build required?","Prepare reuse Deterministic dispatch",1)
-link("Prepare targeted Deterministic dispatch","Dispatch Deterministic check")
-link("Prepare reuse Deterministic dispatch","Dispatch Deterministic check")
-link("Dispatch Deterministic check","Wait for Deterministic")
-link("Wait for Deterministic","Read Deterministic runs")
-link("Read Deterministic runs","Match exact Deterministic run")
-link("Match exact Deterministic run","Deterministic ready?")
-link("Deterministic ready?","Resolve latest sources once")
-link("Deterministic ready?","Wait for Deterministic",1)
+connections["Prepare request"]={"main":[[{"node":"Resolve latest sources once","type":"main","index":0}]]}
 branch("Sources require preparation?", "={{ $json.build_required }}", 2000, -180)
 link("Resolve latest sources once","Sources require preparation?")
 link("Sources require preparation?","Dispatch preparation Action")

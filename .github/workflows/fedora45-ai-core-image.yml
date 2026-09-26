@@ -198,6 +198,7 @@ jobs:
             build/vendor/openclaw-ephemeral/openclaw_ephemeral/scheduling.py
             build/vendor/openclaw-ephemeral/image/runtime/etc/systemd/system/openclaw-config.service
             build/vendor/openclaw-ephemeral/image/runtime/etc/systemd/system/openclaw-ephemeral-schedule.service
+            build/vendor/openclaw-ephemeral/image/runtime/usr/local/libexec/openclaw-openai-refresh.py
             build/vendor/hermes-ephemeral/image/runtime/usr/local/bin/hermes-ephemeral
             build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/__init__.py
             build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/cli.py

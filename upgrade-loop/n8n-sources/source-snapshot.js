@@ -1,7 +1,15 @@
 'use strict';
 
 const { createHash } = require('node:crypto');
+const fs = require('node:fs');
 const { IMAGE_REPO, SHA } = require('./source-inventory');
+
+const VERSION_LOCKS = Object.fromEntries(fs.readFileSync(__dirname + '/versions.lock', 'utf8').split(/\r?\n/)
+  .map(line => line.trim()).filter(line => line && !line.startsWith('#')).map(line => {
+    const match = line.match(/^([A-Z][A-Z0-9_]*)=(\d+\.\d+\.\d+)$/);
+    if (!match) throw new Error('Invalid version lock entry: ' + line);
+    return [match[1].toLowerCase(), match[2]];
+  }));
 
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
@@ -37,6 +45,9 @@ function validateSnapshot(snapshot, expectedId) {
   for (const name of ['openclaw', 'hermes']) {
     const v = snapshot.versions?.[name];
     if (!v || !/^\d+\.\d+\.\d+$/.test(v.current) || !/^\d+\.\d+\.\d+$/.test(v.latest)) throw new Error('Missing snapshot versions');
+    if (VERSION_LOCKS[name] && (v.current !== VERSION_LOCKS[name] || v.latest !== VERSION_LOCKS[name])) {
+      throw new Error('Version lock mismatch: ' + name);
+    }
   }
   const selected = snapshot.openclaw_source;
   if (selected) {
@@ -70,4 +81,4 @@ function cloneManifest(snapshot, buildCommit) {
     repositories: [{ repository: IMAGE_REPO, ref: buildCommit, commit: buildCommit }, ...snapshot.repositories] };
 }
 
-module.exports = { canonical, makeSnapshot, snapshotId, validateSnapshot, cloneManifest };
+module.exports = { canonical, makeSnapshot, snapshotId, validateSnapshot, cloneManifest, VERSION_LOCKS };
