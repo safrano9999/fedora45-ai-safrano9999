@@ -98,8 +98,8 @@
       "repository": "@openai/codex",
       "release_line": "stable",
       "pins": {
-        "CODEX_VERSION": "0.157.0",
-        "CODEX_SHA256": "f15a756cb568359327c47afcb5a6c5a5ce03215a96bbb284eef9e0ebd991f214"
+        "CODEX_VERSION": "0.157.1",
+        "CODEX_SHA256": "813e2a944f4474b7e1826d9ce8bf696ad8d80c68f43f7a7067beec51fa8f5b73"
       }
     },
     {
@@ -107,8 +107,8 @@
       "repository": "@anthropic-ai/claude-code",
       "release_line": "stable",
       "pins": {
-        "CLAUDE_CODE_VERSION": "2.1.282",
-        "CLAUDE_CODE_SHA256": "12f908bd7bf3bc3a7c1edfcb50d017d526ebe76b4f59847c3334e70ac5d84893"
+        "CLAUDE_CODE_VERSION": "2.1.283",
+        "CLAUDE_CODE_SHA256": "e9d3ee7e3c007c2e7c435ee8a64213a65f0341ae80abc51c1e9fde2614c351cb"
       }
     },
     {
@@ -137,7 +137,7 @@
       "release_line": "45",
       "containerfile": "fedora45-ai-core-pre/Containerfile",
       "stage": "ai-core-pre",
-      "digest": "sha256:0fd75fd933c10a04b6440550e48ea0d416d49ff99ca1c492e133e317e47e3eab"
+      "digest": "sha256:b9de06334e40174095c9556a3221a86fa976fb3ad4de626773db63c2ca4b002a"
     }
   ]
 }

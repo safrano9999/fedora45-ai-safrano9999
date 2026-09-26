@@ -6,7 +6,7 @@
     "override_commit": "",
     "commit": "eb377ac59e6c9fd6c7705028034812becf00271b"
   },
-  "source_commit": "e87a7fcba72f7cee3d2f147d7bdc0069e26778b6",
+  "source_commit": "6d9bff6db02ae40d4f1043158aa46fc8930264e3",
   "target": "fedora45-ai-safrano9999",
   "chain": [
     "fedora45-ai-core-pre",
@@ -15,10 +15,10 @@
     "fedora45-ai-kachelmann",
     "fedora45-ai-safrano9999"
   ],
-  "resolved_at": "2026-09-25T05:45:43.334Z",
+  "resolved_at": "2026-09-26T19:10:45.413Z",
   "versions": {
     "openclaw": {
-      "current": "2026.9.6",
+      "current": "2026.9.4",
       "latest": "2026.9.6"
     },
     "hermes": {
@@ -268,7 +268,7 @@
     {
       "repository": "safrano9999/openclaw-ephemeral",
       "ref": "HEAD",
-      "commit": "10d2c4c0aaa2fd47ca6067eaa7f98bca853a877f",
+      "commit": "d89aa4d246481e95c577e0165b6ee4b7ed7d59cc",
       "sources": [
         {
           "layer": "fedora45-ai-core",
@@ -280,7 +280,7 @@
     {
       "repository": "safrano9999/hermes-ephemeral",
       "ref": "HEAD",
-      "commit": "bc2560b908594293f0cbca9807303e12c15a2357",
+      "commit": "faeaaf235ddda462331311818e7f5be671c8b953",
       "sources": [
         {
           "layer": "fedora45-ai-core",
@@ -292,7 +292,7 @@
     {
       "repository": "safrano9999/opencode-ephemeral",
       "ref": "HEAD",
-      "commit": "7c094db60dbf88d57f9ba415713ae4f94de9c3d4",
+      "commit": "2eb9bcbc4dda1145836c5be0ccea26fd1de5dc4e",
       "sources": [
         {
           "layer": "fedora45-ai-core",
@@ -318,101 +318,164 @@
   "build_plan": {
     "schema_version": 1,
     "required": true,
-    "start_image": "fedora45-ai-core",
-    "start_key": "fedora45_core",
+    "start_image": "fedora45-ai-core-pre",
+    "start_key": "fedora45_core_pre",
     "cascade": true,
     "target": "fedora45-ai-safrano9999",
     "baseline": "published-latest-images",
     "baseline_images": [
       {
         "image": "fedora45-ai-core-pre",
-        "digest": "sha256:46567a184af1c4c14f53782f6a59cde55ade210cc37ec2452964c460f3e63158",
-        "revision": "959b665928c5643008891deb5c51592dd5ef3f56"
+        "digest": "sha256:0fd113a3f51e93c5e653af203d7e137b7d47cbc4195481d3adf71c51395ee973",
+        "revision": "c3dd8e656463595805470ac62efd50734598158f"
       },
       {
         "image": "fedora45-ai-core",
-        "digest": "sha256:b6f867a0e410b3af9793e7a7872b64fd30dce0068505231e1cecdaf5ffcb2eb3",
-        "revision": "959b665928c5643008891deb5c51592dd5ef3f56"
+        "digest": "sha256:831209ab9b3f0c91021cfba0cdf45e54b581e94edaf81d17f984929265f3e907",
+        "revision": "c3dd8e656463595805470ac62efd50734598158f"
       },
       {
         "image": "fedora45-ai-base",
-        "digest": "sha256:51d53bc06a0fe929b1af7afda8d074852f407c77c8a69aa3fd17d4e316ef73e4",
-        "revision": "959b665928c5643008891deb5c51592dd5ef3f56"
+        "digest": "sha256:0374a5b31f75cb07d630d303b9e339b39be75ee514137a89d6d87ad9a85dcc72",
+        "revision": "c3dd8e656463595805470ac62efd50734598158f"
       },
       {
         "image": "fedora45-ai-kachelmann",
-        "digest": "sha256:9008c7a8fa365e516ad5fb92d3029bb6d4a32695018e11f693b05dfdcb8269ee",
-        "revision": "959b665928c5643008891deb5c51592dd5ef3f56"
+        "digest": "sha256:fb66b31a14740272cba232e7982cce14e0de76849967a7351dc2ae20471f70dc",
+        "revision": "c3dd8e656463595805470ac62efd50734598158f"
       },
       {
         "image": "fedora45-ai-safrano9999",
-        "digest": "sha256:c8a32bb25c756b198bba2a1109a8dbadf2a386fa7d4594412a1fcd88de79b4f2",
-        "revision": "959b665928c5643008891deb5c51592dd5ef3f56"
+        "digest": "sha256:fdf027aa40aac2d330efffb979f26f9fe109bdc5c509b7d2a11266b5bbf74b17",
+        "revision": "c3dd8e656463595805470ac62efd50734598158f"
       }
     ],
     "changes": [
       {
+        "image": "fedora45-ai-core-pre",
+        "repository": "safrano9999/fedora45-ai-safrano9999",
+        "reason": "image-definition-changed",
+        "before": "c3dd8e656463595805470ac62efd50734598158f",
+        "after": "6d9bff6db02ae40d4f1043158aa46fc8930264e3"
+      },
+      {
         "image": "fedora45-ai-core",
-        "repository": "safrano9999/openclaw-deterministic-latest",
+        "repository": "safrano9999/openclaw-ephemeral",
         "reason": "source-changed",
-        "before": "8fbd670f496fe3f17ba1ff5e443bcde3790a7c58",
-        "after": "0845a4931b27e33ffcff72112ad88d87fef4de69"
+        "before": "10d2c4c0aaa2fd47ca6067eaa7f98bca853a877f",
+        "after": "d89aa4d246481e95c577e0165b6ee4b7ed7d59cc"
+      },
+      {
+        "image": "fedora45-ai-core",
+        "repository": "safrano9999/hermes-ephemeral",
+        "reason": "source-changed",
+        "before": "bc2560b908594293f0cbca9807303e12c15a2357",
+        "after": "faeaaf235ddda462331311818e7f5be671c8b953"
+      },
+      {
+        "image": "fedora45-ai-core",
+        "repository": "safrano9999/opencode-ephemeral",
+        "reason": "source-changed",
+        "before": "7c094db60dbf88d57f9ba415713ae4f94de9c3d4",
+        "after": "2eb9bcbc4dda1145836c5be0ccea26fd1de5dc4e"
       },
       {
         "image": "fedora45-ai-core",
         "repository": "safrano9999/fedora45-ai-safrano9999",
         "reason": "image-definition-changed",
-        "before": "959b665928c5643008891deb5c51592dd5ef3f56",
-        "after": "e87a7fcba72f7cee3d2f147d7bdc0069e26778b6"
+        "before": "c3dd8e656463595805470ac62efd50734598158f",
+        "after": "6d9bff6db02ae40d4f1043158aa46fc8930264e3"
       },
       {
         "image": "fedora45-ai-base",
-        "repository": "safrano9999/openclaw-deterministic-latest",
+        "repository": "safrano9999/openclaw-ephemeral",
         "reason": "source-changed",
-        "before": "8fbd670f496fe3f17ba1ff5e443bcde3790a7c58",
-        "after": "0845a4931b27e33ffcff72112ad88d87fef4de69"
+        "before": "10d2c4c0aaa2fd47ca6067eaa7f98bca853a877f",
+        "after": "d89aa4d246481e95c577e0165b6ee4b7ed7d59cc"
+      },
+      {
+        "image": "fedora45-ai-base",
+        "repository": "safrano9999/hermes-ephemeral",
+        "reason": "source-changed",
+        "before": "bc2560b908594293f0cbca9807303e12c15a2357",
+        "after": "faeaaf235ddda462331311818e7f5be671c8b953"
+      },
+      {
+        "image": "fedora45-ai-base",
+        "repository": "safrano9999/opencode-ephemeral",
+        "reason": "source-changed",
+        "before": "7c094db60dbf88d57f9ba415713ae4f94de9c3d4",
+        "after": "2eb9bcbc4dda1145836c5be0ccea26fd1de5dc4e"
       },
       {
         "image": "fedora45-ai-base",
         "repository": "safrano9999/fedora45-ai-safrano9999",
         "reason": "image-definition-changed",
-        "before": "959b665928c5643008891deb5c51592dd5ef3f56",
-        "after": "e87a7fcba72f7cee3d2f147d7bdc0069e26778b6"
+        "before": "c3dd8e656463595805470ac62efd50734598158f",
+        "after": "6d9bff6db02ae40d4f1043158aa46fc8930264e3"
       },
       {
         "image": "fedora45-ai-kachelmann",
-        "repository": "safrano9999/openclaw-deterministic-latest",
+        "repository": "safrano9999/openclaw-ephemeral",
         "reason": "source-changed",
-        "before": "8fbd670f496fe3f17ba1ff5e443bcde3790a7c58",
-        "after": "0845a4931b27e33ffcff72112ad88d87fef4de69"
+        "before": "10d2c4c0aaa2fd47ca6067eaa7f98bca853a877f",
+        "after": "d89aa4d246481e95c577e0165b6ee4b7ed7d59cc"
+      },
+      {
+        "image": "fedora45-ai-kachelmann",
+        "repository": "safrano9999/hermes-ephemeral",
+        "reason": "source-changed",
+        "before": "bc2560b908594293f0cbca9807303e12c15a2357",
+        "after": "faeaaf235ddda462331311818e7f5be671c8b953"
+      },
+      {
+        "image": "fedora45-ai-kachelmann",
+        "repository": "safrano9999/opencode-ephemeral",
+        "reason": "source-changed",
+        "before": "7c094db60dbf88d57f9ba415713ae4f94de9c3d4",
+        "after": "2eb9bcbc4dda1145836c5be0ccea26fd1de5dc4e"
       },
       {
         "image": "fedora45-ai-kachelmann",
         "repository": "safrano9999/fedora45-ai-safrano9999",
         "reason": "image-definition-changed",
-        "before": "959b665928c5643008891deb5c51592dd5ef3f56",
-        "after": "e87a7fcba72f7cee3d2f147d7bdc0069e26778b6"
+        "before": "c3dd8e656463595805470ac62efd50734598158f",
+        "after": "6d9bff6db02ae40d4f1043158aa46fc8930264e3"
       },
       {
         "image": "fedora45-ai-safrano9999",
-        "repository": "safrano9999/openclaw-deterministic-latest",
+        "repository": "safrano9999/openclaw-ephemeral",
         "reason": "source-changed",
-        "before": "8fbd670f496fe3f17ba1ff5e443bcde3790a7c58",
-        "after": "0845a4931b27e33ffcff72112ad88d87fef4de69"
+        "before": "10d2c4c0aaa2fd47ca6067eaa7f98bca853a877f",
+        "after": "d89aa4d246481e95c577e0165b6ee4b7ed7d59cc"
+      },
+      {
+        "image": "fedora45-ai-safrano9999",
+        "repository": "safrano9999/hermes-ephemeral",
+        "reason": "source-changed",
+        "before": "bc2560b908594293f0cbca9807303e12c15a2357",
+        "after": "faeaaf235ddda462331311818e7f5be671c8b953"
+      },
+      {
+        "image": "fedora45-ai-safrano9999",
+        "repository": "safrano9999/opencode-ephemeral",
+        "reason": "source-changed",
+        "before": "7c094db60dbf88d57f9ba415713ae4f94de9c3d4",
+        "after": "2eb9bcbc4dda1145836c5be0ccea26fd1de5dc4e"
       },
       {
         "image": "fedora45-ai-safrano9999",
         "repository": "safrano9999/fedora45-ai-safrano9999",
         "reason": "image-definition-changed",
-        "before": "959b665928c5643008891deb5c51592dd5ef3f56",
-        "after": "e87a7fcba72f7cee3d2f147d7bdc0069e26778b6"
+        "before": "c3dd8e656463595805470ac62efd50734598158f",
+        "after": "6d9bff6db02ae40d4f1043158aa46fc8930264e3"
       }
     ]
   },
   "upgrade_build_deps": true,
   "build_dependencies_baseline": {
-    "revision": "959b665928c5643008891deb5c51592dd5ef3f56",
-    "digest": "sha256:46567a184af1c4c14f53782f6a59cde55ade210cc37ec2452964c460f3e63158",
-    "policy_sha256": "5a0aea1852034a2216e2dead8e5ff518c72a59952e27841a2fd77dd029bfaa76"
+    "revision": "c3dd8e656463595805470ac62efd50734598158f",
+    "digest": "sha256:0fd113a3f51e93c5e653af203d7e137b7d47cbc4195481d3adf71c51395ee973",
+    "policy_sha256": "299f3295e62c4d4e039bdee0daeb313e35343b138ec896a0a47b0ed98f9e9297"
   }
 }
