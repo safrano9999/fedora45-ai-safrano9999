@@ -6,9 +6,9 @@ After=opencode.service
 [Service]
 Type=simple
 Environment=HOME=/root
-PassEnvironment=OPENCODE_API_KEY OPENCODE_TELEGRAMTOKEN OPENCODE_TELEGRAM_CHAT_ID OPENCODE_API_HOST OPENCODE_API_PORT OPENCODE_MODEL_PROVIDER OPENCODE_MODEL_ID OPENCODE_DEFAULT_PROVIDER OPENCODE_DEFAULT_LLM
+PassEnvironment=OPENCODE_API_KEY OPENCODE_TELEGRAMTOKEN OPENCODE_TELEGRAM_CHAT_ID OPENCODE_API_HOST OPENCODE_API_PORT OPENCODE_MODEL_PROVIDER OPENCODE_MODEL_ID
 ExecCondition=/bin/bash -c '[ -n "$${OPENCODE_API_KEY:-}" ] && [ -n "$${OPENCODE_TELEGRAMTOKEN:-}" ] && [ -n "$${OPENCODE_TELEGRAM_CHAT_ID:-}" ]'
-ExecStart=/bin/bash -lc 'provider="$${OPENCODE_MODEL_PROVIDER:-$${OPENCODE_DEFAULT_PROVIDER:-openai}}"; [ "$${provider,,}" = chatgpt ] && provider=openai; model="$${OPENCODE_MODEL_ID:-$${OPENCODE_DEFAULT_LLM:-gpt-6-luna}}"; export TELEGRAM_BOT_TOKEN="$${OPENCODE_TELEGRAMTOKEN}"; export TELEGRAM_ALLOWED_USER_ID="$${OPENCODE_TELEGRAM_CHAT_ID}"; export OPENCODE_API_URL="http://127.0.0.1:$${OPENCODE_API_PORT:-4096}"; export OPENCODE_MODEL_PROVIDER="$${provider}"; export OPENCODE_MODEL_ID="$${model}"; exec /usr/local/bin/opencode-telegram start'
+ExecStart=/bin/bash -lc 'export TELEGRAM_BOT_TOKEN="$${OPENCODE_TELEGRAMTOKEN}"; export TELEGRAM_ALLOWED_USER_ID="$${OPENCODE_TELEGRAM_CHAT_ID}"; export OPENCODE_API_URL="http://127.0.0.1:$${OPENCODE_API_PORT:-4096}"; exec /usr/local/bin/opencode-telegram start'
 Restart=on-failure
 RestartSec=5
 TimeoutStartSec=120
