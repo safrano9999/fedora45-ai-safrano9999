@@ -1,0 +1,122 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "api" || $CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "pipeline"'
+    - when: never
+
+stages:
+  - cascade
+
+variables:
+  GIT_DEPTH: "0"
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  TARGET_TAG: "2026.9.17.4"
+  CASCADE_TARGET: "fedora45-ai-safrano9999"
+  BUILD_COMMIT: "$CI_COMMIT_SHA"
+
+fedora45-safrano-cascade:
+  stage: cascade
+  image: docker:27.5.1
+  services:
+    - name: docker:27.5.1-dind
+      alias: docker
+      command: ["--tls=false", "--mtu=1460"]
+  timeout: 6h
+  before_script:
+    - apk add --no-cache bash ca-certificates curl git jq python3 tar gzip
+    - gh_version="2.80.0"
+    - curl --fail --silent --show-error --location "https://github.com/cli/cli/releases/download/v${gh_version}/gh_${gh_version}_linux_amd64.tar.gz" | tar -xz -C /tmp
+    - install -m 0755 "/tmp/gh_${gh_version}_linux_amd64/bin/gh" /usr/local/bin/gh
+    - test -n "${GITHUB_TOKEN:-}" || { echo "GITHUB_TOKEN is required for private source preparation" >&2; exit 1; }
+    - printf '%s' "$GITHUB_TOKEN" | gh auth login --hostname github.com --with-token
+    - gh auth setup-git
+    - until docker info >/dev/null 2>&1; do sleep 2; done
+    - printf '%s' "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
+  script:
+    - |
+      set -euo pipefail
+
+      test "$CASCADE_TARGET" = fedora45-ai-safrano9999
+      [[ "$BUILD_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+      # The pipeline definition is allowed to be newer than the source snapshot
+      # being rebuilt. The five image stages must consume the exact prepared
+      # commit supplied by the caller.
+      git fetch --all --tags --quiet
+      git checkout --detach "$BUILD_COMMIT"
+
+      registry_image="$CI_REGISTRY_IMAGE"
+      pre_image="$registry_image/fedora45-ai-core-pre:$TARGET_TAG"
+      core_image="$registry_image/fedora45-ai-core:$TARGET_TAG"
+      base_image="$registry_image/fedora45-ai-base:$TARGET_TAG"
+      kachelmann_image="$registry_image/fedora45-ai-kachelmann:$TARGET_TAG"
+      safrano_image="$registry_image/fedora45-ai-safrano9999:$TARGET_TAG"
+
+      add_args_from_resolved() {
+        local file="$1" key value
+        while IFS='=' read -r key value; do
+          [[ "$key" =~ ^[A-Z][A-Z0-9_]*$ ]] || continue
+          args+=(--build-arg "$key=$value")
+        done < "$file"
+      }
+
+      build_core_pre() {
+        local layer=fedora45-ai-core-pre
+        ( cd "$layer"
+          ./build/prepare-build-context.sh --no-cache
+          set -a
+          . ./build.conf
+          set +a
+          args=()
+          for key in HERMES_VERSION ELECTRUM_VERSION LND_VERSION GETH_VERSION GETH_COMMIT WEBHOOK_VERSION VDITOR_VERSION OPENCLAW_VERSION OPENCLAW_BRAVE_PLUGIN_VERSION OPENCODE_VERSION OPENCODE_TELEGRAM_VERSION; do
+            args+=(--build-arg "$key=${!key}")
+          done
+          add_args_from_resolved .resolved-build.env
+          docker build --pull --no-cache --platform linux/amd64 --target ai-core-pre \
+            --label "org.opencontainers.image.revision=$BUILD_COMMIT" \
+            -t "$pre_image" "${args[@]}" -f Containerfile .
+          docker push "$pre_image"
+        )
+      }
+
+      build_core() {
+        local layer=fedora45-ai-core
+        ( cd "$layer"
+          ./build/prepare-build-context.sh --no-cache
+          set -a
+          . ./build.conf
+          set +a
+          args=(--build-arg "AI_CORE_PRE_IMAGE=$pre_image")
+          for key in OPENCLAW_VERSION OPENCLAW_UPSTREAM_SHA OPENCLAW_DETERMINISTIC_TAG NOTE_REPOSITORY NOTE_RELEASE_TAG NOTE_RELEASE_ASSET NOTE_RELEASE_SHA256; do
+            args+=(--build-arg "$key=${!key}")
+          done
+          docker build --pull --no-cache --platform linux/amd64 --target ai-core \
+            --label "org.opencontainers.image.revision=$BUILD_COMMIT" \
+            -t "$core_image" "${args[@]}" -f Containerfile .
+          docker push "$core_image"
+        )
+      }
+
+      build_layer() {
+        local layer="$1" target="$2" parent_key="$3" parent_image="$4" output="$5"
+        ( cd "$layer"
+          ./build/prepare-build-context.sh --no-cache
+          args=(--build-arg "$parent_key=$parent_image")
+          add_args_from_resolved .resolved-build.env
+          docker build --pull --no-cache --platform linux/amd64 --target "$target" \
+            --label "org.opencontainers.image.revision=$BUILD_COMMIT" \
+            -t "$output" "${args[@]}" -f Containerfile .
+          docker push "$output"
+        )
+      }
+
+      build_core_pre
+      build_core
+      build_layer fedora45-ai-base ai-base AI_CORE_IMAGE "$core_image" "$base_image"
+      build_layer fedora45-ai-kachelmann ai-kachelmann AI_BASE_IMAGE "$base_image" "$kachelmann_image"
+      build_layer fedora45-ai-safrano9999 ai-safrano9999 AI_KACHELMANN_IMAGE "$kachelmann_image" "$safrano_image"
+
+      docker pull "$safrano_image"
+      test "$(docker image inspect --format '{{index .Config.Labels \"org.opencontainers.image.revision\"}}' "$safrano_image")" = "$BUILD_COMMIT"
+      printf 'GitLab cascade completed: %s\n' "$safrano_image"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "api" || $CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "pipeline"'
