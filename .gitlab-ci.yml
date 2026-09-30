@@ -89,6 +89,7 @@ fedora45-safrano-cascade:
           for key in OPENCLAW_VERSION OPENCLAW_UPSTREAM_SHA OPENCLAW_DETERMINISTIC_TAG NOTE_REPOSITORY NOTE_RELEASE_TAG NOTE_RELEASE_ASSET NOTE_RELEASE_SHA256; do
             args+=(--build-arg "$key=${!key}")
           done
+          add_args_from_resolved .resolved-build.env
           docker build --pull --no-cache --platform linux/amd64 --target ai-core \
             --label "org.opencontainers.image.revision=$BUILD_COMMIT" \
             -t "$core_image" "${args[@]}" -f Containerfile .
