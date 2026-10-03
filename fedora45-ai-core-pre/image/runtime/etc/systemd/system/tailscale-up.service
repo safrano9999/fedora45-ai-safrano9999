@@ -2,6 +2,7 @@
 Description=Tailscale state restore or authkey join
 Requires=persistainer.service tailscaled.service
 After=persistainer.service tailscaled.service
+PartOf=tailscaled.service
 
 [Service]
 Type=oneshot
@@ -9,8 +10,11 @@ PassEnvironment=TS_AUTHKEY TS_HOSTNAME TS_EXTRA_ARGS TS_STATE_DIR
 Environment=TS_STATE_DIR=/var/lib/tailscale
 ExecCondition=/bin/bash -c '[ -n "$$TS_AUTHKEY" ] || [ -s "$${TS_STATE_DIR:-/var/lib/tailscale}/tailscaled.state" ]'
 ExecStart=/usr/local/bin/tailscale-state-up.sh
+# READY=1 from tailscaled does not yet mean a network map is available.
+# Run only after `tailscale up` succeeds, including after daemon restarts.
+ExecStartPost=/usr/bin/tailscale serve reset
 RemainAfterExit=yes
-TimeoutStartSec=40
+TimeoutStartSec=75
 
 [Install]
 WantedBy=multi-user.target
