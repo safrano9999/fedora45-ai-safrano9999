@@ -18,6 +18,11 @@ on:
         description: "fedora45-ai-kachelmann parent tag. Empty uses build.conf"
         required: false
         default: ""
+      replace_existing:
+        description: "Explicitly allow replacing the requested fixed tag during an authorized rebuild"
+        required: false
+        type: boolean
+        default: false
       push_latest:
         description: "Also advance latest; false builds a candidate for external verification"
         required: false
@@ -110,6 +115,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REQUESTED_TAG: ${{ inputs.image_tag }}
+          REPLACE_EXISTING: ${{ inputs.replace_existing }}
           KACHELMANN_TAG: ${{ inputs.kachelmann_tag }}
           PUSH_STABLE: ${{ inputs.push_stable }}
           PUSH_LATEST: ${{ inputs.push_latest }}
@@ -121,7 +127,7 @@ jobs:
           kachelmann_ref="$AI_KACHELMANN_IMAGE"
           [ -z "$KACHELMANN_TAG" ] || kachelmann_ref="${AI_KACHELMANN_IMAGE%:*}:$KACHELMANN_TAG"
           image="${FEDORA45_AI_SAFRANO9999_IMAGE%:*}"
-          version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG")"
+          version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG" "$REPLACE_EXISTING")"
 
           {
             echo "version=$version"
@@ -269,6 +275,7 @@ jobs:
         if: inputs.cascade && inputs.cascade_target != 'fedora45-ai-safrano9999'
         env:
           BUILD_COMMIT: ${{ steps.source.outputs.commit }}
+          REPLACE_EXISTING: ${{ inputs.replace_existing }}
           GH_TOKEN: ${{ github.token }}
           IMAGE_TAG: ${{ steps.refs.outputs.version }}
           PUSH_STABLE: ${{ inputs.push_stable }}
@@ -284,5 +291,6 @@ jobs:
             -f "safrano9999_tag=$IMAGE_TAG" \
             -f "push_stable=$PUSH_STABLE" \
             -f "push_latest=$PUSH_LATEST" \
+            -f "replace_existing=$REPLACE_EXISTING" \
             -f "monitor_id=${{ inputs.monitor_id }}" \
             -f "monitor_final=${{ inputs.cascade_target == 'fedora45-ai-safrano9999-full' || (inputs.cascade_target == '' && 'fedora45-ai-safrano9999-full' == 'fedora45-ai-safrano9999-full') }}"

@@ -2,8 +2,15 @@
 # Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
 set -euo pipefail
 
-image="${1:?Usage: resolve-fedora-image-tag.sh IMAGE [YYYY.M.N[.P]]}"
+image="${1:?Usage: resolve-fedora-image-tag.sh IMAGE [YYYY.M.N[.P]] [REPLACE_EXISTING=false]}"
 version="${2:-}"
+replace_existing="${3:-false}"
+[[ "$replace_existing" == false || "$replace_existing" == true ]] || {
+    echo "REPLACE_EXISTING must be true or false" >&2; exit 1;
+}
+[[ "$replace_existing" != true || -n "$version" ]] || {
+    echo "Replacing an existing tag requires an explicit fixed version" >&2; exit 1;
+}
 [[ "$image" =~ ^ghcr.io/([^/]+)/(fedora45-ai-(core-pre|core|base|kachelmann|safrano9999(-full)?))$ ]] || {
     echo "Unsupported Fedora image: $image" >&2; exit 1;
 }
@@ -40,6 +47,9 @@ fi
     echo "Image version must use YYYY.M.N or YYYY.M.N.P: $version" >&2; exit 1;
 }
 if grep -Fxq "$version" "$temporary/current"; then
-    echo "Refusing to overwrite existing image version: $image:$version" >&2; exit 1
+    if [[ "$replace_existing" != true ]]; then
+        echo "Refusing to overwrite existing image version: $image:$version" >&2; exit 1
+    fi
+    echo "Explicitly authorized replacement of image version: $image:$version" >&2
 fi
 printf '%s\n' "$version"

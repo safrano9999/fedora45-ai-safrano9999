@@ -14,6 +14,11 @@ on:
         description: "Fixed YYYY.M.N or YYYY.M.N.P version. Empty selects the next monthly number."
         required: false
         default: ""
+      replace_existing:
+        description: "Explicitly allow replacing the requested fixed tag during an authorized rebuild"
+        required: false
+        type: boolean
+        default: false
       push_latest:
         description: "Also advance latest; false builds a candidate for external verification"
         required: false
@@ -132,6 +137,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REQUESTED_TAG: ${{ inputs.image_tag }}
+          REPLACE_EXISTING: ${{ inputs.replace_existing }}
           PUSH_STABLE: ${{ inputs.push_stable }}
           PUSH_LATEST: ${{ inputs.push_latest }}
         run: |
@@ -144,7 +150,7 @@ jobs:
             exit 1
           }
           image="${FEDORA45_AI_CORE_PRE_IMAGE%:*}"
-          version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG")"
+          version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG" "$REPLACE_EXISTING")"
           {
             echo "version=$version"
             echo "image=$image"
@@ -338,6 +344,7 @@ jobs:
         env:
           CASCADE_TARGET: ${{ inputs.cascade_target }}
           BUILD_COMMIT: ${{ steps.source.outputs.commit }}
+          REPLACE_EXISTING: ${{ inputs.replace_existing }}
           GH_TOKEN: ${{ github.token }}
           IMAGE_TAG: ${{ steps.tags.outputs.version }}
           PUSH_STABLE: ${{ inputs.push_stable }}
@@ -353,6 +360,7 @@ jobs:
             -f "core_pre_tag=$IMAGE_TAG" \
             -f "push_stable=$PUSH_STABLE" \
             -f "push_latest=$PUSH_LATEST" \
+            -f "replace_existing=$REPLACE_EXISTING" \
             -f "cascade=true" \
             -f "cascade_target=$CASCADE_TARGET" \
             -f "monitor_id=${{ inputs.monitor_id }}" \
