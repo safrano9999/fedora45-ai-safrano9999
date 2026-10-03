@@ -1,8 +1,5 @@
 BIP39_PORT=11030
 
-#default-preset: 1
-CITADEL_CLOUDFLARE=1
-
 #CONTAINER-NAME
 #default-preset: fedora45-ai-core
 #required:
@@ -79,6 +76,13 @@ VDITOR_NOTES_PATH=/data
 #required:
 VDITOR_NOTES_PORT=11100
 
+# Public catalog used by the twice-daily LiteLLM-Free client refresh.
+#default-preset: https://www.f24-sales.com/litellm-config.yaml
+IMPORT_SOURCE_URL=https://www.f24-sales.com/litellm-config.yaml
+
+#default-preset: litellm-free
+LITELLM_FREE_PROVIDER=litellm-free
+
 #publish-host: FASTAPI_HOST
 #required: published host bind address
 FASTAPI_HOST=127.0.0.1
@@ -88,6 +92,12 @@ FASTAPI_HOST=127.0.0.1
 # Leave blank when no reverse proxy should be trusted.
 #default-preset: 127.0.0.1,::1
 OPENCLAW_TRUSTED_PROXIES=127.0.0.1,::1
+
+# Optional X-Real-IP fallback from a trusted proxy that overwrites this header.
+# Leave disabled unless the forwarded client chain cannot identify the client.
+#choices: 0 1
+#default-preset: 0
+OPENCLAW_ALLOW_REAL_IP_FALLBACK=0
 
 #default-preset: http://127.0.0.1:18789,http://localhost:18789,http://127.0.0.1:20789
 OPENCLAW_CONTROL_UI_ALLOWED_ORIGINS=http://127.0.0.1:18789,http://localhost:18789,http://127.0.0.1:20789
@@ -134,25 +144,46 @@ HERMES_WEBHOOK_PORT=8644
 #required: CODEANALYST internal web UI port
 CODEANALYST_PORT=11010
 
+# WebUI transport is independent of the optional Caddyfile export.
 #choices: tcp unix
-#required: CITADEL web UI transport
 CITADEL_WEBUI_TRANSPORT=tcp
+
+# Unix transport only. Empty uses $XDG_RUNTIME_DIR/citadel/citadel.sock,
+# or /run/citadel/citadel.sock when XDG_RUNTIME_DIR is not set.
+#when: CITADEL_WEBUI_TRANSPORT=unix
+CITADEL_WEBUI_SOCKET=
 
 #required: CITADEL internal web UI port
 CITADEL_WEBUI_PORT=11000
 
-# Bare-metal only; containers keep using TCP.
-#required: CITADEL Unix socket path
-CITADEL_WEBUI_SOCKET=%t/citadel/citadel.sock
-
-#named-volume: /named_volumes/CITADEL /named_volumes/CITADEL/ports.filter.json /opt/safrano9999/CITADEL/ports.filter.json file
-#named-volume: /named_volumes/CITADEL /named_volumes/CITADEL/extensions/providers_state.json /opt/safrano9999/CITADEL/extensions/providers_state.json file
-#named-volume: /named_volumes/CITADEL /named_volumes/CITADEL/extensions/enabled/cloudflare/routes.json /opt/safrano9999/CITADEL/extensions/enabled/cloudflare/routes.json file
-#named-volume: /named_volumes/CITADEL /named_volumes/CITADEL/tailscale.json /opt/safrano9999/CITADEL/tailscale.json link
-#named-volume: /named_volumes/CITADEL /named_volumes/CITADEL/CADDYFILES /opt/safrano9999/CITADEL/CADDYFILES dir
+# Hide only this WebUI's duplicate HTTP tile while the same instance is
+# reachable through a working scanned HTTPS frontend. Backends remain routable.
 #choices: 0 1
 #default-preset: 1
-CITADEL_PERSISTENT=1
+CITADEL_HIDE_HTTP_WEBUI_DUPE=1
+
+# Optional Caddyfile export. Empty/0 disables generation, not the WebUI.
+# The caddy extension's config.json specifies Caddy's hosts and backend address.
+CADDYFILE_START=
+
+# Empty uses 1. Existing backend ports retain their assigned frontend ports.
+CADDYFILE_STEPS=1
+
+# 0 rebuilds Tailscale Serve routes from scratch on every scan.
+# 1 retains routes and persists policy/state across container recreation.
+# Listener discovery is always fresh; logos have their own setting below.
+#named-volume: /named_volumes/CITADEL /named_volumes/CITADEL/ports.filter.json /opt/safrano9999/CITADEL/ports.filter.json file
+#named-volume: /named_volumes/CITADEL /named_volumes/CITADEL/extensions/enabled/cloudflare/routes.json /opt/safrano9999/CITADEL/extensions/enabled/cloudflare/routes.json file
+#named-volume: /named_volumes/CITADEL /named_volumes/CITADEL/tailscale.json /opt/safrano9999/CITADEL/tailscale.json link
+#choices: 0 1
+#default-preset: 0
+CITADEL_PERSISTENT=0
+
+# Keep logos independently of policy persistence. Discovery is always fresh.
+#named-volume: /named_volumes/CITADEL_LOGOS /named_volumes/CITADEL_LOGOS/icons /opt/safrano9999/CITADEL/icons dir
+#choices: 0 1
+#default-preset: 1
+CITADEL_LOGO_PERSISTENT=1
 
 # Optional: leave empty to disable subnet routes.
 CITADEL_SUBNET_IP=
@@ -166,65 +197,16 @@ CITADEL_HTTPS_ONLY=0
 #default-preset: Mozilla/5.0 (compatible; CITADEL/1.0)
 CITADEL_USER_AGENT=Mozilla/5.0 (compatible; CITADEL/1.0)
 
-# Destructive: clear every Tailscale Serve/Funnel route before each scan and rebuild from scratch.
-#choices: 0 1
-#default-preset: 0
-CITADEL_CLEAR_TAILSCALE=0
-
-#default-preset: 0
-#choices: 0 1
-CITADEL_CONTAINER=0
-
-#when: CITADEL_CONTAINER=1
-#default-preset: 0
-#choices: 0 1
-CITADEL_CONTAINER_MAP=0
-
-#when: CITADEL_CONTAINER_MAP=1
-#default-preset: 65100
-CITADEL_DEDUPE_PORT=65100
-
-#default-preset: insert later
-CITADEL_TAILSCALE=true
-
-#choices: 0 1
-#default-preset: 1
-CITADEL_TAILSCALE_DEFAULT=1
-
-# Optional first public port for CITADEL-managed Tailscale HTTP Serve routes.
-# Leave empty or set 0 to disable the Tailscale HTTP dropdown.
-#default-preset: 0
-CITADEL_TAILSCALE_HTTP_START=
-
-# Optional first public port for CITADEL-managed Tailscale HTTPS Serve routes.
-# Leave empty or set 0 to disable the Tailscale HTTPS dropdown.
-#default-preset: 0
-CITADEL_TAILSCALE_HTTPS_START=0
-
-# Optional spacing between initially allocated Tailscale ports.
-# When omitted, CITADEL uses 10.
-#default-preset: 10
-CITADEL_TAILSCALE_RANGE=10
-
-# Optional central-Caddy export. Start 0 disables the generated Caddyfile.
-#default-preset: 0
-CITADEL_CADDY_HTTPS_START=0
-
-# Stable increment between generated central-Caddy HTTPS ports.
-#default-preset: 1
-CITADEL_CADDY_RANGE=1
-
-# Container DNS backend and central Tailscale hostname; required when enabled.
-CITADEL_CADDY_BACKEND=
-
-CITADEL_CADDY_HOST=
-
-#required: Enable Tailscale discovery (0/1)
-#default-preset: 0
-CITADEL_TS_DISCOVERY=0
-
 #default-preset: insert later
 CITADEL_CLOUDFLARE_DOMAIN=
+
+# Port 443 hostname switches: www443 has priority in dashboard/provider links.
+# Set either or both to 1; with both 0, CITADEL uses the numeric 443 hostname.
+#default-preset: 0
+CITADEL_CLOUDFLARE_WWW443=0
+
+#default-preset: 0
+CITADEL_CLOUDFLARE_DOMAIN443=0
 
 #default-preset: insert later
 CITADEL_CLOUDFLARE_ACCOUNT_ID=
