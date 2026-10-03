@@ -198,6 +198,7 @@ jobs:
             build/vendor/openclaw-ephemeral/openclaw_ephemeral/plugins.py
             build/vendor/openclaw-ephemeral/openclaw_ephemeral/providers.py
             build/vendor/openclaw-ephemeral/openclaw_ephemeral/scheduling.py
+            build/vendor/openclaw-ephemeral/openclaw_ephemeral/voice.py
             build/vendor/openclaw-ephemeral/image/runtime/etc/systemd/system/openclaw-config.service
             build/vendor/openclaw-ephemeral/image/runtime/etc/systemd/system/openclaw-ephemeral-schedule.service
             build/vendor/openclaw-ephemeral/image/runtime/usr/local/libexec/openclaw-openai-refresh.py
