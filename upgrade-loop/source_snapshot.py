@@ -107,6 +107,10 @@ def build_inputs(snapshot, core):
     try:
         inputs = {name.upper() + "_EPHEMERAL_COMMIT": entries[f"safrano9999/{name}-ephemeral"]["commit"]
                   for name in ("openclaw", "hermes")}
+        for key, repository in (("OPENCODE_EPHEMERAL_COMMIT", "safrano9999/opencode-ephemeral"),
+                                ("LITELLM_FREE_COMMIT", "f24sales/litellm-free")):
+            if key in core:
+                inputs[key] = entries[repository]["commit"]
         version = snapshot["versions"]["openclaw"]["latest"]
         patch = entries["safrano9999/openclaw-deterministic-latest"]["release"]
         note = entries[core["NOTE_REPOSITORY"].lower()]["release"]

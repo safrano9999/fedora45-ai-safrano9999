@@ -93,6 +93,28 @@ test('latest preview refreshes every Git source and both release inputs instead 
   assert.equal(resolved.openclaw_source.commit, '1'.repeat(40));
 });
 
+test('n8n source adapter resolves the explicitly selected f24sales LiteLLM source', async () => {
+  const files = await fixture(), seen = [];
+  const get = async ({url}) => {
+    const endpoint = url.replace('https://api.github.com', '');
+    seen.push(endpoint);
+    if (endpoint === '/repos/' + IMAGE_REPO + '/commits/main') return files(endpoint);
+    if (endpoint === '/repos/' + IMAGE_REPO + '/commits/' + imageCommit) return {sha: imageCommit};
+    if (endpoint.includes('/commits/')) return {sha: 'b'.repeat(40)};
+    if (endpoint.endsWith('/NEXTCLOUD/releases/tags/latest')) return {assets: ['nextcloud-fedora64-plugin-latest.zip','nextcloud-fedora64-plugin-latest.zip.sha256'].map((name,i) => ({name,id:i+1,digest:'sha256:'+'a'.repeat(64)}))};
+    if (endpoint.endsWith('/openclaw-deterministic-latest/releases/latest')) return {tag_name:'2026.9.4-deterministic.99',assets:[{name:'openclaw-2026.9.4-deterministic.tar.gz',digest:'sha256:'+'a'.repeat(64)}]};
+    if (endpoint.endsWith('/NOTE/releases/latest')) return {tag_name:'2026.9.99',assets:[{name:'note-latest.zip',digest:'sha256:'+'a'.repeat(64)}]};
+    return files(endpoint);
+  };
+  const result = await Fedora45Sources.prototype.execute.call({
+    getInputData: () => [{json:{}}], getNodeParameter: () => 'inventory',
+    getCredentials: async () => ({name:'Authorization',value:'Bearer fixture'}),
+    helpers: {httpRequestWithAuthentication: async function(kind, args) { return get(args); }},
+  });
+  assert.ok(seen.includes('/repos/f24sales/litellm-free/commits/HEAD'));
+  assert.equal(result[0][0].json.repositories.find(r => r.repository === 'f24sales/litellm-free').commit, 'b'.repeat(40));
+});
+
 test('latest release selection checks compatible assets and fails on invalid release evidence', async () => {
   const asset = 'openclaw-2026.9.4-deterministic.tar.gz';
   const release = { tag_name: '2026.9.4-deterministic.2', assets: [{ name: asset, digest: 'sha256:' + 'a'.repeat(64) }] };
