@@ -15,8 +15,8 @@
       "repository": "anza-xyz/agave",
       "release_line": "stable",
       "pins": {
-        "SOLANA_VERSION": "v4.2.2",
-        "SOLANA_SHA256": "5fc8684f7430038105fde953d4308ed56addf627f658daa61709f345448247ee"
+        "SOLANA_VERSION": "v4.3.0",
+        "SOLANA_SHA256": "c97289a8abb1d0efb497d8b5cb285baabd9b7f8ea6647f5d145c5dc8ff3611e8"
       }
     },
     {
@@ -34,8 +34,8 @@
       "repository": "lightningnetwork/lnd",
       "release_line": "stable",
       "pins": {
-        "LND_VERSION": "v0.21.3-beta",
-        "LND_SHA256": "aad62005d25bb0d974c5c1b135decc269d8f3e69ee9cde8bb6b32998100bc3fd"
+        "LND_VERSION": "v0.21.4-beta",
+        "LND_SHA256": "beffe4949a5e46410d90c0e6d020a1b685468440b0004fc4d59740a6291178fb"
       }
     },
     {
@@ -43,9 +43,9 @@
       "repository": "ethereum/go-ethereum",
       "release_line": "stable",
       "pins": {
-        "GETH_VERSION": "1.17.6",
-        "GETH_COMMIT": "3d84c6b2",
-        "GETH_SHA256": "7e393b54ed1347221b3088efc290c0c6aaa8173f6a1d5b9d9b090bc8e04a43ad"
+        "GETH_VERSION": "1.17.7",
+        "GETH_COMMIT": "3d858f85",
+        "GETH_SHA256": "d9973f609e44e97f4d55f8cb644586cabc2542096e1fcb1c7334a0cba00a89e8"
       }
     },
     {
@@ -62,8 +62,8 @@
       "repository": "astral-sh/uv",
       "release_line": "stable",
       "pins": {
-        "UV_VERSION": "0.12.19",
-        "UV_INSTALLER_SHA256": "61b349611f1b6e1ba33645f30c36da5287df2609dd7af8605d96a031435eb35b"
+        "UV_VERSION": "0.12.22",
+        "UV_INSTALLER_SHA256": "58488ae8dbd0773134c92c85e901430e33f99d975bd7f929d26aa9ab0c2f9390"
       }
     },
     {
@@ -98,8 +98,8 @@
       "repository": "@openai/codex",
       "release_line": "stable",
       "pins": {
-        "CODEX_VERSION": "0.157.1",
-        "CODEX_SHA256": "813e2a944f4474b7e1826d9ce8bf696ad8d80c68f43f7a7067beec51fa8f5b73"
+        "CODEX_VERSION": "0.160.0",
+        "CODEX_SHA256": "373517768e912eeb5054024ae9215e2c90a1420957b66fe134ef745a00948d4a"
       }
     },
     {
@@ -107,8 +107,8 @@
       "repository": "@anthropic-ai/claude-code",
       "release_line": "stable",
       "pins": {
-        "CLAUDE_CODE_VERSION": "2.1.283",
-        "CLAUDE_CODE_SHA256": "e9d3ee7e3c007c2e7c435ee8a64213a65f0341ae80abc51c1e9fde2614c351cb"
+        "CLAUDE_CODE_VERSION": "2.1.288",
+        "CLAUDE_CODE_SHA256": "13ad0dd7d50855682082e8d0c4d4d45822170cbb5bebde5f4d024611a0c94842"
       }
     },
     {
@@ -125,8 +125,8 @@
       "repository": "npm",
       "release_line": "stable",
       "pins": {
-        "NPM_VERSION": "12.1.0",
-        "NPM_SHA256": "f08e674e31eb99931df2297aa55c274bf9bebd90679dad57fdbe9683907a3325"
+        "NPM_VERSION": "12.2.0",
+        "NPM_SHA256": "6666b48816b39b86c3febac7b51a4ee4de6c5ca589c382ad8004b6b113f86677"
       }
     }
   ],
