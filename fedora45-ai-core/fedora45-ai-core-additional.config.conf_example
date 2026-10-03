@@ -73,3 +73,8 @@ VDITOR_NOTES_PATH=/data
 #default-preset: 11100
 #required:
 VDITOR_NOTES_PORT=11100
+# Public catalog used by the twice-daily LiteLLM-Free client refresh.
+#default-preset: https://www.f24-sales.com/litellm-config.yaml
+IMPORT_SOURCE_URL=https://www.f24-sales.com/litellm-config.yaml
+#default-preset: litellm-free
+LITELLM_FREE_PROVIDER=litellm-free

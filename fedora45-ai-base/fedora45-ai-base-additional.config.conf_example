@@ -1,2 +1,1 @@
-#default-preset: 1
-CITADEL_CLOUDFLARE=1
+# Provider activation is owned by Citadel's enabled extensions and credentials.
