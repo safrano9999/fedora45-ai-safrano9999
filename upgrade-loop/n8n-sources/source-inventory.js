@@ -61,8 +61,8 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
   }
   const repos = new Map(), chain = [], runtimeAssets = new Map();
   function add(repo, sourceRef, layer, file, kind, selection = { type: 'default-branch' }) {
-    if (!repo.startsWith(OWNER + '/')) return;
-    if (!/^safrano9999\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(repo)) throw new Error('Invalid Safrano repository');
+    if (!repo.startsWith(OWNER + '/') && repo !== 'f24sales/litellm-free') return;
+    if (!/^safrano9999\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(repo) && repo !== 'f24sales/litellm-free') throw new Error('Invalid Safrano repository');
     validRef(sourceRef);
     const key = repo.toLowerCase(), old = repos.get(key);
     if (old && old.ref !== sourceRef) throw new Error('Conflicting source refs: ' + repo);
@@ -99,7 +99,7 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
       for (const match of text.matchAll(/^([A-Z][A-Z0-9_]*_REPOSITORY)=/gm)) {
         const key = match[1], prefix = key.slice(0, -'_REPOSITORY'.length);
         const repo = literal(text, key);
-        if (!repo.startsWith(OWNER + '/')) continue;
+        if (!repo.startsWith(OWNER + '/') && repo !== 'f24sales/litellm-free') continue;
         let sourceRef = null, selection = { type: 'default-branch' };
         for (const suffix of ['_COMMIT', '_REF', '_RELEASE_TAG', '_TAG']) {
           sourceRef = literal(conf, prefix + suffix, false);

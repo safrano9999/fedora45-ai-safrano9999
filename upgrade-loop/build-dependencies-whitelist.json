@@ -133,11 +133,15 @@
   "base_images": [
     {
       "id": "fedora45-base",
-      "image": "quay.io/fedora/fedora",
-      "release_line": "45",
+      "image": "fedora45-approved-beta",
+      "release_line": "45_Beta-1.3",
       "containerfile": "fedora45-ai-core-pre/Containerfile",
       "stage": "ai-core-pre",
-      "digest": "sha256:b9de06334e40174095c9556a3221a86fa976fb3ad4de626773db63c2ca4b002a"
+      "digest": "sha256:5f6c3c965a3af6b0faa21efc46ab46b9acfb1e1a8f69cec63fd6e44bdcf270cb",
+      "source_archive": {
+        "url": "https://dl.fedoraproject.org/pub/fedora/linux/releases/test/45_Beta/Container/x86_64/images/Fedora-Container-Base-Generic-45_Beta-1.3.x86_64.oci.tar.xz",
+        "sha256": "c9bacf3e467932a035233b123836ddee11bdcede60a9f8bb8d9d6560fae1e5b8"
+      }
     }
   ]
 }

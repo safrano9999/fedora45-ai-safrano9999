@@ -24,6 +24,15 @@ def snapshot(repository="safrano9999/FIXTURE", commit="a" * 40):
 
 
 class SnapshotTests(unittest.TestCase):
+    def test_litellm_free_source_is_explicitly_allowed_in_both_validators(self):
+        selected = snapshot("f24sales/litellm-free")
+        self.assertIn("f24sales/litellm-free", validate_snapshot(selected))
+        script = "const m=require(process.argv[1]);const s=JSON.parse(process.argv[2]);m.validateSnapshot(s,m.snapshotId(s));"
+        subprocess.run(['node', '-e', script, str(ROOT/'n8n-sources/source-snapshot.js'), json.dumps(selected)], check=True)
+        for repository in ("f24sales/other", "someone/litellm-free"):
+            with self.assertRaises(ValueError):
+                validate_snapshot(snapshot(repository))
+
     def test_n8n_and_python_use_the_same_identity_and_clone_keeps_selected_commit(self):
         selected = snapshot()
         script = "const m=require(process.argv[1]);const s=JSON.parse(process.argv[2]);m.validateSnapshot(s,m.snapshotId(s));console.log(JSON.stringify({id:m.snapshotId(s),clone:m.cloneManifest(s,'b'.repeat(40))}));"

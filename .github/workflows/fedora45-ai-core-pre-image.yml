@@ -185,7 +185,7 @@ jobs:
           . ./build.conf
           . ./.resolved-build.env
           set +a
-          for name in HERMES_VERSION OPENCLAW_VERSION OPENCLAW_BRAVE_PLUGIN_VERSION FEDORA_REPOMD_KEY \
+          for name in HERMES_VERSION OPENCLAW_VERSION FEDORA_REPOMD_KEY \
             SOLANA_VERSION SOLANA_SHA256 ELECTRUM_VERSION ELECTRUM_SHA256 \
             ELECTRUM_KEYS_COMMIT LND_VERSION LND_SHA256 GETH_VERSION \
             GETH_COMMIT GETH_SHA256 BIP39_VERSION BIP39_SHA256 \
@@ -213,11 +213,16 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v3
         with:
           cache-binary: false
           keep-state: false
           cleanup: true
+
+      - name: Verify approved Fedora Beta OCI context
+        id: fedora
+        run: python3 .github/scripts/prepare-fedora-beta.py
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -235,6 +240,7 @@ jobs:
           file: ./fedora45-ai-core-pre/Containerfile
           target: ai-core-pre
           platforms: linux/amd64
+          build-contexts: ${{ steps.fedora.outputs.context }}
           pull: true
           no-cache: true
           push: true

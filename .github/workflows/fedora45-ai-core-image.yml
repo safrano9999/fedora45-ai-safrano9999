@@ -122,7 +122,9 @@ jobs:
           echo 'SAFRANO_SOURCE_MANIFEST=' >> "$GITHUB_ENV"
 
       - name: Test independent OpenClaw component installers
-        run: python3 -m unittest discover -s fedora45-ai-core/tests -v
+        run: |
+          python3 -m unittest discover -s fedora45-ai-core/tests -v
+          node --test fedora45-ai-core/tests/*.test.mjs
 
       - name: Free runner disk space
         run: .github/scripts/free-runner-disk-space.sh
@@ -341,7 +343,9 @@ jobs:
               /etc/systemd/system/fedora45-ai.service; do
               test ! -e "$legacy"
             done
-            test ! -e /opt/safrano9999
+            test -x /opt/safrano9999/litellm-free/ops/refresh-models.sh
+            test -s /etc/cron.d/litellm-free
+            test "$(systemctl is-enabled crond.service)" = enabled
           '
           docker run --rm \
             --entrypoint bash \

@@ -45,8 +45,11 @@ async function fixture(edits = {}) {
 
 test('derive only selected parent chain, provenance, release refs and both generator pins', async () => {
   const get = await fixture(), regular = await inventory(get), full = await inventory(get, { target: 'fedora45-ai-safrano9999-full' });
-  assert.equal(regular.repositories.length, 22);
-  assert.equal(full.repositories.length, 23);
+  assert.equal(regular.repositories.length, 24);
+  assert.equal(full.repositories.length, 25);
+  assert.ok(regular.repositories.some(r => r.repository === 'f24sales/litellm-free'));
+  assert.ok(regular.repositories.some(r => r.repository === 'safrano9999/opencode-ephemeral'));
+  assert.equal(regular.external_base, 'fedora45-approved-beta');
   assert.equal(regular.chain.length, 5);
   assert.equal(full.chain.length, 6);
   assert.ok(!regular.repositories.some(r => r.repository.endsWith('/VikAI')));
@@ -69,7 +72,7 @@ test('latest preview refreshes every Git source and both release inputs instead 
     return files(url);
   };
   const preview = await inventory(get, { latest: true, target: 'fedora45-ai-safrano9999-full' });
-  assert.equal(preview.repositories.length, 23);
+  assert.equal(preview.repositories.length, 25);
   assert.equal(preview.source_policy, 'latest-resolved-for-preview');
   for (const entry of preview.repositories) {
     if (entry.repository === IMAGE_REPO) assert.equal(entry.ref, imageCommit);
