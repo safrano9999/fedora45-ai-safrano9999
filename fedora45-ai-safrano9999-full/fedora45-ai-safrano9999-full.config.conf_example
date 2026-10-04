@@ -15,6 +15,11 @@ TS_HOSTNAME=${CONTAINER_NAME}
 #default-preset: --ssh
 TS_EXTRA_ARGS=--ssh
 
+# Bootstrap only; missing/0 leaves Serve routes untouched.
+#choices: 0 1
+#default-preset: 0
+TAILSCALE_SERVE_RESET=0
+
 #mount-bind: FEDORA45_AI_INIT_HOOKS_PATH:/usr/local/share/fedora45-ai/init.d
 #default-preset: %config-conf/fedora45-ai-init.d
 FEDORA45_AI_INIT_HOOKS_PATH=%config-conf/fedora45-ai-init.d
@@ -326,4 +331,3 @@ VIKAI_OPENCLAW_LLM=luna
 #default-preset: luna
 #required: VikAI Hermes model
 VIKAI_HERMES_LLM=luna
-

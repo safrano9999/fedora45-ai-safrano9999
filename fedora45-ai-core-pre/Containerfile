@@ -139,6 +139,7 @@ COPY image/runtime/ /
 COPY build/vendor/persistainer/image/runtime/ /
 
 RUN chmod 0755 /usr/local/bin/tailscale-state-up.sh \
+      /usr/local/bin/tailscale-serve-reset.sh \
       /usr/local/bin/persistainer \
       /usr/local/libexec/import-ca-certificates \
       /usr/local/libexec/fedora45-wait-ready \

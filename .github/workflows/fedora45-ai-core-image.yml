@@ -23,6 +23,11 @@ on:
         description: "fedora45-ai-core-pre parent tag. Empty uses build.conf"
         required: false
         default: ""
+      replace_existing:
+        description: "Explicitly allow replacing the requested fixed tag during an authorized rebuild"
+        required: false
+        type: boolean
+        default: false
       push_latest:
         description: "Also advance latest; false builds a candidate for external verification"
         required: false
@@ -122,7 +127,9 @@ jobs:
           echo 'SAFRANO_SOURCE_MANIFEST=' >> "$GITHUB_ENV"
 
       - name: Test independent OpenClaw component installers
-        run: python3 -m unittest discover -s fedora45-ai-core/tests -v
+        run: |
+          python3 -m unittest discover -s fedora45-ai-core/tests -v
+          node --test fedora45-ai-core/tests/*.test.mjs
 
       - name: Free runner disk space
         run: .github/scripts/free-runner-disk-space.sh
@@ -133,6 +140,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REQUESTED_TAG: ${{ inputs.image_tag }}
+          REPLACE_EXISTING: ${{ inputs.replace_existing }}
           CORE_PRE_TAG: ${{ inputs.core_pre_tag }}
           PUSH_STABLE: ${{ inputs.push_stable }}
           PUSH_LATEST: ${{ inputs.push_latest }}
@@ -144,7 +152,7 @@ jobs:
           pre_ref="$AI_CORE_PRE_IMAGE"
           [ -z "$CORE_PRE_TAG" ] || pre_ref="${AI_CORE_PRE_IMAGE%:*}:$CORE_PRE_TAG"
           image="${FEDORA45_AI_CORE_IMAGE%:*}"
-          version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG")"
+          version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG" "$REPLACE_EXISTING")"
           {
             echo "version=$version"
             echo "pre_ref=$pre_ref"
@@ -196,6 +204,7 @@ jobs:
             build/vendor/openclaw-ephemeral/openclaw_ephemeral/plugins.py
             build/vendor/openclaw-ephemeral/openclaw_ephemeral/providers.py
             build/vendor/openclaw-ephemeral/openclaw_ephemeral/scheduling.py
+            build/vendor/openclaw-ephemeral/openclaw_ephemeral/voice.py
             build/vendor/openclaw-ephemeral/image/runtime/etc/systemd/system/openclaw-config.service
             build/vendor/openclaw-ephemeral/image/runtime/etc/systemd/system/openclaw-ephemeral-schedule.service
             build/vendor/openclaw-ephemeral/image/runtime/usr/local/libexec/openclaw-openai-refresh.py
@@ -341,7 +350,9 @@ jobs:
               /etc/systemd/system/fedora45-ai.service; do
               test ! -e "$legacy"
             done
-            test ! -e /opt/safrano9999
+            test -x /opt/safrano9999/litellm-free/ops/refresh-models.sh
+            test -s /etc/cron.d/litellm-free
+            test "$(systemctl is-enabled crond.service)" = enabled
           '
           docker run --rm \
             --entrypoint bash \
@@ -427,6 +438,7 @@ jobs:
         env:
           CASCADE_TARGET: ${{ inputs.cascade_target }}
           BUILD_COMMIT: ${{ steps.source.outputs.commit }}
+          REPLACE_EXISTING: ${{ inputs.replace_existing }}
           GH_TOKEN: ${{ github.token }}
           IMAGE_TAG: ${{ steps.refs.outputs.version }}
           PUSH_STABLE: ${{ inputs.push_stable }}
@@ -442,6 +454,7 @@ jobs:
             -f "core_tag=$IMAGE_TAG" \
             -f "push_stable=$PUSH_STABLE" \
             -f "push_latest=$PUSH_LATEST" \
+            -f "replace_existing=$REPLACE_EXISTING" \
             -f "cascade=true" \
             -f "cascade_target=$CASCADE_TARGET" \
             -f "monitor_id=${{ inputs.monitor_id }}" \

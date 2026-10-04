@@ -18,6 +18,11 @@ on:
         description: "fedora45-ai-safrano9999 parent tag. Empty uses build.conf"
         required: false
         default: ""
+      replace_existing:
+        description: "Explicitly allow replacing the requested fixed tag during an authorized rebuild"
+        required: false
+        type: boolean
+        default: false
       push_latest:
         description: "Also advance latest; false builds a candidate for external verification"
         required: false
@@ -104,6 +109,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REQUESTED_TAG: ${{ inputs.image_tag }}
+          REPLACE_EXISTING: ${{ inputs.replace_existing }}
           SAFRANO9999_TAG: ${{ inputs.safrano9999_tag }}
           PUSH_STABLE: ${{ inputs.push_stable }}
           PUSH_LATEST: ${{ inputs.push_latest }}
@@ -115,7 +121,7 @@ jobs:
           safrano9999_ref="$AI_SAFRANO9999_IMAGE"
           [ -z "$SAFRANO9999_TAG" ] || safrano9999_ref="${AI_SAFRANO9999_IMAGE%:*}:$SAFRANO9999_TAG"
           image="${FEDORA45_AI_SAFRANO9999_FULL_IMAGE%:*}"
-          version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG")"
+          version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG" "$REPLACE_EXISTING")"
 
           {
             echo "version=$version"
@@ -231,4 +237,3 @@ jobs:
           docker run --rm -i --network none --read-only --entrypoint python3 \
             "${{ steps.refs.outputs.image }}:${{ steps.refs.outputs.version }}" \
             - < .github/scripts/check-fedora45-image.py
-

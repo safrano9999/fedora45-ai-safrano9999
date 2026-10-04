@@ -2,6 +2,7 @@
 Description=Tailscale state restore or authkey join
 Requires=persistainer.service tailscaled.service
 After=persistainer.service tailscaled.service
+PartOf=tailscaled.service
 
 [Service]
 Type=oneshot

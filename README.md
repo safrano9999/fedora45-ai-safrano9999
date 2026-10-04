@@ -30,6 +30,14 @@ of truth; layer setup defaults to the matching GHCR image with the `latest` tag.
 
 ## Sources
 
+Core-pre runs the shared `tailscale-serve-reset.sh` helper after Tailscale up.
+Only `TAILSCALE_SERVE_RESET=1` resets all Serve/Funnel routes; unset/empty/0
+leaves them untouched. Set it in the instance configuration when rebuilding
+routes after bootstrap is desired. It is independent of Citadel's scan flag
+and does not run when only the Citadel WebUI restarts. Script and systemd
+drop-in have their SOT in `SCRIPTS/safrano9999-lib/tailscale/`; dev-init restores
+their hardlinks. The Citadel runtime orders its WebUI after Tailscale up.
+
 - Workflow SOT: [SCRIPTS/githubactions/fedora45-ai-safrano9999](https://github.com/safrano9999/SCRIPTS/tree/main/githubactions/fedora45-ai-safrano9999).
 - [openclaw-deterministic-latest](https://github.com/safrano9999/openclaw-deterministic-latest).
 - [openclaw-ephemeral](https://github.com/safrano9999/openclaw-ephemeral).

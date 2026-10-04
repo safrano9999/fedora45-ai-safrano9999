@@ -35,7 +35,7 @@ jobs:
       DOCKER_BUILD_RECORD_UPLOAD: 'false'
       IMAGE: ghcr.io/safrano9999/fedora45-ai-safrano9999
       FIXED_TAG: 2026.9.17.3
-      OPENCODE_EPHEMERAL_COMMIT: 7cfc06d0ef71b070c4c2bb7940d71a07e6a46e7d
+      OPENCODE_EPHEMERAL_COMMIT: 8cccb98527b18ece741c990f71cf0f3f4c6730b9
 
     steps:
       - name: Checkout
