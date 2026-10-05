@@ -183,12 +183,13 @@ CADDYFILE_START=
 # An explicit positive number retains assigned frontend ports across scans.
 CADDYFILE_STEPS=1
 
-# 1 resets and rebuilds same-port HTTPS Serve routes on every scan.
-# 0 never manages Serve; advertise only verified direct HTTPS endpoints.
+# full: reset/rebuild same-port HTTPS Serve routes for all discovered services.
+# http_to_https: keep verified direct HTTPS; use Serve only for HTTP backends.
+# off: never manage Serve; advertise only verified direct HTTPS endpoints.
 # Volumes/mounts are configured separately at the container level.
-#choices: 0 1
-#default-preset: 1
-CITADEL_TAILSCALE_SERVE=1
+#choices: off http_to_https full
+#default-preset: full
+CITADEL_TAILSCALE_SERVE=full
 
 # Kernel TUN by default; userspace mode needs no /dev/net/tun or NET_ADMIN.
 #choices: 0 1
