@@ -175,7 +175,7 @@
     {
       "repository": "safrano9999/CITADEL",
       "ref": "HEAD",
-      "commit": "6716609c12b9225ef36ced5b415b61a4a72bea3d",
+      "commit": "d30340f0f9e46abfe4fd7e1794b3c75d5ea36f86",
       "sources": [
         {
           "layer": "fedora45-ai-base",
