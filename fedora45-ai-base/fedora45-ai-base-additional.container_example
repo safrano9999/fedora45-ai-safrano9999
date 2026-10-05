@@ -1,1 +1,3 @@
-# No Base-specific container values.
+# Citadel owns the shared runtime layout from Base upwards.
+#default-preset: ${CONTAINER_NAME}-tailscale:/opt/safrano9999/CITADEL/CITADEL_TAILSCALE:Z
+TAILSCALE_VOLUMES=${CONTAINER_NAME}-tailscale:/opt/safrano9999/CITADEL/CITADEL_TAILSCALE:Z
