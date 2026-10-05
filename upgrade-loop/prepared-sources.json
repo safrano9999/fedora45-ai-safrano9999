@@ -175,7 +175,7 @@
     {
       "repository": "safrano9999/CITADEL",
       "ref": "HEAD",
-      "commit": "a4be74d48a68edfc79eea215fdc20573d53e38a8",
+      "commit": "9dbfc9cd936f94efcf61cee90eab00a67acbb648",
       "sources": [
         {
           "layer": "fedora45-ai-base",
@@ -317,7 +317,7 @@
     {
       "repository": "f24sales/litellm-free",
       "ref": "HEAD",
-      "commit": "50e0a343c96bbe92259b1eb3b188dbd537f55bdb",
+      "commit": "97a6c21f269060ce9288af96760125b3d91a2687",
       "sources": [
         {
           "layer": "fedora45-ai-core",
