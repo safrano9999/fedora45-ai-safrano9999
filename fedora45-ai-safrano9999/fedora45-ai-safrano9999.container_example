@@ -24,8 +24,8 @@ FEDORA45_AI_CAPABILITIES=NET_ADMIN,NET_RAW
 
 FEDORA45_AI_DEVICES=/dev/net/tun
 
-#default-preset: ${CONTAINER_NAME}-tailscale:/var/lib/tailscale:Z
-TAILSCALE_VOLUMES=${CONTAINER_NAME}-tailscale:/var/lib/tailscale:Z
+#default-preset: ${CONTAINER_NAME}-tailscale:/opt/safrano9999/CITADEL/CITADEL_TAILSCALE:Z
+TAILSCALE_VOLUMES=${CONTAINER_NAME}-tailscale:/opt/safrano9999/CITADEL/CITADEL_TAILSCALE:Z
 
 #repeat-group: ADDITIONAL_LINE suffix02 ADDITIONAL_LINE
 #repeat-freeform: ADDITIONAL_LINE
@@ -69,4 +69,3 @@ NATURALGROUNDING_PUBLISH_PORT=11070
 
 #required: SPANKER published web UI port
 SPANKER_PUBLISH_PORT=11090
-

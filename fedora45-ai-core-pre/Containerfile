@@ -142,7 +142,9 @@ RUN chmod 0755 /usr/local/bin/tailscale-state-up.sh \
       /usr/local/bin/tailscale-serve-reset.sh \
       /usr/local/bin/persistainer \
       /usr/local/libexec/import-ca-certificates \
+      /usr/local/libexec/cockpit-prepare \
       /usr/local/libexec/fedora45-wait-ready \
+ && systemd-sysusers /usr/lib/sysusers.d/cockpit-container.conf \
  && systemctl enable \
       ca-certificates-import.service \
       persistainer.service \

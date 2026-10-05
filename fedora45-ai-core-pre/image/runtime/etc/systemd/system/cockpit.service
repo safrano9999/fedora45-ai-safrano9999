@@ -2,9 +2,15 @@
 Description=Cockpit Web Service
 Wants=network-online.target
 After=network-online.target
+Requires=dbus.socket cockpit-wsinstance-http.socket cockpit-wsinstance-https-factory.socket
+After=dbus.socket cockpit-wsinstance-http.socket cockpit-wsinstance-https-factory.socket
 
 [Service]
-ExecStart=/usr/libexec/cockpit-ws --port=9090 --no-tls
+RuntimeDirectory=cockpit/tls
+RuntimeDirectoryMode=0700
+EnvironmentFile=-/run/cockpit/tls/mode.env
+ExecStartPre=/usr/local/libexec/cockpit-prepare
+ExecStart=/usr/libexec/cockpit-tls --port=9090 --idle-timeout=0 $COCKPIT_TLS_ARGS
 ExecStartPost=/usr/local/libexec/fedora45-wait-ready --timeout 60 tcp 127.0.0.1 9090
 Restart=always
 

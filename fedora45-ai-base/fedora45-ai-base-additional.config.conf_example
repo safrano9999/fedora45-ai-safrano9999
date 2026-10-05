@@ -1,2 +1,7 @@
 #default-preset: 1
 CITADEL_CLOUDFLARE=1
+
+# Keep unchanged Cloudflare-side bindings; 0 forces a full remote rebuild.
+#choices: 0 1
+#default-preset: 1
+CITADEL_CLOUDFLARE_SERVERSIDE_PERSISTENCE=1

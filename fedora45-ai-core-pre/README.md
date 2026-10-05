@@ -20,6 +20,15 @@ Its one-shot persistence preparation runs before the optional Tailscale state
 is restored. The generic readiness helper is installed here for higher-layer
 service units.
 
+Cockpit's existing service prepares TLS on each start. The optional
+`COCKPIT_CERTIFICATES_PATH` setup field mounts a directory read-only at
+`/etc/cockpit/ws-certs.d`. Put one official server `.crt`/`.cert` and its
+matching, unencrypted `.key` there (same basename). Cockpit's native helper
+validates and loads it; no certificate is generated and invalid pairs fail
+the start. With no certificate, port 9090 retains its HTTP behavior. This
+is separate from `CA_CERTIFICATES_PATH`, which imports trusted CAs.
+After replacing mounted certificates, restart Cockpit to reload them.
+
 OpenCode is pinned to `1.18.32` and `@grinev/opencode-telegram-bot` to `0.25.3`.
 The image contains no credentials: `OPENCODE_API_KEY`,
 `OPENCODE_TELEGRAMTOKEN`, and `OPENCODE_TELEGRAM_CHAT_ID` are runtime values.

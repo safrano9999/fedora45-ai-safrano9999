@@ -1,6 +1,11 @@
 #default-preset: 1
 CITADEL_CLOUDFLARE=1
 
+# Keep unchanged Cloudflare-side bindings; 0 forces a full remote rebuild.
+#choices: 0 1
+#default-preset: 1
+CITADEL_CLOUDFLARE_SERVERSIDE_PERSISTENCE=1
+
 #CONTAINER-NAME
 #default-preset: fedora45-ai-core
 #required:
@@ -24,6 +29,11 @@ FEDORA45_AI_INIT_HOOKS_PATH=%config-conf/fedora45-ai-init.d
 
 #mount-bind-ro-shared: CA_CERTIFICATES_PATH:/usr/local/share/ca-certificates-extra
 CA_CERTIFICATES_PATH=
+
+# Optional Cockpit server certificate + matching .key; empty directory keeps HTTP.
+#mount-bind-ro-shared: COCKPIT_CERTIFICATES_PATH:/etc/cockpit/ws-certs.d
+#default-preset: %config-conf/cockpit_cert
+COCKPIT_CERTIFICATES_PATH=%config-conf/cockpit_cert
 
 #choices: 0 1
 #default-preset: 0

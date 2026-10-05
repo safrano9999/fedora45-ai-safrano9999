@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Optional read-only cert mount. Never generate a replacement certificate.
+set -euo pipefail
+cert_dir=/etc/cockpit/ws-certs.d
+runtime="${RUNTIME_DIRECTORY:?systemd RuntimeDirectory is required}"
+shopt -s nullglob
+certificates=("$cert_dir"/*.cert "$cert_dir"/*.crt)
+if ((${#certificates[@]})); then
+    mapfile -d '' -t certificates < <(printf '%s\0' "${certificates[@]}" | LC_ALL=C sort -z)
+    certificate="${certificates[-1]}"
+    key="${certificate%.*}.key"
+    openssl x509 -in "$certificate" -noout -checkend 0
+    public_cert="$(openssl x509 -in "$certificate" -pubkey -noout | openssl pkey -pubin -outform DER | sha256sum)"
+    public_key="$(openssl pkey -in "$key" -passin pass: -pubout -outform DER | sha256sum)"
+    [[ "$public_cert" == "$public_key" ]] || { echo 'Cockpit certificate/key mismatch' >&2; exit 1; }
+    /usr/libexec/cockpit-certificate-ensure --check
+    /usr/libexec/cockpit-certificate-ensure --for-cockpit-tls
+    printf 'COCKPIT_TLS_ARGS=\n' > "$runtime/mode.env"
+else
+    printf 'COCKPIT_TLS_ARGS=--no-tls\n' > "$runtime/mode.env"
+fi
