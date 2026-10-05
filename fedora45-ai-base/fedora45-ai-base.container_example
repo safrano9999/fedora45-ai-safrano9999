@@ -1,3 +1,7 @@
+# Citadel owns the shared runtime layout from Base upwards.
+#default-preset: ${CONTAINER_NAME}-tailscale:/opt/safrano9999/CITADEL/CITADEL_TAILSCALE:Z
+TAILSCALE_VOLUMES=${CONTAINER_NAME}-tailscale:/opt/safrano9999/CITADEL/CITADEL_TAILSCALE:Z
+
 # Container port block: 2=20000-29999, TUN=no host publishing, blank=manual.
 #default-preset: TUN
 CONTAINER_NR=TUN
@@ -21,9 +25,6 @@ COCKPIT_PUBLISH_PORT=9090
 FEDORA45_AI_CAPABILITIES=NET_ADMIN,NET_RAW
 
 FEDORA45_AI_DEVICES=/dev/net/tun
-
-#default-preset: ${CONTAINER_NAME}-tailscale:/var/lib/tailscale:Z
-TAILSCALE_VOLUMES=${CONTAINER_NAME}-tailscale:/var/lib/tailscale:Z
 
 #repeat-group: ADDITIONAL_LINE suffix02 ADDITIONAL_LINE
 #repeat-freeform: ADDITIONAL_LINE
