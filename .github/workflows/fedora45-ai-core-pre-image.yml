@@ -290,6 +290,8 @@ jobs:
               /etc/systemd/system/tailscale-up.service
             grep -Fqx "Requires=persistainer.service" \
               /etc/systemd/system/tailscaled.service
+            grep -Fq -- "--statedir=" \
+              /etc/systemd/system/tailscaled.service
             grep -Fqx "Requires=persistainer.service tailscaled.service" \
               /etc/systemd/system/tailscale-up.service
             for unit in bip39.service cockpit.service cloudflared.service; do
