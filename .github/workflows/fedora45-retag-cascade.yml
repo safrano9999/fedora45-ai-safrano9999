@@ -9,9 +9,13 @@ on:
         required: true
         type: string
       build_commit:
-        description: Exact source revision shared by all six completed images
+        description: Exact source revision of completed Core-pre, Core and Base
         required: true
         type: string
+      upper_build_commit:
+        description: Source revision for Kachelmann and above; blank uses build_commit
+        type: string
+        default: ""
 concurrency:
   group: fedora45-retag-cascade
   cancel-in-progress: false
@@ -33,20 +37,27 @@ jobs:
           SOURCE_TAG: ${{ inputs.source_tag }}
           TARGET_TAG: ${{ inputs.target_tag }}
           BUILD_COMMIT: ${{ inputs.build_commit }}
+          UPPER_BUILD_COMMIT: ${{ inputs.upper_build_commit }}
         shell: bash
         run: |
           set -euo pipefail
           [[ "$SOURCE_TAG" =~ ^20[0-9]{2}\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]
           [[ "$TARGET_TAG" =~ ^20[0-9]{2}\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]
           [[ "$SOURCE_TAG" != "$TARGET_TAG" && "$BUILD_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          UPPER_BUILD_COMMIT="${UPPER_BUILD_COMMIT:-$BUILD_COMMIT}"
+          [[ "$UPPER_BUILD_COMMIT" =~ ^[0-9a-f]{40}$ ]]
           declare -A digests
           stages=(core-pre core base kachelmann safrano9999 safrano9999-full)
           for stage in "${stages[@]}"; do
             image="ghcr.io/safrano9999/fedora45-ai-$stage"
             digest="$(docker buildx imagetools inspect "$image:$SOURCE_TAG" --format '{{json .Manifest}}' | jq -er .digest)"
             [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+            case "$stage" in
+              core-pre|core|base) revision="$BUILD_COMMIT" ;;
+              *) revision="$UPPER_BUILD_COMMIT" ;;
+            esac
             docker buildx imagetools inspect "$image@$digest" --format '{{json .Image}}' |
-              jq -e --arg revision "$BUILD_COMMIT" '(.config // .["linux/amd64"].config).Labels["org.opencontainers.image.revision"] == $revision' >/dev/null
+              jq -e --arg revision "$revision" '(.config // .["linux/amd64"].config).Labels["org.opencontainers.image.revision"] == $revision' >/dev/null
             digests[$stage]="$digest"
           done
           for stage in "${stages[@]}"; do
