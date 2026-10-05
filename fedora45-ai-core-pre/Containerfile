@@ -1,4 +1,6 @@
-FROM quay.io/fedora/fedora:45@sha256:b9de06334e40174095c9556a3221a86fa976fb3ad4de626773db63c2ca4b002a AS ai-core-pre
+FROM fedora45-approved-beta AS ai-core-pre
+# The Action supplies this named OCI context from the approved Fedora 45 Beta
+# archive, pinned by SHA256 and manifest digest in build-dependencies-whitelist.json.
 
 ARG WEBHOOK_VERSION
 ARG HERMES_VERSION=0.21.5
@@ -14,7 +16,6 @@ ARG OPENCLAW_VERSION=2026.9.4
 ARG OPENCLAW_UPSTREAM_SHA=
 ARG CODEX_VERSION
 ARG CLAUDE_CODE_VERSION
-ARG OPENCLAW_BRAVE_PLUGIN_VERSION
 ARG ELECTRUM_VERSION
 ARG LND_VERSION
 ARG GETH_VERSION
@@ -34,8 +35,8 @@ ARG CLAUDE_CODE_SHA256
 ARG VDITOR_SHA256
 ARG NPM_VERSION
 ARG NPM_SHA256
-ARG OPENCODE_VERSION=1.18.32
-ARG OPENCODE_TELEGRAM_VERSION=0.25.3
+ARG OPENCODE_VERSION=1.18.34
+ARG OPENCODE_TELEGRAM_VERSION=0.26.2
 
 LABEL org.opencontainers.image.title="fedora45-ai-core-pre" \
       org.opencontainers.image.description="Heavy generic Fedora 45 AI toolchain foundation without Safrano project content or ephemeral runtime configuration." \
@@ -208,9 +209,6 @@ RUN test -n "${FUGU_COMMIT}" \
  && cp /root/.fugu/configs/injects/model_providers.sakana.toml /root/.codex/config.toml \
  && install -m 0755 /root/.fugu/scripts/codex-fugu /usr/local/bin/codex-fugu
 
-RUN --mount=type=cache,target=/root/.npm \
-    test -n "${OPENCLAW_BRAVE_PLUGIN_VERSION}" \
- && openclaw plugins install "@openclaw/brave-plugin@${OPENCLAW_BRAVE_PLUGIN_VERSION}"
 
 RUN test -n "${CLOUDFLARED_VERSION}" \
  && test -n "${CLOUDFLARED_SHA256}" \

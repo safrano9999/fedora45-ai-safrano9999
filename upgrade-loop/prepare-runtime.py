@@ -89,15 +89,18 @@ def prepare(component, version, cache, source_inputs=None):
         packed.mkdir(exist_ok=True)
         with tarfile.open(bundle) as payload:
             members = payload.getmembers()
-            if (len(members) != 2 or {m.name for m in members} != {"manifest.json", "openclaw.tgz"}
+            expected = {"manifest.json", "openclaw.tgz", "brave.tgz", "mai-transcribe.tgz"}
+            if (len(members) != len(expected) or {m.name for m in members} != expected
                     or not all(m.isfile() for m in members)):
                 raise ValueError("Expected a Deterministic OpenClaw runtime bundle")
             payload.extractall(packed, filter="data")
         manifest = json.loads((packed / "manifest.json").read_text())
-        if (manifest.get("schemaVersion") != 1 or manifest.get("version") != version
+        if (manifest.get("schemaVersion") != 2 or manifest.get("version") != version
                 or manifest.get("upstreamCommit") != commit or manifest.get("releaseTag") != release):
             raise ValueError("Runtime bundle differs from Core-pre source selection")
-        for filename in ("openclaw.tgz",):
+        if set(manifest.get("artifacts", {})) != expected - {"manifest.json"}:
+            raise ValueError("Invalid Deterministic artifact manifest")
+        for filename in ("openclaw.tgz", "brave.tgz", "mai-transcribe.tgz"):
             if hashlib.sha256((packed / filename).read_bytes()).hexdigest() != manifest["artifacts"][filename]:
                 raise ValueError("Invalid selected package checksum")
         prefix = cache / "selected-runtime"

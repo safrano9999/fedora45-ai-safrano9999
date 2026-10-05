@@ -6,9 +6,10 @@ After=network-online.target
 [Service]
 Type=simple
 Environment=HOME=/root
-PassEnvironment=OPENCODE_START OPENCODE_API_HOST OPENCODE_API_PORT OPENCODE_API_KEY
-ExecCondition=/bin/bash -c '[ "$${OPENCODE_START:-1}" = "1" ] && [ -n "$${OPENCODE_API_KEY:-}" ]'
+PassEnvironment=OPENCODE_START OPENCODE_API_HOST OPENCODE_API_PORT OPENCODE_SERVER_USERNAME OPENCODE_SERVER_PASSWORD
+ExecCondition=/bin/bash -c '[ "$${OPENCODE_START:-1}" = "1" ]'
 ExecStart=/bin/bash -lc 'exec /usr/local/bin/opencode serve --hostname "$${OPENCODE_API_HOST:-0.0.0.0}" --port "$${OPENCODE_API_PORT:-4096}"'
+ExecStartPost=/bin/bash -lc 'exec /usr/local/libexec/fedora45-wait-ready --timeout 110 http "http://127.0.0.1:$${OPENCODE_API_PORT:-4096}/global/health"'
 Restart=on-failure
 RestartSec=5
 TimeoutStartSec=120

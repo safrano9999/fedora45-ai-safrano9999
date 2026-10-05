@@ -183,14 +183,22 @@ def image_digest(image, line):
 def base_binding(root, policy, entry):
     image, line, digest = entry.get('image', ''), entry.get('release_line', ''), entry.get('digest', '')
     path, stage = entry.get('containerfile', ''), entry.get('stage', '')
-    if not re.fullmatch(r'[a-z0-9.-]+\.[a-z]+/[a-z0-9_./-]+', image) or '..' in image.split('/'):
+    archive = entry.get('source_archive')
+    if archive is not None:
+        if (image != 'fedora45-approved-beta' or not re.fullmatch(r'45_Beta-\d+\.\d+', line)
+                or not isinstance(archive, dict) or set(archive) != {'url', 'sha256'}
+                or archive['url'] != 'https://dl.fedoraproject.org/pub/fedora/linux/releases/test/45_Beta/Container/x86_64/images/Fedora-Container-Base-Generic-' + line + '.x86_64.oci.tar.xz'
+                or not re.fullmatch(r'[0-9a-f]{64}', archive['sha256'])):
+            raise ValueError('Invalid approved Fedora Beta archive pin')
+    elif not re.fullmatch(r'[a-z0-9.-]+\.[a-z]+/[a-z0-9_./-]+', image) or '..' in image.split('/'):
         raise ValueError('Invalid configured base repository')
     if not re.fullmatch(r'[A-Za-z0-9_][A-Za-z0-9_.-]*', line) or not re.fullmatch(r'sha256:[0-9a-f]{64}', digest):
         raise ValueError('Invalid configured base release line or digest')
     if path != policy['image'] + '/Containerfile' or not re.fullmatch(r'[a-z0-9][a-z0-9_.-]*', stage):
         raise ValueError('Invalid configured base binding')
     text = (root / path).read_text()
-    pattern = r'^FROM ' + re.escape(image) + r'(?::' + re.escape(line) + r')?@' + re.escape(digest) + r' AS ' + re.escape(stage) + r'$'
+    reference = re.escape(image) if archive else re.escape(image) + r'(?::' + re.escape(line) + r')?@' + re.escape(digest)
+    pattern = r'^FROM ' + reference + r' AS ' + re.escape(stage) + r'$'
     if len(re.findall(pattern, text, re.M)) != 1:
         raise ValueError('Whitelist/Containerfile base pin drift: ' + entry['id'])
     return Path(path), text, pattern
@@ -237,7 +245,9 @@ def plan(root=ROOT, get=github, read=fetch, read_image=image_digest):
         if entry['id'] in seen_bases or entry['id'] in seen: raise ValueError('Duplicate base image dependency')
         seen_bases.add(entry['id'])
         path, text, pattern = base_binding(root, policy, entry)
-        wanted = read_image(entry['image'], entry['release_line'])
+        # Approved Beta composes are immutable. A daily registry tag cannot
+        # silently replace their release certification; Actions checks the OCI.
+        wanted = entry['digest'] if entry.get('source_archive') else read_image(entry['image'], entry['release_line'])
         if not re.fullmatch(r'sha256:[0-9a-f]{64}', wanted): raise ValueError('Invalid resolved base digest')
         selected.append({'id': entry['id'], 'release_line': entry['release_line'], 'digest': wanted})
         if wanted != entry['digest']:

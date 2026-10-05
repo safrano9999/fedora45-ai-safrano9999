@@ -4,5 +4,14 @@
   "description": "Local no-auth Speaches transcription provider.",
   "activation": { "onStartup": true },
   "contracts": { "mediaUnderstandingProviders": ["speaches"], "speechProviders": ["speaches"] },
-  "configSchema": { "type": "object", "additionalProperties": false, "properties": {} }
+  "configSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {
+      "baseUrl": { "type": "string" },
+      "sttModel": { "type": "string" },
+      "ttsModel": { "type": "string" },
+      "ttsVoice": { "type": "string" },
+      "responseFormat": { "type": "string" }
+    }
+  }
 }

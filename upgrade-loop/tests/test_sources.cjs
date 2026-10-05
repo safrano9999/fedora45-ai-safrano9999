@@ -45,8 +45,11 @@ async function fixture(edits = {}) {
 
 test('derive only selected parent chain, provenance, release refs and both generator pins', async () => {
   const get = await fixture(), regular = await inventory(get), full = await inventory(get, { target: 'fedora45-ai-safrano9999-full' });
-  assert.equal(regular.repositories.length, 22);
-  assert.equal(full.repositories.length, 23);
+  assert.equal(regular.repositories.length, 24);
+  assert.equal(full.repositories.length, 25);
+  assert.ok(regular.repositories.some(r => r.repository === 'f24sales/litellm-free'));
+  assert.ok(regular.repositories.some(r => r.repository === 'safrano9999/opencode-ephemeral'));
+  assert.equal(regular.external_base, 'fedora45-approved-beta');
   assert.equal(regular.chain.length, 5);
   assert.equal(full.chain.length, 6);
   assert.ok(!regular.repositories.some(r => r.repository.endsWith('/VikAI')));
@@ -69,7 +72,7 @@ test('latest preview refreshes every Git source and both release inputs instead 
     return files(url);
   };
   const preview = await inventory(get, { latest: true, target: 'fedora45-ai-safrano9999-full' });
-  assert.equal(preview.repositories.length, 23);
+  assert.equal(preview.repositories.length, 25);
   assert.equal(preview.source_policy, 'latest-resolved-for-preview');
   for (const entry of preview.repositories) {
     if (entry.repository === IMAGE_REPO) assert.equal(entry.ref, imageCommit);
@@ -88,6 +91,28 @@ test('latest preview refreshes every Git source and both release inputs instead 
   } : ({ sha: url.endsWith('/' + imageCommit) ? imageCommit : 'b'.repeat(40) }), preview);
   assert.ok(resolved.repositories.every(r => /^[a-f0-9]{40}$/.test(r.commit)));
   assert.equal(resolved.openclaw_source.commit, '1'.repeat(40));
+});
+
+test('n8n source adapter resolves the explicitly selected f24sales LiteLLM source', async () => {
+  const files = await fixture(), seen = [];
+  const get = async ({url}) => {
+    const endpoint = url.replace('https://api.github.com', '');
+    seen.push(endpoint);
+    if (endpoint === '/repos/' + IMAGE_REPO + '/commits/main') return files(endpoint);
+    if (endpoint === '/repos/' + IMAGE_REPO + '/commits/' + imageCommit) return {sha: imageCommit};
+    if (endpoint.includes('/commits/')) return {sha: 'b'.repeat(40)};
+    if (endpoint.endsWith('/NEXTCLOUD/releases/tags/latest')) return {assets: ['nextcloud-fedora64-plugin-latest.zip','nextcloud-fedora64-plugin-latest.zip.sha256'].map((name,i) => ({name,id:i+1,digest:'sha256:'+'a'.repeat(64)}))};
+    if (endpoint.endsWith('/openclaw-deterministic-latest/releases/latest')) return {tag_name:'2026.9.4-deterministic.99',assets:[{name:'openclaw-2026.9.4-deterministic.tar.gz',digest:'sha256:'+'a'.repeat(64)}]};
+    if (endpoint.endsWith('/NOTE/releases/latest')) return {tag_name:'2026.9.99',assets:[{name:'note-latest.zip',digest:'sha256:'+'a'.repeat(64)}]};
+    return files(endpoint);
+  };
+  const result = await Fedora45Sources.prototype.execute.call({
+    getInputData: () => [{json:{}}], getNodeParameter: () => 'inventory',
+    getCredentials: async () => ({name:'Authorization',value:'Bearer fixture'}),
+    helpers: {httpRequestWithAuthentication: async function(kind, args) { return get(args); }},
+  });
+  assert.ok(seen.includes('/repos/f24sales/litellm-free/commits/HEAD'));
+  assert.equal(result[0][0].json.repositories.find(r => r.repository === 'f24sales/litellm-free').commit, 'b'.repeat(40));
 });
 
 test('latest release selection checks compatible assets and fails on invalid release evidence', async () => {

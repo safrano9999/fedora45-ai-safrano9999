@@ -84,6 +84,13 @@ VDITOR_NOTES_PATH=/data
 #required:
 VDITOR_NOTES_PORT=11100
 
+# Public catalog used by the twice-daily LiteLLM-Free client refresh.
+#default-preset: https://www.f24-sales.com/litellm-config.yaml
+IMPORT_SOURCE_URL=https://www.f24-sales.com/litellm-config.yaml
+
+#default-preset: litellm-free
+LITELLM_FREE_PROVIDER=litellm-free
+
 #publish-host: FASTAPI_HOST
 #required: published host bind address
 FASTAPI_HOST=127.0.0.1
@@ -93,6 +100,12 @@ FASTAPI_HOST=127.0.0.1
 # Leave blank when no reverse proxy should be trusted.
 #default-preset: 127.0.0.1,::1
 OPENCLAW_TRUSTED_PROXIES=127.0.0.1,::1
+
+# Optional X-Real-IP fallback from a trusted proxy that overwrites this header.
+# Leave disabled unless the forwarded client chain cannot identify the client.
+#choices: 0 1
+#default-preset: 0
+OPENCLAW_ALLOW_REAL_IP_FALLBACK=0
 
 #default-preset: http://127.0.0.1:18789,http://localhost:18789,http://127.0.0.1:20789
 OPENCLAW_CONTROL_UI_ALLOWED_ORIGINS=http://127.0.0.1:18789,http://localhost:18789,http://127.0.0.1:20789

@@ -69,14 +69,23 @@ class ComponentTests(unittest.TestCase):
                 "exports": {"./plugin-sdk/new": "./dist/new.js"},
                 "dependencies": {"fixture-dependency": "file:" + str(dependency)},
             }),
-            "package/openclaw.mjs": "#!/usr/bin/env node\nimport fs from 'node:fs';\nfs.writeFileSync(process.env.PLUGIN_RECEIPT, JSON.stringify(process.argv.slice(2)));\n",
+            "package/openclaw.mjs": "#!/usr/bin/env node\nimport fs from 'node:fs';\nfs.appendFileSync(process.env.PLUGIN_RECEIPT, JSON.stringify(process.argv.slice(2)) + '\\n');\n",
             "package/dist/index.js": "export const patched = true;\n",
             "package/dist/new.js": "export const addedExport = true;\n",
             "package/dist/control-ui/index.html": "UI",
             "package/dist/deterministic-gateway-replies.txt": "dummy reply",
         }, link=link)
         artifacts = {"openclaw.tgz": runtime.read_bytes()}
-        self.manifest = {"schemaVersion": 1, "version": VERSION, "displayVersion": VERSION + "-patched",
+        plugins = {}
+        for plugin_id, name, plugin_version in (("brave", "@openclaw/brave-plugin", VERSION),
+                                                 ("mai-transcribe", "openclaw-mai-transcribe-plugin", "0.1.1")):
+            artifact = self.root / (plugin_id + ".tgz")
+            write_tar(artifact, {"package/package.json": json.dumps({"name": name, "version": plugin_version}),
+                                 "package/openclaw.plugin.json": json.dumps({"id": plugin_id})})
+            artifacts[artifact.name] = artifact.read_bytes()
+            plugins[plugin_id] = {"artifact": artifact.name, "package": name, "version": plugin_version}
+        self.manifest = {"schemaVersion": 2, "version": VERSION, "displayVersion": VERSION + "-patched",
+                         "plugins": plugins,
                          "upstreamCommit": commit, "releaseTag": RELEASE,
                          "artifacts": {name: hashlib.sha256(data).hexdigest() for name, data in artifacts.items()}}
         if tampered:
@@ -103,7 +112,11 @@ class ComponentTests(unittest.TestCase):
         self.assertEqual(dependency["version"], "2.0.0")
         self.assertFalse((self.package / "dist/old.js").exists())
         self.assertFalse((self.package / "node_modules/old-dependency.txt").exists())
-        self.assertFalse((self.root / "plugin-install.json").exists())
+        calls = [json.loads(line) for line in (self.root / "plugin-install.json").read_text().splitlines()]
+        self.assertEqual(len(calls), 2)
+        for call, plugin_id in zip(calls, ("brave", "mai-transcribe")):
+            self.assertEqual(call[:4], ["plugins", "install", "--force", "--accept-capabilities"])
+            self.assertEqual(Path(call[4]).name, plugin_id + ".tgz")
         self.assertEqual(json.loads((self.package / "deterministic-build.json").read_text()), self.manifest)
 
     def test_hollow_bedrock_link_is_rejected_before_install(self):

@@ -47,7 +47,6 @@ FEDORA_REPOMD_KEY="$(printf '%s\n%s\n' "$FEDORA_BASE_REPOMD" "$FEDORA_UPDATES_RE
     | sha256sum | cut -d' ' -f1)"
 
 OPENCLAW_VERSION="$OPENCLAW_REQUESTED"
-OPENCLAW_BRAVE_PLUGIN_VERSION="${OPENCLAW_BRAVE_PLUGIN_VERSION:-$OPENCLAW_VERSION}"
 
 encoded_openclaw="$(jq -nr --arg package openclaw '$package | @uri')"
 registry_openclaw_document="$(curl "${CURL_RETRY[@]}" \
@@ -64,7 +63,6 @@ temporary="${OUTPUT}.tmp"
     printf 'FEDORA_REPOMD_KEY=%s\n' "$FEDORA_REPOMD_KEY"
     python3 "$(dirname -- "${BASH_SOURCE[0]}")/../../upgrade-loop/build_dependencies.py" --emit
     printf 'OPENCLAW_VERSION=%s\n' "$OPENCLAW_VERSION"
-    printf 'OPENCLAW_BRAVE_PLUGIN_VERSION=%s\n' "$OPENCLAW_BRAVE_PLUGIN_VERSION"
 } > "$temporary"
 mv -f "$temporary" "$OUTPUT"
 printf 'Resolved immutable build inputs -> %s\n' "$OUTPUT"

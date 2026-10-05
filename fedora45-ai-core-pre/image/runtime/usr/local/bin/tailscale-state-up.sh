@@ -25,30 +25,19 @@ $has_accept_dns || up_args+=(--accept-dns)
 up_args+=("${extra_args[@]}")
 [ -z "${TS_HOSTNAME:-}" ] || up_args+=(--hostname="$TS_HOSTNAME")
 
-backend_state=""
+# A restored daemon can still be in Starting here. Let `up` wait for its
+# network map instead of treating transient startup as an invalid identity.
 if [ -s "$state_file" ]; then
-    for _ in {1..50}; do
-        backend_state="$(tailscale status --json 2>/dev/null \
-            | python3 -c 'import json, sys; print(json.load(sys.stdin).get("BackendState", ""))' \
-            2>/dev/null || true)"
-        [ -n "$backend_state" ] && break
-        sleep 0.1
-    done
+    if timeout "$up_timeout" tailscale "${up_args[@]}"; then
+        log "reused persistent state${TS_HOSTNAME:+ for $TS_HOSTNAME}"
+        exit 0
+    fi
+    log "persistent state failed; trying auth key fallback"
 fi
 
-case "$backend_state" in
-    Running|Stopped)
-        if timeout "$up_timeout" tailscale "${up_args[@]}"; then
-            log "reused persistent state${TS_HOSTNAME:+ for $TS_HOSTNAME}"
-            exit 0
-        fi
-        log "persistent state failed; trying auth key fallback"
-        ;;
-esac
-
 if [ -z "${TS_AUTHKEY:-}" ]; then
-    log "no reusable state and TS_AUTHKEY is empty; skipping"
-    exit 0
+    log "no reusable state and TS_AUTHKEY is empty"
+    exit 1
 fi
 
 if timeout "$up_timeout" tailscale "${up_args[@]}" --authkey="$TS_AUTHKEY"; then

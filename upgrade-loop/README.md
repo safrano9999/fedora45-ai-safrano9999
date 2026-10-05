@@ -296,11 +296,13 @@ GitHub preparation Action. Read-only local inspection is `python3 upgrade-loop/b
 access. `--apply` is reserved for the GitHub runner; normal publication belongs to
 prepare-container.py's shared commit.
 
-The `base_images` JSON entries bind a repository and release line to one exact
-Containerfile stage. The Fedora base follows only `quay.io/fedora/fedora:45`; it
-does not advance to another Fedora release. Preparation reads registry metadata,
-verifies its digest and updates the policy and FROM pin in the same commit. A
-retired old digest can therefore be replaced without trying to pull it first.
+The `base_images` JSON entries bind a source to one exact Containerfile stage.
+Fedora uses the officially approved **45 Beta 1.3** OCI archive, not the daily
+Quay tag. Its archive SHA256 and manifest digest are pinned together. The GitHub
+Action verifies both plus every OCI blob, then supplies `fedora45-approved-beta`
+as an OCI build context. No image is built or pulled locally for this preparation.
+An approved compose cannot drift to a daily image during dependency upgrades;
+changing the approved Beta requires changing the explicit archive pins.
 OpenClaw and Hermes keep their existing release and compatibility checks. Safrano repositories keep their own
 source-upgrade path. RPM/Python packages use the existing repository/requirements
 constraints on image build; this routine does not rewrite requirements in other

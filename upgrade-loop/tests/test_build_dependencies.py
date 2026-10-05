@@ -152,8 +152,8 @@ class BuildDependencyTests(unittest.TestCase):
             if key.endswith('_SHA256'): self.assertIn('${' + key + '}', containerfile)
         self.assertNotIn('SOLANA_INSTALLER_MD5', containerfile)
         self.assertNotIn('/stable/', containerfile)
-        old_from = subprocess.check_output(['git', 'show', 'HEAD:fedora45-ai-core-pre/Containerfile'], cwd=deps.ROOT, text=True).splitlines()[0]
-        self.assertEqual(containerfile.splitlines()[0], old_from)
+        for base in policy['base_images']:
+            deps.base_binding(deps.ROOT, policy, base)
 
     def test_preparation_gate_uses_published_policy_and_checks_both_generators_when_needed(self):
         import importlib.util
@@ -167,6 +167,9 @@ class BuildDependencyTests(unittest.TestCase):
         selected['versions'] = {n: {'current': v, 'latest': v} for n, v in pins.items()}
         override = prep.openclaw_override((deps.ROOT/'fedora45-ai-core-pre/Containerfile').read_text(), pins['openclaw'])
         selected['openclaw_source'] = {'version':pins['openclaw'], 'override_commit':override, 'commit':override or '1'*40}
+        for entry in selected['repositories']:
+            if entry['repository'] == 'safrano9999/openclaw-deterministic-latest':
+                entry['release']['asset'] = 'openclaw-' + pins['openclaw'] + '-deterministic.tar.gz'
         policy = (deps.ROOT / deps.POLICY).read_text()
         selected['upgrade_build_deps'] = True
         selected['build_dependencies_baseline'] = {'revision': 'a' * 40, 'digest': 'sha256:' + 'b' * 64,

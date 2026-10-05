@@ -28,7 +28,7 @@ function validateSnapshot(snapshot, expectedId) {
       snapshotId(snapshot) !== expectedId) throw new Error('Invalid shared source snapshot');
   const seen = new Set();
   for (const entry of snapshot.repositories) {
-    if (!/^safrano9999\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(entry.repository || '') ||
+    if ((!/^safrano9999\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(entry.repository || '') && entry.repository !== 'f24sales/litellm-free') ||
         entry.repository === IMAGE_REPO || seen.has(entry.repository.toLowerCase()) || !SHA.test(entry.commit || '')) {
       throw new Error('Invalid snapshot repository');
     }

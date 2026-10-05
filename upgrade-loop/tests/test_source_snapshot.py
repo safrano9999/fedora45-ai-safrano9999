@@ -24,6 +24,15 @@ def snapshot(repository="safrano9999/FIXTURE", commit="a" * 40):
 
 
 class SnapshotTests(unittest.TestCase):
+    def test_litellm_free_source_is_explicitly_allowed_in_both_validators(self):
+        selected = snapshot("f24sales/litellm-free")
+        self.assertIn("f24sales/litellm-free", validate_snapshot(selected))
+        script = "const m=require(process.argv[1]);const s=JSON.parse(process.argv[2]);m.validateSnapshot(s,m.snapshotId(s));"
+        subprocess.run(['node', '-e', script, str(ROOT/'n8n-sources/source-snapshot.js'), json.dumps(selected)], check=True)
+        for repository in ("f24sales/other", "someone/litellm-free"):
+            with self.assertRaises(ValueError):
+                validate_snapshot(snapshot(repository))
+
     def test_n8n_and_python_use_the_same_identity_and_clone_keeps_selected_commit(self):
         selected = snapshot()
         script = "const m=require(process.argv[1]);const s=JSON.parse(process.argv[2]);m.validateSnapshot(s,m.snapshotId(s));console.log(JSON.stringify({id:m.snapshotId(s),clone:m.cloneManifest(s,'b'.repeat(40))}));"
@@ -78,7 +87,9 @@ class SnapshotTests(unittest.TestCase):
             {'repository':'safrano9999/openclaw-deterministic-latest','ref':'patch','commit':'d'*40,
              'release':{'ref':'patch','asset':f"openclaw-{current['openclaw']}-deterministic.tar.gz",'sha256':'e'*64,'upstream_commit':'1'*40}},
             {'repository':'safrano9999/NOTE','ref':'note','commit':'f'*40,
-             'release':{'ref':'note','asset':'note-latest.zip','sha256':'a'*64}}]
+             'release':{'ref':'note','asset':'note-latest.zip','sha256':'a'*64}},
+            {'repository':'safrano9999/opencode-ephemeral','ref':'HEAD','commit':'2'*40},
+            {'repository':'f24sales/litellm-free','ref':'HEAD','commit':'3'*40}]
         override = openclaw_override((ROOT.parent/'fedora45-ai-core-pre/Containerfile').read_text(), current['openclaw'])
         selected['openclaw_source'] = {'version':current['openclaw'], 'override_commit':override, 'commit':override or '1'*40}
         selected['repositories'][2]['release']['upstream_commit'] = override or '1'*40
@@ -88,6 +99,8 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(report['source_snapshot_id'],snapshot_id(selected))
         self.assertEqual(report['build_inputs']['OPENCLAW_EPHEMERAL_COMMIT'],'a'*40)
         self.assertEqual(report['build_inputs']['HERMES_EPHEMERAL_COMMIT'],'b'*40)
+        self.assertEqual(report['build_inputs']['OPENCODE_EPHEMERAL_COMMIT'],'2'*40)
+        self.assertEqual(report['build_inputs']['LITELLM_FREE_COMMIT'],'3'*40)
 
     def test_explicit_source_upgrade_gate_and_earliest_stage_validation(self):
         spec = importlib.util.spec_from_file_location('source_upgrade_prep', ROOT/'prepare-container.py')

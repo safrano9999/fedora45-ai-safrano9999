@@ -17,6 +17,7 @@ OPENCLAW_DETERMINISTIC_ASSET="openclaw-${OPENCLAW_VERSION}-deterministic.tar.gz"
 OPENCLAW_EPHEMERAL_REPOSITORY=safrano9999/openclaw-ephemeral
 HERMES_EPHEMERAL_REPOSITORY=safrano9999/hermes-ephemeral
 OPENCODE_EPHEMERAL_REPOSITORY=safrano9999/opencode-ephemeral
+LITELLM_FREE_REPOSITORY=f24sales/litellm-free
 
 # Core build.conf is a prepared artifact lock, never a second source selector.
 python3 - "$CONTEXT/../fedora45-ai-core-pre/Containerfile" <<'PY'
@@ -42,6 +43,12 @@ PY
 if [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ]; then
     python3 "${SAFRANO_SOURCE_MANIFEST%/*}/source_snapshot.py" \
         --manifest "$SAFRANO_SOURCE_MANIFEST" --verify-core "$CONTEXT/build.conf"
+    selected_litellm="$(python3 "${SAFRANO_SOURCE_MANIFEST%/*}/source_snapshot.py" \
+        --manifest "$SAFRANO_SOURCE_MANIFEST" --repository "$LITELLM_FREE_REPOSITORY")"
+    [ "$selected_litellm" = "$LITELLM_FREE_COMMIT" ] || {
+        echo "LiteLLM-Free pin differs from the selected source snapshot" >&2
+        exit 1
+    }
 fi
 
 for command in curl git python3 sha256sum; do
@@ -195,6 +202,7 @@ ephemeral_files=(
     openclaw_ephemeral/plugins.py
     openclaw_ephemeral/providers.py
     openclaw_ephemeral/scheduling.py
+    openclaw_ephemeral/voice.py
 )
 for relative in "${ephemeral_files[@]}"; do
     [ -f "$ephemeral_checkout/$relative" ] || {
@@ -215,8 +223,8 @@ stage_runtime_overlay \
 rm -rf -- "$ephemeral_checkout"
 
 [ "$(find "$vendor_stage/openclaw-ephemeral" -type f \
-    ! -path '*/image/runtime/*' | wc -l)" -eq 10 ] || {
-    echo "OpenClaw Ephemeral payload must contain exactly ten code files" >&2
+    ! -path '*/image/runtime/*' | wc -l)" -eq 11 ] || {
+    echo "OpenClaw Ephemeral payload must contain exactly eleven code files" >&2
     exit 1
 }
 
@@ -253,6 +261,13 @@ stage_runtime_overlay \
     "$vendor_stage/opencode-ephemeral/image/runtime" \
     "$OPENCODE_EPHEMERAL_REPOSITORY"
 rm -rf -- "$opencode_checkout"
+
+litellm_checkout="$vendor_stage/.litellm-free-checkout"
+checkout_source "$LITELLM_FREE_REPOSITORY" "$litellm_checkout" "${LITELLM_FREE_COMMIT:?Missing LiteLLM-Free source pin}"
+mkdir -p "$vendor_stage/litellm-free"
+git -C "$litellm_checkout" archive HEAD | tar -x -C "$vendor_stage/litellm-free"
+printf '%s\n' "$LITELLM_FREE_COMMIT" > "$vendor_stage/litellm-free/SOURCE_COMMIT"
+rm -rf -- "$litellm_checkout"
 
 rm -rf -- "$BUILD/vendor"
 mv -- "$vendor_stage" "$BUILD/vendor"

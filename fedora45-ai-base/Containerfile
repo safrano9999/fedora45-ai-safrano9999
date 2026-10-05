@@ -25,6 +25,11 @@ COPY .fedora45-image-runtime/rootfs/ /
 
 COPY safrano9999/ /opt/safrano9999/
 
+# Exercise the exact interpreter flags used by the generated Citadel service.
+# Fedora hides /usr/local pip packages under -s, so a bare python import test
+# would miss a runtime-only failure in that service's launcher.
+RUN python3 -c 'import pathlib, shlex, subprocess; unit = pathlib.Path("/etc/systemd/system/citadel.service").read_text(); command = next(line.split("=", 1)[1] for line in unit.splitlines() if line.startswith("ExecStart=")); argv = shlex.split(command); launcher = argv[:argv.index("webui.py")]; subprocess.run([*launcher, "-c", "import dotenv, fastapi, jinja2, uvicorn"], check=True)'
+
 COPY .fedora45-runtime/nextcloud-fedora64-plugin-latest.zip \
      .fedora45-runtime/nextcloud-fedora64-plugin-latest.zip.sha256 \
      /tmp/nextcloud-runtime/

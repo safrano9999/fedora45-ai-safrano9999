@@ -23,6 +23,16 @@
   },
   "repositories": [
     {
+      "repository": "safrano9999/opencode-ephemeral",
+      "ref": "HEAD",
+      "commit": "2222222222222222222222222222222222222222"
+    },
+    {
+      "repository": "f24sales/litellm-free",
+      "ref": "HEAD",
+      "commit": "3333333333333333333333333333333333333333"
+    },
+    {
       "repository": "safrano9999/DAILYNEWS",
       "ref": "HEAD",
       "commit": "5d166299e50d809a9f5a4fd8617defab11e92f2b",

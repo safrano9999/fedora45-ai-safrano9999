@@ -10,8 +10,9 @@ PassEnvironment=TS_AUTHKEY TS_HOSTNAME TS_EXTRA_ARGS TS_STATE_DIR
 Environment=TS_STATE_DIR=/var/lib/tailscale
 ExecCondition=/bin/bash -c '[ -n "$$TS_AUTHKEY" ] || [ -s "$${TS_STATE_DIR:-/var/lib/tailscale}/tailscaled.state" ]'
 ExecStart=/usr/local/bin/tailscale-state-up.sh
+# Optional reset after successful up is supplied by tailscale-serve-reset.conf.
 RemainAfterExit=yes
-TimeoutStartSec=40
+TimeoutStartSec=75
 
 [Install]
 WantedBy=multi-user.target
