@@ -24,8 +24,8 @@ FEDORA45_AI_CAPABILITIES=NET_ADMIN,NET_RAW
 
 FEDORA45_AI_DEVICES=/dev/net/tun
 
-#default-preset: ${CONTAINER_NAME}-tailscale:/opt/safrano9999/CITADEL/CITADEL_TAILSCALE:Z
-TAILSCALE_VOLUMES=${CONTAINER_NAME}-tailscale:/opt/safrano9999/CITADEL/CITADEL_TAILSCALE:Z
+#default-preset: ${CONTAINER_NAME}-tailscale:/var/lib/tailscale:Z
+TAILSCALE_VOLUMES=${CONTAINER_NAME}-tailscale:/var/lib/tailscale:Z
 
 #repeat-group: ADDITIONAL_LINE suffix02 ADDITIONAL_LINE
 #repeat-freeform: ADDITIONAL_LINE
@@ -39,12 +39,34 @@ HERMES_WEBHOOK_PUBLISH_PORT=18644
 #required: CODEANALYST published host port
 CODEANALYST_PUBLISH_PORT=11010
 
-# Use the Containerfile CMD: /usr/bin/python3 -s webui.py.
-# The Python entrypoint selects TCP or Unix from runtime configuration.
+# Keep the image bootstrap: Tailscale, optional reset, Cloudflared, WebUI, scan.
 #container-command: image
 
-#required: CITADEL published web UI port
+# Built only by GitHub Actions; latest tracks the newest successful image.
+# Pull exclusively through Smart1.
+IMAGE=ghcr.io/safrano9999/citadel:latest
+
+# Volume naming; the Quadlet name comes from the checkout directory.
+#default-preset: citadel
+CONTAINER_NAME=citadel
+
+#default-preset: 127.0.0.1
+CITADEL_WEBUI_PUBLISH_HOST=127.0.0.1
+
+# Blank for Podman-network-only access or Network=host.
+#default-preset: 11000
 CITADEL_WEBUI_PUBLISH_PORT=11000
+
+# One shared bind: policy, scan/provider state, logos, Caddy config/output/socket.
+# Application code stays in the image. Tailscale state remains separate.
+#volume-if: CITADEL_VOLUMES CITADEL_VOLUMES
+#default-preset: ./CITADEL_DATA:/opt/safrano9999/CITADEL/CITADEL_DATA:z
+CITADEL_VOLUMES=./CITADEL_DATA:/opt/safrano9999/CITADEL/CITADEL_DATA:z
+
+# May be blank for a mounted host Tailscale socket or TS_USERSPACE=1.
+CITADEL_CAPABILITIES=NET_ADMIN,NET_RAW
+
+CITADEL_DEVICES=/dev/net/tun
 
 #required: KACHELMANN published WebUI port
 KACHELMANN_PUBLISH_PORT=11040
@@ -73,3 +95,4 @@ NATURALGROUNDING_PUBLISH_PORT=11070
 
 #required: SPANKER published web UI port
 SPANKER_PUBLISH_PORT=11090
+
