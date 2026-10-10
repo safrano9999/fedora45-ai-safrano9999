@@ -198,13 +198,13 @@
       "runtime_assets": [
         {
           "name": "nextcloud-fedora64-plugin-latest.zip",
-          "id": 559006334,
-          "sha256": "b3e85a84eb6c5f3742866cf5c84731931c5cc5a3017073473fee1187198df423"
+          "id": 622627131,
+          "sha256": "7b1476faaca35d2583559777ca2f4263969fdc5aaabfd06e84aa60d5b01d111d"
         },
         {
           "name": "nextcloud-fedora64-plugin-latest.zip.sha256",
-          "id": 559006332,
-          "sha256": "4675b7c69429f4c18e868467ea124584ca8cc1906481bd97b96f014e3f342ad1"
+          "id": 622627129,
+          "sha256": "7b37ee9cd8bf6a28023479595f6ac037d5b579c46fb1301c207c9e41cee10b2b"
         }
       ]
     },
