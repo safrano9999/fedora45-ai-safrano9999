@@ -17,7 +17,7 @@ OPENCLAW_DETERMINISTIC_ASSET="openclaw-${OPENCLAW_VERSION}-deterministic.tar.gz"
 OPENCLAW_EPHEMERAL_REPOSITORY=safrano9999/openclaw-ephemeral
 HERMES_EPHEMERAL_REPOSITORY=safrano9999/hermes-ephemeral
 OPENCODE_EPHEMERAL_REPOSITORY=safrano9999/opencode-ephemeral
-LITELLM_FREE_REPOSITORY=f24sales/litellm-free
+LITELLM_FREE_REPOSITORY=safrano9999/litellm-free
 
 # Core build.conf is a prepared artifact lock, never a second source selector.
 python3 - "$CONTEXT/../fedora45-ai-core-pre/Containerfile" <<'PY'

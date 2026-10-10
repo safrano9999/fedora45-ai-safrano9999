@@ -25,8 +25,8 @@ def snapshot(repository="safrano9999/FIXTURE", commit="a" * 40):
 
 class SnapshotTests(unittest.TestCase):
     def test_litellm_free_source_is_explicitly_allowed_in_both_validators(self):
-        selected = snapshot("f24sales/litellm-free")
-        self.assertIn("f24sales/litellm-free", validate_snapshot(selected))
+        selected = snapshot("safrano9999/litellm-free")
+        self.assertIn("safrano9999/litellm-free", validate_snapshot(selected))
         script = "const m=require(process.argv[1]);const s=JSON.parse(process.argv[2]);m.validateSnapshot(s,m.snapshotId(s));"
         subprocess.run(['node', '-e', script, str(ROOT/'n8n-sources/source-snapshot.js'), json.dumps(selected)], check=True)
         for repository in ("f24sales/other", "someone/litellm-free"):
@@ -89,7 +89,7 @@ class SnapshotTests(unittest.TestCase):
             {'repository':'safrano9999/NOTE','ref':'note','commit':'f'*40,
              'release':{'ref':'note','asset':'note-latest.zip','sha256':'a'*64}},
             {'repository':'safrano9999/opencode-ephemeral','ref':'HEAD','commit':'2'*40},
-            {'repository':'f24sales/litellm-free','ref':'HEAD','commit':'3'*40}]
+            {'repository':'safrano9999/litellm-free','ref':'HEAD','commit':'3'*40}]
         override = openclaw_override((ROOT.parent/'fedora45-ai-core-pre/Containerfile').read_text(), current['openclaw'])
         selected['openclaw_source'] = {'version':current['openclaw'], 'override_commit':override, 'commit':override or '1'*40}
         selected['repositories'][2]['release']['upstream_commit'] = override or '1'*40

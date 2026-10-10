@@ -315,7 +315,7 @@
       ]
     },
     {
-      "repository": "f24sales/litellm-free",
+      "repository": "safrano9999/litellm-free",
       "ref": "HEAD",
       "commit": "f11cb01575cd9c80469de8d6f49643109b16c147",
       "sources": [
