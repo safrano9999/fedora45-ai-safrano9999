@@ -317,7 +317,7 @@
     {
       "repository": "f24sales/litellm-free",
       "ref": "HEAD",
-      "commit": "97a6c21f269060ce9288af96760125b3d91a2687",
+      "commit": "f11cb01575cd9c80469de8d6f49643109b16c147",
       "sources": [
         {
           "layer": "fedora45-ai-core",
