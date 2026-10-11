@@ -168,28 +168,6 @@ def release_assets(release: dict[str, Any]) -> tuple[str, dict[str, Any], dict[s
     return tag, versioned[0], sidecars[0]
 
 
-def verify_checkout(destination: Path, repository: str, release_tag: str) -> str:
-    destination = destination.resolve()
-    if not destination.is_dir() or destination.is_symlink():
-        raise StageError(f"KACHELMANN checkout is missing: {destination}")
-    top = Path(run_text(["git", "rev-parse", "--show-toplevel"], cwd=destination)).resolve()
-    if top != destination:
-        raise StageError(f"Destination is not the KACHELMANN checkout root: {destination}")
-    head = run_text(["git", "rev-parse", "HEAD"], cwd=destination).lower()
-    if re.fullmatch(r"[0-9a-f]{40}", head) is None:
-        raise StageError("KACHELMANN checkout has an invalid HEAD")
-    comparison = gh_json(f"repos/{repository}/compare/{release_tag}...{head}")
-    base = comparison.get("base_commit")
-    merge_base = comparison.get("merge_base_commit")
-    base_sha = base.get("sha", "").lower() if isinstance(base, dict) else ""
-    merge_sha = merge_base.get("sha", "").lower() if isinstance(merge_base, dict) else ""
-    if comparison.get("status") not in {"ahead", "identical"} or base_sha != merge_sha:
-        raise StageError(
-            f"Prepared KACHELMANN checkout {head} does not contain release {release_tag}"
-        )
-    return head
-
-
 def atomic_stage(source: Path, destination: Path) -> Path:
     existing = sorted(
         path.name
@@ -241,7 +219,6 @@ def main() -> int:
             raise StageError("GH_TOKEN is required to read the KACHELMANN release")
         release = gh_json(f"repos/{arguments.repository}/releases/latest")
         tag, apk_asset, checksum_asset = release_assets(release)
-        verify_checkout(arguments.destination, arguments.repository, tag)
         with tempfile.TemporaryDirectory(prefix="kachelmann-apk-") as raw_directory:
             directory = Path(raw_directory)
             apk = directory / str(apk_asset["name"])

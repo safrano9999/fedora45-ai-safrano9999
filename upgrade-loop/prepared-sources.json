@@ -149,18 +149,6 @@
       ]
     },
     {
-      "repository": "safrano9999/KACHELMANN",
-      "ref": "HEAD",
-      "commit": "11fe1634ccfcb0687158709de8005e530de132e5",
-      "sources": [
-        {
-          "layer": "fedora45-ai-kachelmann",
-          "file": "fedora45-ai-kachelmann/build.conf",
-          "kind": "extensions"
-        }
-      ]
-    },
-    {
       "repository": "safrano9999/WELCOME",
       "ref": "HEAD",
       "commit": "bd59fc65391659cb390468f39a91e4e1822bcb1e",

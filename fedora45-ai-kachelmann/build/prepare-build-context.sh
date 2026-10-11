@@ -213,7 +213,7 @@ sync_repository() {
     path="$SOURCE_DIR/$repository"
     expected_origin="https://github.com/safrano9999/$repository"
     local locked_commit=""
-    if [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ]; then
+    if [ "$repository" != "KACHELMANN" ] && [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ]; then
         locked_commit="$(python3 "${SAFRANO_SOURCE_MANIFEST%/*}/source_snapshot.py" \
             --manifest "$SAFRANO_SOURCE_MANIFEST" --repository "safrano9999/$repository")"
     fi
