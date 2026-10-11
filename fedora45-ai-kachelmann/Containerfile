@@ -1,5 +1,4 @@
-ARG AI_BASE_IMAGE
-FROM ${AI_BASE_IMAGE} AS ai-kachelmann
+FROM ghcr.io/safrano9999/fedora45-ai-base:latest AS ai-kachelmann
 
 ARG KACHELMANN_SOURCE_KEY
 
