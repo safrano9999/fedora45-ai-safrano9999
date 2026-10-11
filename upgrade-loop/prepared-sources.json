@@ -151,7 +151,7 @@
     {
       "repository": "safrano9999/KACHELMANN",
       "ref": "HEAD",
-      "commit": "11fe1634ccfcb0687158709de8005e530de132e5",
+      "commit": "a0747b73365e585a3b285c65a886bc90e961dd9c",
       "sources": [
         {
           "layer": "fedora45-ai-kachelmann",
