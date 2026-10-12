@@ -358,6 +358,7 @@ jobs:
             --entrypoint bash \
             "$image" -lc '
             set -euo pipefail
+            export OPENCLAW_WEB_FETCH_ALLOWED_HOSTNAMES=host.containers.internal
             if ! /usr/local/bin/openclaw-ephemeral.py configure; then
               # This default fixture receives no runtime credentials.
               openclaw config validate || true
@@ -365,6 +366,7 @@ jobs:
               exit 1
             fi
             openclaw config validate
+            python3 -c '\''import json; c=json.load(open("/root/.openclaw/openclaw.json")); assert c["tools"]["web"]["fetch"]["ssrfPolicy"] == {"allowedHostnames": ["host.containers.internal"]}'\''
           '
           docker run --rm \
             -e MCP_SERVER_URL=http://kachelmann-mcp:11041/mcp \

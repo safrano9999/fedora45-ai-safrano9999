@@ -8,6 +8,10 @@ on:
       target_tag:
         required: true
         type: string
+      core_pre_only:
+        description: Retag only the unchanged Core-pre foundation before rebuilding Core and above
+        type: boolean
+        default: false
       build_commit:
         description: Exact source revision of completed Core-pre, Core and Base
         required: true
@@ -38,6 +42,7 @@ jobs:
           TARGET_TAG: ${{ inputs.target_tag }}
           BUILD_COMMIT: ${{ inputs.build_commit }}
           UPPER_BUILD_COMMIT: ${{ inputs.upper_build_commit }}
+          CORE_PRE_ONLY: ${{ inputs.core_pre_only }}
         shell: bash
         run: |
           set -euo pipefail
@@ -48,6 +53,9 @@ jobs:
           [[ "$UPPER_BUILD_COMMIT" =~ ^[0-9a-f]{40}$ ]]
           declare -A digests
           stages=(core-pre core base kachelmann safrano9999 safrano9999-full)
+          if [[ "$CORE_PRE_ONLY" == true ]]; then
+            stages=(core-pre)
+          fi
           for stage in "${stages[@]}"; do
             image="ghcr.io/safrano9999/fedora45-ai-$stage"
             digest="$(docker buildx imagetools inspect "$image:$SOURCE_TAG" --format '{{json .Manifest}}' | jq -er .digest)"
@@ -59,6 +67,10 @@ jobs:
             docker buildx imagetools inspect "$image@$digest" --format '{{json .Image}}' |
               jq -e --arg revision "$revision" '(.config // .["linux/amd64"].config).Labels["org.opencontainers.image.revision"] == $revision' >/dev/null
             digests[$stage]="$digest"
+            if docker buildx imagetools inspect "$image:$TARGET_TAG" >/dev/null 2>&1; then
+              echo "Refusing to overwrite existing version $image:$TARGET_TAG" >&2
+              exit 1
+            fi
           done
           for stage in "${stages[@]}"; do
             image="ghcr.io/safrano9999/fedora45-ai-$stage"

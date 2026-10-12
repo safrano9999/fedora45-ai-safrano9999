@@ -269,7 +269,7 @@
     {
       "repository": "safrano9999/openclaw-ephemeral",
       "ref": "HEAD",
-      "commit": "b0abe0d575e1e4fbdeb80a3d46e01c24f046e298",
+      "commit": "c34d6ce0b21403f271d76da2501d7992b7303ce7",
       "sources": [
         {
           "layer": "fedora45-ai-core",
