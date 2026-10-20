@@ -1,0 +1,145 @@
+# syntax=docker/dockerfile:1
+ARG AI_CORE_PRE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core-pre:2026.9.17.11
+FROM ${AI_CORE_PRE_IMAGE} AS core-sources
+# No Git fragment: BuildKit fetches the current default branch directly.
+ADD https://github.com/safrano9999/openclaw-ephemeral.git /sources/openclaw-ephemeral/
+ADD https://github.com/safrano9999/hermes-ephemeral.git /sources/hermes-ephemeral/
+ADD https://github.com/safrano9999/opencode-ephemeral.git /sources/opencode-ephemeral/
+ADD https://github.com/safrano9999/litellm-free.git /sources/litellm-free/
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+    gh release download latest --repo safrano9999/NOTE \
+      --pattern note-latest.zip --pattern note-latest.zip.sha256 --dir /sources/note \
+ && cd /sources/note && sha256sum -c note-latest.zip.sha256
+
+FROM ${AI_CORE_PRE_IMAGE} AS ai-core
+
+ARG OPENCLAW_VERSION=2026.9.4
+ARG OPENCLAW_UPSTREAM_SHA=3a9d69db306cd7f081e06254cb89c4bcc14a7107
+ARG OPENCLAW_DETERMINISTIC_TAG=2026.9.4-deterministic.4
+ARG OPENCLAW_DETERMINISTIC_SHA256=4a6e0423c7fc93993155df004c0b6d091eb573ae0e7f7f6a431fe416a407a49a
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+    gh release download "${OPENCLAW_DETERMINISTIC_TAG}" \
+      --repo safrano9999/openclaw-deterministic-latest \
+      --pattern "openclaw-${OPENCLAW_VERSION}-deterministic.tar.gz" \
+      --output /tmp/openclaw-deterministic.tar.gz \
+ && echo "${OPENCLAW_DETERMINISTIC_SHA256}  /tmp/openclaw-deterministic.tar.gz" | sha256sum -c -
+
+LABEL org.opencontainers.image.title="fedora45-ai-core" \
+      org.opencontainers.image.description="Small ephemeral OpenClaw, NOTE, Hermes configuration, and systemd runtime layer on fedora45-ai-core-pre." \
+      org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
+      io.safrano9999.parent="fedora45-ai-core-pre" \
+      io.safrano9999.openclaw.version="${OPENCLAW_VERSION}" \
+      io.safrano9999.openclaw.build="${OPENCLAW_VERSION}-patched" \
+      io.safrano9999.openclaw.upstream-commit="${OPENCLAW_UPSTREAM_SHA}" \
+      io.safrano9999.openclaw.deterministic-release="${OPENCLAW_DETERMINISTIC_TAG}" \
+      io.safrano9999.note.repository="safrano9999/NOTE" \
+      io.safrano9999.note.release="latest"
+
+# Assemble the distro-neutral OpenClaw payload directly on Fedora.
+ENV HOME=/root \
+    OPENCLAW_CONFIG_DIR=/root/.openclaw \
+    OPENCLAW_CONFIG=/root/.openclaw/openclaw.json \
+    OPENCLAW_GATEWAY_PORT=18789 \
+    OPENCLAW_DISABLE_BONJOUR=1 \
+    PYTHONPATH=/usr/local/lib/openclaw-ephemeral:/usr/local/lib/hermes-ephemeral \
+    PYTHONUNBUFFERED=1
+
+RUN install -d -o root -g root -m 0700 "${OPENCLAW_CONFIG_DIR}"
+
+# LiteLLM-Free is immutable image code; credentials and client config stay runtime-only.
+RUN --mount=type=cache,target=/var/cache/dnf \
+    dnf -y install cronie python3-pyyaml python3-dotenv
+COPY --from=core-sources /sources/litellm-free/ /opt/safrano9999/litellm-free/
+COPY --from=core-sources /sources/litellm-free/image/runtime/ /
+RUN chmod 0755 /opt/safrano9999/litellm-free/ops/refresh-models.sh \
+ && python3 -c 'import yaml, dotenv' \
+ && systemctl enable crond.service
+
+# Deterministic alone stays pinned. Codex is installed from its
+# official npm package so OpenClaw records trusted npm provenance.
+RUN --mount=type=bind,source=build,target=/tmp/core-build python3 /tmp/core-build/install-deterministic.py /tmp/openclaw-deterministic.tar.gz "$(npm root -g)/openclaw" "$OPENCLAW_VERSION" "$OPENCLAW_UPSTREAM_SHA" "$OPENCLAW_DETERMINISTIC_TAG" && rm /tmp/openclaw-deterministic.tar.gz
+RUN --mount=type=cache,target=/root/.npm \
+    openclaw plugins install \
+      --force \
+      --accept-capabilities \
+      --pin \
+      "npm:@openclaw/codex@${OPENCLAW_VERSION}"
+RUN --mount=type=bind,source=build,target=/tmp/core-build \
+    openclaw plugins install --force --accept-capabilities \
+      /tmp/core-build/voice-plugins/speaches
+RUN --mount=type=bind,source=build,target=/tmp/core-build \
+    --mount=type=bind,from=core-sources,source=/sources/openclaw-ephemeral,target=/tmp/openclaw-ephemeral \
+    python3 /tmp/core-build/install-ephemeral.py /tmp/openclaw-ephemeral
+RUN --mount=type=bind,source=build,target=/tmp/core-build \
+    --mount=type=bind,from=core-sources,source=/sources/opencode-ephemeral,target=/tmp/opencode-ephemeral \
+    python3 /tmp/core-build/install-opencode-ephemeral.py /tmp/opencode-ephemeral
+
+COPY --from=core-sources /sources/note/note-latest.zip /tmp/note-latest.zip
+
+RUN set -euo pipefail; \
+    openclaw_root="$(npm root -g)/openclaw"; \
+    codex_root="$(openclaw plugins inspect codex --json | jq -er '.install.installPath')"; \
+    test -f "$codex_root/openclaw.plugin.json"; \
+    test -f "$codex_root/$(jq -er '.openclaw.runtimeExtensions[0] // .openclaw.extensions[0]' "$codex_root/package.json")"; \
+    openclaw plugins install \
+      --force \
+      --accept-capabilities \
+      /tmp/note-latest.zip; \
+    rm -f /tmp/note-latest.zip; \
+    test -f /root/.openclaw/extensions/note/openclaw.plugin.json; \
+    sed -i 's/psycopg\[binary\]/psycopg/g' /root/.openclaw/extensions/note/requirements.txt; \
+    note_python="$(/root/.openclaw/extensions/note/scripts/setup-python.sh)"; \
+    "$note_python" -c 'import dotenv, sqlalchemy, psycopg, pymysql'; \
+    rm -rf /root/.openclaw/extensions/note/.uv; \
+    node "$openclaw_root/openclaw.mjs" --version | grep -F "${OPENCLAW_VERSION}"; \
+    find /root/.openclaw -maxdepth 1 -name 'openclaw.json*' -delete
+
+# Preserve only public install records outside the persistent state directory.
+# Bootstrap uses them when an older SQLite ledger is mounted over this image.
+RUN python3 - <<'PY'
+import json
+import sqlite3
+from pathlib import Path
+
+database_path = Path("/root/.openclaw/state/openclaw.sqlite")
+with sqlite3.connect(database_path.as_uri() + "?mode=ro", uri=True) as database:
+    row = database.execute(
+        "SELECT value_json FROM config_machine_state WHERE state_key = ?",
+        ("plugins.installedIndex",),
+    ).fetchone()
+records = json.loads(row[0])["index"]["installRecords"]
+assert {"codex", "brave", "mai-transcribe", "speaches", "note"} <= records.keys()
+for record in records.values():
+    package = json.loads((Path(record["installPath"]) / "package.json").read_text())
+    assert package["version"] == record["version"]
+destination = Path("/usr/local/share/openclaw/image-plugin-installs.json")
+destination.parent.mkdir(parents=True, exist_ok=True)
+destination.write_text(json.dumps({"schemaVersion": 1, "installRecords": records}) + "\n")
+PY
+
+# Runtime order added here: optional init hooks, Vditor, fresh OpenClaw and
+# Hermes configuration/gateways. Persistence comes from the Core-pre parent.
+COPY image/runtime/ /
+COPY --from=core-sources /sources/hermes-ephemeral/image/runtime/ /
+
+RUN python3 /usr/local/libexec/openclaw-tts-provider-order.py
+
+RUN chmod 0755 \
+      /usr/local/bin/fedora45-ai-init-hooks \
+      /usr/local/bin/hermes-ephemeral \
+      /usr/lib/systemd/system-generators/fedora45-runtime-environment-generator \
+ && systemctl enable \
+      fedora45-ai-init-hooks.service \
+      vditor-notes.service \
+      openclaw-config.service \
+      openclaw.service \
+      openclaw-ephemeral-schedule.service \
+      opencode-config.service \
+      hermes-config.service \
+      hermes.service \
+      hermes-dashboard.service
+
+USER root
+WORKDIR /root
+STOPSIGNAL SIGRTMIN+3
+CMD ["/sbin/init"]

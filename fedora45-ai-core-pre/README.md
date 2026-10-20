@@ -40,12 +40,7 @@ chat/user ID. The default bridge model is `opencode/mimo-v2.6-flash-free`.
 the deterministic OpenClaw overlay, `openclaw-ephemeral`, NOTE, Hermes/OpenClaw
 configuration generators, and their project-aware systemd runtime units.
 
-Local build:
-
-```bash
-gh auth setup-git
-./build/build-local.sh
-```
-
-The build fails if the private `persistainer` source cannot be fetched or its
-runtime overlay is incomplete; a previously staged payload is never reused.
+Builds run exclusively through the GitHub Actions cascade in
+`SCRIPTS/githubactions/fedora45-ai-safrano9999`. Persistainer is fetched directly
+from its current Git default branch by the Containerfile; no staged source pin
+or host-side vendor directory is used.

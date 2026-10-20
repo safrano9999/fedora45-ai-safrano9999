@@ -9,16 +9,12 @@ fedora45-ai-core-pre -> fedora45-ai-core -> fedora45-ai-base -> fedora45-ai-kach
 
 The heavy generic Fedora 45 packages, toolchains, OpenClaw/Hermes installations,
 and third-party command-line tools live in `fedora45-ai-core-pre`. Core imports
-the pinned deterministic OpenClaw distribution, ten `openclaw_ephemeral`
-Python/runtime files, the pinned NOTE release, and the owner runtime overlays
-from `openclaw-ephemeral`, private `hermes-ephemeral`, and pinned
-`opencode-ephemeral`.
-`build/prepare-build-context.sh` verifies and stages those inputs below ignored
-`build/vendor/`; the Containerfile verifies the release assets again and
-installs them directly into the Fedora-native npm and Python runtimes inherited
-from Core-pre. No Debian or Ephemeral container image is used as a build
-source. The image
-retains no generated OpenClaw configuration; configuration is rebuilt from
+the pinned deterministic OpenClaw distribution. Its Containerfile obtains
+`openclaw-ephemeral`, `hermes-ephemeral`, `opencode-ephemeral`, and `litellm-free`
+directly from their current Git default branches, and NOTE from its `latest`
+release. BuildKit handles Git fetching; no source snapshot or prepared commit
+list overrides these sources. Release checksums are verified before installation.
+The image retains no generated OpenClaw configuration; configuration is rebuilt from
 injected environment variables on each container start. The private
 `persistainer` runtime inherited from Core-pre projects all declared persistent
 paths before the three ephemeral configurators and their gateways start.
@@ -77,14 +73,7 @@ ignored, disabled units are not started by those edges, and condition-skipped
 units are already complete. Listener units expose readiness through the common
 bounded `fedora45-wait-ready` helper, so the final jobs need no fixed sleep.
 
-Prepare or build locally with:
-
-```bash
-gh auth setup-git
-./build/prepare-build-context.sh
-./build/build-local.sh
-```
-
-`./setup.sh` renders per-instance Compose and Quadlet files below
-`CONTAINER/<name>/`. Use `--config-only`, `--pull`, or `--build` for
-noninteractive operation; an interactive run defaults to the local build.
+Build and publish through the GitHub Actions cascade maintained in
+`SCRIPTS/githubactions/fedora45-ai-safrano9999`. Private Git sources and release
+downloads use BuildKit secrets; credentials are not stored in image layers.
+Image pulls on the host are handled exclusively by Smart1.

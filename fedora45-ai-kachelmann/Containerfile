@@ -1,17 +1,26 @@
+# syntax=docker/dockerfile:1
 ARG AI_BASE_IMAGE
+FROM ${AI_BASE_IMAGE} AS layer-sources
+USER root
+COPY build/ /tmp/fedora45-ai-kachelmann/build/
+COPY build.conf fedora45-ai-kachelmann.*_example /tmp/fedora45-ai-kachelmann/
+# Native Git ADD follows each repository's current default branch.
+ADD --keep-git-dir=true https://github.com/safrano9999/KACHELMANN.git /tmp/fedora45-ai-kachelmann/safrano9999/KACHELMANN/
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+    /tmp/fedora45-ai-kachelmann/build/assemble-runtime.sh \
+ && find /tmp/fedora45-ai-kachelmann/safrano9999 -name .git -type d -prune -exec rm -rf {} +
+
 FROM ${AI_BASE_IMAGE} AS ai-kachelmann
 
-ARG KACHELMANN_SOURCE_KEY
 
 LABEL org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
       org.opencontainers.image.title="fedora45-ai-kachelmann" \
       org.opencontainers.image.description="Fedora 45 AI Base with the KACHELMANN contribution." \
-      io.safrano9999.parent="fedora45-ai-base" \
-      io.safrano9999.kachelmann-source-tags.sha256="${KACHELMANN_SOURCE_KEY}"
+      io.safrano9999.parent="fedora45-ai-base"
 
 USER root
 
-COPY requirements.kachelmann.txt /requirements.kachelmann.txt
+COPY --from=layer-sources /tmp/fedora45-ai-kachelmann/requirements.kachelmann.txt /requirements.kachelmann.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     sed -i 's/psycopg\[binary\]/psycopg/g' /requirements.kachelmann.txt \
  && pip install -r /requirements.kachelmann.txt \
@@ -20,22 +29,17 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 ENV KACHELMANN_DIR=/opt/safrano9999/KACHELMANN \
     KACHELMANN_PYTHON=/usr/bin/python3
 
-COPY .kachelmann-source-tags.tsv /README/kachelmann-source-tags.tsv
-COPY .fedora45-ai-repositories.list /usr/local/share/fedora45-ai/kachelmann-repositories.list
-COPY .fedora45-image-runtime/manifest.tsv /usr/local/share/fedora45-ai/kachelmann-runtime-files.tsv
-COPY .fedora45-image-runtime/systemd-enable.list /usr/local/share/fedora45-ai/kachelmann-systemd-enable.list
-COPY .fedora45-image-runtime/rootfs/ /
+COPY --from=layer-sources /tmp/fedora45-ai-kachelmann/.kachelmann-source-tags.tsv /README/kachelmann-source-tags.tsv
+COPY --from=layer-sources /tmp/fedora45-ai-kachelmann/.fedora45-ai-repositories.list /usr/local/share/fedora45-ai/kachelmann-repositories.list
+COPY --from=layer-sources /tmp/fedora45-ai-kachelmann/.fedora45-image-runtime/manifest.tsv /usr/local/share/fedora45-ai/kachelmann-runtime-files.tsv
+COPY --from=layer-sources /tmp/fedora45-ai-kachelmann/.fedora45-image-runtime/systemd-enable.list /usr/local/share/fedora45-ai/kachelmann-systemd-enable.list
+COPY --from=layer-sources /tmp/fedora45-ai-kachelmann/.fedora45-image-runtime/rootfs/ /
 
-COPY safrano9999/ /opt/safrano9999/
+COPY --from=layer-sources /tmp/fedora45-ai-kachelmann/safrano9999/ /opt/safrano9999/
+COPY safrano9999/KACHELMANN/*.apk /opt/safrano9999/KACHELMANN/
 RUN sed -i 's/psycopg\[binary\]/psycopg/g' /opt/safrano9999/KACHELMANN/requirements.txt
 
-RUN uv pip install \
-      --python /usr/local/lib/hermes-agent/venv/bin/python \
-      --no-cache \
-      "SQLAlchemy>=2.0" \
- && /usr/local/lib/hermes-agent/venv/bin/python -c 'import sqlalchemy'
-
-COPY .fedora45-image-buildtime/ /tmp/fedora45-image-buildtime/
+COPY --from=layer-sources /tmp/fedora45-ai-kachelmann/.fedora45-image-buildtime/ /tmp/fedora45-image-buildtime/
 COPY build/run-container-buildtime.sh /tmp/fedora45-image-buildtime/run-container-buildtime
 RUN --network=none \
     /tmp/fedora45-image-buildtime/run-container-buildtime \

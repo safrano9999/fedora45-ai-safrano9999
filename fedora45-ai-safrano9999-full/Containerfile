@@ -1,30 +1,39 @@
+# syntax=docker/dockerfile:1
 ARG AI_SAFRANO9999_IMAGE
+FROM ${AI_SAFRANO9999_IMAGE} AS layer-sources
+USER root
+COPY build/ /tmp/fedora45-ai-safrano9999-full/build/
+COPY build.conf fedora45-ai-safrano9999-full.*_example /tmp/fedora45-ai-safrano9999-full/
+# Native Git ADD follows each repository's current default branch.
+ADD --keep-git-dir=true https://github.com/safrano9999/VikAI.git /tmp/fedora45-ai-safrano9999-full/safrano9999/VikAI/
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+    /tmp/fedora45-ai-safrano9999-full/build/assemble-runtime.sh \
+ && find /tmp/fedora45-ai-safrano9999-full/safrano9999 -name .git -type d -prune -exec rm -rf {} +
+
 FROM ${AI_SAFRANO9999_IMAGE} AS ai-safrano9999-full
 
-ARG SAFRANO9999_FULL_SOURCE_KEY
 
 LABEL org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
       org.opencontainers.image.title="fedora45-ai-safrano9999-full" \
       org.opencontainers.image.description="Optional VikAI agents on Fedora AI Safrano." \
-      io.safrano9999.parent="fedora45-ai-safrano9999" \
-      io.safrano9999.source-tags.sha256="${SAFRANO9999_FULL_SOURCE_KEY}"
+      io.safrano9999.parent="fedora45-ai-safrano9999"
 
 USER root
 
-COPY requirements.safrano9999-full.txt /requirements.safrano9999-full.txt
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999-full/requirements.safrano9999-full.txt /requirements.safrano9999-full.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r /requirements.safrano9999-full.txt \
  && pip check
 
-COPY .safrano9999-full-source-tags.tsv /README/safrano9999-full-source-tags.tsv
-COPY .fedora45-ai-repositories.list /usr/local/share/fedora45-ai/safrano9999-full-repositories.list
-COPY .fedora45-image-runtime/manifest.tsv /usr/local/share/fedora45-ai/safrano9999-full-runtime-files.tsv
-COPY .fedora45-image-runtime/systemd-enable.list /usr/local/share/fedora45-ai/safrano9999-full-systemd-enable.list
-COPY .fedora45-image-runtime/rootfs/ /
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999-full/.safrano9999-full-source-tags.tsv /README/safrano9999-full-source-tags.tsv
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999-full/.fedora45-ai-repositories.list /usr/local/share/fedora45-ai/safrano9999-full-repositories.list
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999-full/.fedora45-image-runtime/manifest.tsv /usr/local/share/fedora45-ai/safrano9999-full-runtime-files.tsv
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999-full/.fedora45-image-runtime/systemd-enable.list /usr/local/share/fedora45-ai/safrano9999-full-systemd-enable.list
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999-full/.fedora45-image-runtime/rootfs/ /
 
-COPY safrano9999/ /opt/safrano9999/
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999-full/safrano9999/ /opt/safrano9999/
 
-COPY .fedora45-image-buildtime/ /tmp/fedora45-image-buildtime/
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999-full/.fedora45-image-buildtime/ /tmp/fedora45-image-buildtime/
 COPY build/run-container-buildtime.sh /tmp/fedora45-image-buildtime/run-container-buildtime
 RUN --network=none \
     /tmp/fedora45-image-buildtime/run-container-buildtime \

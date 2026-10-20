@@ -11,7 +11,7 @@ def install(source: Path, destination: Path) -> None:
     shutil.copytree(source / "openclaw_ephemeral", library, dirs_exist_ok=True)
     for relative, name in (
         ("openclaw-ephemeral.py", "openclaw-ephemeral.py"),
-        ("runtime/yolo.sh", "openclaw-ephemeral-yolo"),
+        ("container/runtime/yolo.sh", "openclaw-ephemeral-yolo"),
     ):
         target = destination / "usr/local/bin" / name
         target.parent.mkdir(parents=True, exist_ok=True)

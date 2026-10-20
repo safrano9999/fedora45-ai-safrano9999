@@ -10,6 +10,11 @@ on:
         required: false
         default: ""
         type: string
+      build_series:
+        description: 'Containerfile series, e.g. 2026.9.17; empty uses Containerfile'
+        required: false
+        default: ''
+        type: string
       image_tag:
         description: "Fixed YYYY.M.N or YYYY.M.N.P version. Empty selects the next monthly number."
         required: false
@@ -94,6 +99,25 @@ jobs:
           ref: ${{ steps.source.outputs.commit }}
           fetch-depth: 1
 
+      - name: Select Containerfile
+        id: recipe
+        env:
+          BUILD_SERIES: ${{ inputs.build_series }}
+          REQUESTED_TAG: ${{ inputs.image_tag }}
+        run: |
+          set -euo pipefail
+          file="fedora45-ai-core/Containerfile"
+          if [ -n "$BUILD_SERIES" ]; then
+            [[ "$BUILD_SERIES" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+$ ]]
+            [[ "$REQUESTED_TAG" == "$BUILD_SERIES."* ]]
+            [[ "${REQUESTED_TAG#"$BUILD_SERIES."}" =~ ^[0-9]+$ ]]
+            file+="$BUILD_SERIES"
+          fi
+          test -f "$file"
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+          echo "CONTAINERFILE=$GITHUB_WORKSPACE/$file" >> "$GITHUB_ENV"
+          echo "BUILD_SERIES=$BUILD_SERIES" >> "$GITHUB_ENV"
+
       - name: Verify source checkout
         shell: bash
         env:
@@ -106,10 +130,6 @@ jobs:
             exit 1
           }
           printf 'Source commit: %s\n' "$actual" >> "$GITHUB_STEP_SUMMARY"
-          if [ -f upgrade-loop/prepared-sources.json ]; then
-            python3 upgrade-loop/source_snapshot.py --manifest upgrade-loop/prepared-sources.json
-            printf 'SAFRANO_SOURCE_MANIFEST=%s/upgrade-loop/prepared-sources.json\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
-          fi
 
       - name: Use the exact Deterministic result from Core-pre
         if: inputs.deterministic_release != ''
@@ -118,13 +138,7 @@ jobs:
           RELEASE_TAG: ${{ inputs.deterministic_release }}
         run: |
           set -euo pipefail
-          # Validate the prepared source pins before recording the build-derived artifact.
-          if [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ]; then
-            python3 upgrade-loop/source_snapshot.py --manifest "$SAFRANO_SOURCE_MANIFEST" --verify-core fedora45-ai-core/build.conf
-          fi
           python3 .github/scripts/record-openclaw-release.py
-          # The selected release is now pinned locally; Core-pre version/source stay authoritative.
-          echo 'SAFRANO_SOURCE_MANIFEST=' >> "$GITHUB_ENV"
 
       - name: Test independent OpenClaw component installers
         run: |
@@ -141,7 +155,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REQUESTED_TAG: ${{ inputs.image_tag }}
           REPLACE_EXISTING: ${{ inputs.replace_existing }}
-          CORE_PRE_TAG: ${{ inputs.core_pre_tag }}
+          CORE_PRE_TAG: ${{ inputs.core_pre_tag || (inputs.build_series != '' && inputs.image_tag) || '' }}
           PUSH_STABLE: ${{ inputs.push_stable }}
           PUSH_LATEST: ${{ inputs.push_latest }}
         run: |
@@ -164,96 +178,12 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Prepare ephemeral Core inputs
+      - name: Read pinned OpenClaw version
         id: build
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
         run: |
-          set -euo pipefail
-          gh auth setup-git
-          cd fedora45-ai-core
-          ./build/prepare-build-context.sh
-          set -a
-          . ./build.conf
-          set +a
-          for name in OPENCLAW_VERSION OPENCLAW_UPSTREAM_SHA OPENCLAW_DETERMINISTIC_TAG NOTE_REPOSITORY NOTE_RELEASE_TAG \
-            NOTE_RELEASE_ASSET NOTE_RELEASE_SHA256; do
-            [ -n "${!name:-}" ] || {
-              echo "Missing required build input: $name" >&2
-              exit 1
-            }
-          done
-          for name in NOTE_RELEASE_SHA256; do
-            [[ "${!name}" =~ ^[0-9a-f]{64}$ ]] || {
-              echo "$name must be a lowercase SHA256" >&2
-              exit 1
-            }
-          done
-
-          vendor_files=(
-            build/vendor/openclaw-deterministic/openclaw-deterministic.tar.gz
-            build/vendor/note/note-latest.zip
-            build/vendor/openclaw-ephemeral/openclaw-ephemeral.py
-            build/vendor/openclaw-ephemeral/runtime/yolo.sh
-            build/vendor/openclaw-ephemeral/openclaw_ephemeral/__init__.py
-            build/vendor/openclaw-ephemeral/openclaw_ephemeral/cli.py
-            build/vendor/openclaw-ephemeral/openclaw_ephemeral/configuration.py
-            build/vendor/openclaw-ephemeral/openclaw_ephemeral/environment.py
-            build/vendor/openclaw-ephemeral/openclaw_ephemeral/filesystem.py
-            build/vendor/openclaw-ephemeral/openclaw_ephemeral/plugins.py
-            build/vendor/openclaw-ephemeral/openclaw_ephemeral/providers.py
-            build/vendor/openclaw-ephemeral/openclaw_ephemeral/scheduling.py
-            build/vendor/openclaw-ephemeral/openclaw_ephemeral/voice.py
-            build/vendor/openclaw-ephemeral/image/runtime/etc/systemd/system/openclaw-config.service
-            build/vendor/openclaw-ephemeral/image/runtime/etc/systemd/system/openclaw-ephemeral-schedule.service
-            build/vendor/openclaw-ephemeral/image/runtime/usr/local/libexec/openclaw-openai-refresh.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/bin/hermes-ephemeral
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/__init__.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/cli.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/configuration.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/environment.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/mcp.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/providers.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/profiles.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/webhooks.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/model_defaults.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/feedback_defaults.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-model-defaults/__init__.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-model-defaults/plugin.yaml
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-mcp-feedback/plugin.yaml
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-mcp-feedback/__init__.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/lib/hermes-ephemeral/hermes_ephemeral/main_session.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-main-session/__init__.py
-            build/vendor/hermes-ephemeral/image/runtime/usr/local/share/hermes-ephemeral/plugins/safrano-main-session/plugin.yaml
-            build/vendor/hermes-ephemeral/image/runtime/etc/systemd/system/hermes-config.service
-          )
-          for file in "${vendor_files[@]}"; do
-            [ -s "$file" ] || {
-              echo "Missing staged vendor file: $file" >&2
-              exit 1
-            }
-          done
-          for family in openclaw-ephemeral hermes-ephemeral; do
-            diff -u \
-              <(printf '%s\n' "${vendor_files[@]}" | grep -F "build/vendor/$family/" | LC_ALL=C sort) \
-              <(find "build/vendor/$family" -type f | LC_ALL=C sort) || {
-                echo "Unexpected $family vendor file set" >&2
-                exit 1
-              }
-          done
-          {
-            echo "openclaw_version=$OPENCLAW_VERSION"
-            echo "build_args<<EOF"
-            echo "OPENCLAW_VERSION=$OPENCLAW_VERSION"
-            echo "OPENCLAW_UPSTREAM_SHA=$OPENCLAW_UPSTREAM_SHA"
-            echo "OPENCLAW_DETERMINISTIC_TAG=$OPENCLAW_DETERMINISTIC_TAG"
-            echo "NOTE_REPOSITORY=$NOTE_REPOSITORY"
-            echo "NOTE_RELEASE_TAG=$NOTE_RELEASE_TAG"
-            echo "NOTE_RELEASE_ASSET=$NOTE_RELEASE_ASSET"
-            echo "NOTE_RELEASE_SHA256=$NOTE_RELEASE_SHA256"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          version="$(sed -n 's/^ARG OPENCLAW_VERSION=//p' "$CONTAINERFILE")"
+          test -n "$version"
+          echo "openclaw_version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -275,16 +205,18 @@ jobs:
           labels: |
             org.opencontainers.image.revision=${{ steps.source.outputs.commit }}
           context: ./fedora45-ai-core
-          file: ./fedora45-ai-core/Containerfile
+          file: ${{ steps.recipe.outputs.file }}
           target: ai-core
           platforms: linux/amd64
           pull: true
           no-cache: true
+          secrets: |
+            GIT_AUTH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
+            GH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
           push: true
           tags: ${{ steps.refs.outputs.tags }}
           build-args: |
             AI_CORE_PRE_IMAGE=${{ steps.refs.outputs.pre_ref }}
-            ${{ steps.build.outputs.build_args }}
 
       - name: Reclaim container build space
         run: .github/scripts/prune-container-build-space.sh
@@ -452,6 +384,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --ref "$GITHUB_REF_NAME" \
             -f "build_commit=$BUILD_COMMIT" \
+            -f "build_series=$BUILD_SERIES" \
             -f "image_tag=$IMAGE_TAG" \
             -f "core_tag=$IMAGE_TAG" \
             -f "push_stable=$PUSH_STABLE" \

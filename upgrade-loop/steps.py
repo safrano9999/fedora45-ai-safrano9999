@@ -203,8 +203,8 @@ for raw in sys.argv[2:]:
             spec = importlib.util.spec_from_file_location("component_preparation", ROOT / "prepare-container.py")
             preparation = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(preparation)
-            core = dict(line.split("=", 1) for line in (REPO / "fedora45-ai-core/build.conf").read_text().splitlines()
-                        if re.match(r"^[A-Z_][A-Z0-9_]*=", line))
+            core = dict(line[4:].split("=", 1) for line in (REPO / "fedora45-ai-core/Containerfile").read_text().splitlines()
+                        if re.match(r"^ARG [A-Z_][A-Z0-9_]*=", line))
             inputs = preparation.patch_inputs(selected, core,
                 gh("repos/safrano9999/openclaw-deterministic-latest/releases?per_page=100"),
                 gh("repos/safrano9999/openclaw-deterministic-latest/releases/latest"))
@@ -375,11 +375,11 @@ for raw in sys.argv[2:]:
             if count != 1:
                 raise ValueError("Expected exactly one version pin")
         changes = [(path, before, after)]
-        core = REPO / "fedora45-ai-core/build.conf"
+        core = REPO / "fedora45-ai-core/Containerfile"
         old_core = core.read_text()
         new_core = old_core
         for key, value in self.data.get("core_inputs", {}).items():
-            new_core, count = re.subn(r"^" + key + r"=.*$", key + "=" + value, new_core, flags=re.M)
+            new_core, count = re.subn(r"^ARG " + key + r"=.*$", "ARG " + key + "=" + value, new_core, flags=re.M)
             if count != 1: raise ValueError("Expected one Core input pin")
         changes.append((core, old_core, new_core))
         patch = "".join("".join(difflib.unified_diff(old.splitlines(True), new.splitlines(True),
@@ -464,7 +464,7 @@ for raw in sys.argv[2:]:
         if name == "commit-pins": return self.pins(apply=True)
         if name == "own-patches":
             # Core must explicitly name the new upstream and its reviewed artifact before building.
-            values = dict(line.split("=", 1) for line in (REPO / "fedora45-ai-core/build.conf").read_text().splitlines() if re.match(r"^[A-Z_]+=", line))
+            values = dict(line[4:].split("=", 1) for line in (REPO / "fedora45-ai-core/Containerfile").read_text().splitlines() if re.match(r"^ARG [A-Z_]+=", line))
             target = self.data["versions"]["openclaw"]["latest"]
             inputs = {}
             if values.get("OPENCLAW_VERSION") != target:
@@ -481,11 +481,6 @@ for raw in sys.argv[2:]:
                 foundation = (REPO / "fedora45-ai-core-pre/Containerfile").read_text()
                 override = __import__("source_snapshot").openclaw_override(foundation, target)
                 inputs["OPENCLAW_UPSTREAM_SHA"] = override or gh(f"repos/openclaw/openclaw/commits/v{target}")["sha"]
-            for component in ("openclaw", "hermes"):
-                version = self.data["versions"][component]
-                if version["current"] != version["latest"]:
-                    repository = component + "-ephemeral"
-                    inputs[component.upper() + "_EPHEMERAL_COMMIT"] = self.data.get("tested_sources", {}).get(repository, self.data["source_baseline"][repository])
             self.data["core_inputs"] = inputs
             return {"status": "PASS", "patch_tag": values["OPENCLAW_DETERMINISTIC_TAG"],
                     "patch_sha256": values["OPENCLAW_DETERMINISTIC_SHA256"]}

@@ -74,10 +74,10 @@ jobs:
           ALLOW_OPENCLAW_DOWNGRADE: ${{ inputs.allow_downgrade }}
         run: |
           python3 .github/scripts/record-openclaw-release.py
-          if git diff --quiet -- fedora45-ai-core/build.conf fedora45-ai-core-pre/Containerfile; then exit 0; fi
+          if git diff --quiet -- fedora45-ai-core/Containerfile fedora45-ai-core-pre/Containerfile; then exit 0; fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add fedora45-ai-core/build.conf fedora45-ai-core-pre/Containerfile
+          git add fedora45-ai-core/Containerfile fedora45-ai-core-pre/Containerfile
           git commit -m 'Pin verified OpenClaw runtime [skip ci]'
           # A concurrent Core edit must never be overwritten; the next run retries.
           git push origin HEAD:main

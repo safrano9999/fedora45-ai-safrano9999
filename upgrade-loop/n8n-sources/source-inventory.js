@@ -87,47 +87,38 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
       const version = openclawVersion || current;
       openclawSource = { version, override_commit: version === current ? override : '' };
     }
-    const helperPath = layer + '/build/prepare-build-context.sh';
-    const declarations = [[confPath, conf]];
-    if (paths.has(helperPath)) {
-      const helper = await file(helperPath);
-      declarations.push([helperPath, helper]);
-      const runtime = helper.match(/stage_runtime_assets\(\)\s*\{\s*local repository=([A-Za-z0-9._-]+)\s+local asset=([A-Za-z0-9._-]+)/);
-      if (runtime) runtimeAssets.set(OWNER + '/' + runtime[1], [runtime[2], runtime[2] + '.sha256']);
+    // Report the direct Containerfile sources; these commits are diagnostic
+    // evidence only and are never injected into the image build.
+    for (const match of cf.matchAll(/^ADD(?: --[\w-]+=[^ ]+)* https:\/\/github\.com\/(safrano9999\/[A-Za-z0-9._-]+)\.git(?:\s)/gm)) {
+      add(match[1], 'HEAD', layer, cfPath, 'containerfile-git');
     }
-    for (const [path, text] of declarations) {
-      for (const match of text.matchAll(/^([A-Z][A-Z0-9_]*_REPOSITORY)=/gm)) {
-        const key = match[1], prefix = key.slice(0, -'_REPOSITORY'.length);
-        const repo = literal(text, key);
-        if (!repo.startsWith(OWNER + '/') && repo !== 'f24sales/litellm-free') continue;
-        let sourceRef = null, selection = { type: 'default-branch' };
-        for (const suffix of ['_COMMIT', '_REF', '_RELEASE_TAG', '_TAG']) {
-          sourceRef = literal(conf, prefix + suffix, false);
-          if (sourceRef !== null) {
-            if (suffix === '_RELEASE_TAG' || suffix === '_TAG') {
-              const asset = prefix === 'OPENCLAW_DETERMINISTIC'
-                ? 'openclaw-' + (openclawVersion || literal(conf, 'OPENCLAW_VERSION')) + '-deterministic.tar.gz'
-                : literal(conf, prefix + '_RELEASE_ASSET', false);
-              selection = { type: 'latest-release', ...(asset ? { asset } : {}) };
-            }
-            break;
-          }
-        }
-        add(repo, sourceRef || 'HEAD', layer, path, 'declared-repository', selection);
-      }
+    if (layer === 'fedora45-ai-core') {
+      const declared = cf.replace(/^ARG /gm, '');
+      const tag = literal(declared, 'OPENCLAW_DETERMINISTIC_TAG');
+      const version = openclawVersion || literal(declared, 'OPENCLAW_VERSION');
+      add(OWNER + '/openclaw-deterministic-latest', tag, layer, cfPath, 'containerfile-release',
+          { type: 'pinned-release', asset: 'openclaw-' + version + '-deterministic.tar.gz' });
+      add(OWNER + '/NOTE', 'latest', layer, cfPath, 'containerfile-release',
+          { type: 'latest-release', asset: 'note-latest.zip' });
+    }
+    if (/--repo safrano9999\/NEXTCLOUD\s/.test(cf)) {
+      runtimeAssets.set(OWNER + '/NEXTCLOUD', ['nextcloud-fedora64-plugin-latest.zip', 'nextcloud-fedora64-plugin-latest.zip.sha256']);
     }
     for (const key of ['EXTENSIONS', 'STANDALONE']) {
       const value = literal(conf, key, false);
       if (value === null || value === '') continue;
       for (const entry of value.split(',')) {
-        const match = entry.match(/^([A-Za-z0-9][A-Za-z0-9._-]*)(?:@([A-Za-z0-9][A-Za-z0-9._/-]*))?$/);
+        const match = entry.match(/^([A-Za-z0-9][A-Za-z0-9._-]*)$/);
         if (!match) throw new Error('Invalid ' + key + ' repository specification');
-        add(OWNER + '/' + match[1], match[2] || 'HEAD', layer, confPath, key.toLowerCase());
+        const declared = repos.get((OWNER + '/' + match[1]).toLowerCase());
+        if (!declared?.sources.some(source => source.layer === layer && source.kind === 'containerfile-git')) {
+          throw new Error('Runtime role has no Containerfile Git source: ' + match[1]);
+        }
       }
     }
     const from = [...cf.matchAll(/^FROM\s+(\S+)(?:\s+AS\s+\S+)?\s*$/gim)];
-    if (from.length !== 1) throw new Error('Expected one unambiguous FROM in ' + cfPath);
-    let image = from[0][1];
+    if (!from.length) throw new Error('Missing final FROM in ' + cfPath);
+    let image = from.at(-1)[1];
     const arg = image.match(/^\$\{([A-Z][A-Z0-9_]*)\}$/);
     if (arg) image = literal(conf, arg[1]);
     if (image.includes('$')) throw new Error('Unresolved parent image');
@@ -144,7 +135,14 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
     for (const entry of repos.values()) {
       if (entry.repository === IMAGE_REPO) continue;
       entry.declared_ref = entry.ref;
-      if (entry.selection.type === 'latest-release') {
+      if (entry.selection.type === 'pinned-release') {
+        const release = await get('/repos/' + entry.repository + '/releases/tags/' + entry.ref);
+        const asset = (release.assets || []).find(a => a.name === entry.selection.asset);
+        if (release.draft || release.prerelease || !/^sha256:[0-9a-f]{64}$/.test(asset?.digest || '')) {
+          throw new Error('Missing pinned Deterministic release asset');
+        }
+        entry.release = {ref: entry.ref, asset: entry.selection.asset, sha256: asset.digest.slice(7)};
+      } else if (entry.selection.type === 'latest-release') {
         const selected = await latestRelease(get, entry.repository, entry.selection.asset);
         entry.ref = selected.ref;
         entry.release = selected;
@@ -164,7 +162,7 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
   return { schema_version: 1, target, image_repository: IMAGE_REPO, image_commit: commit,
     ...(openclawSource ? { openclaw_source: openclawSource } : {}),
     chain: chain.reverse(), external_base: externalBase, repositories: [...repos.values()],
-    source_policy: latest ? 'latest-resolved-for-preview' : 'prepared-pins-and-current-branches',
+    source_policy: 'containerfile-latest-with-pinned-deterministic',
     clone_depth: 1, clone_gate: 'READY_FOR_BUILD', local_build: false };
 }
 

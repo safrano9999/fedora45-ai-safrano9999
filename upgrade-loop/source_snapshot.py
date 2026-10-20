@@ -102,24 +102,16 @@ def validate_snapshot(snapshot):
     return entries
 
 
-def build_inputs(snapshot, core):
+def build_inputs(snapshot):
     entries = validate_snapshot(snapshot)
     try:
-        inputs = {name.upper() + "_EPHEMERAL_COMMIT": entries[f"safrano9999/{name}-ephemeral"]["commit"]
-                  for name in ("openclaw", "hermes")}
-        for key, repository in (("OPENCODE_EPHEMERAL_COMMIT", "safrano9999/opencode-ephemeral"),
-                                ("LITELLM_FREE_COMMIT", "safrano9999/litellm-free")):
-            if key in core:
-                inputs[key] = entries[repository]["commit"]
         version = snapshot["versions"]["openclaw"]["latest"]
         patch = entries["safrano9999/openclaw-deterministic-latest"]["release"]
-        note = entries[core["NOTE_REPOSITORY"].lower()]["release"]
-        if patch["asset"] != f"openclaw-{version}-deterministic.tar.gz" or note["asset"] != core["NOTE_RELEASE_ASSET"]:
+        if patch["asset"] != f"openclaw-{version}-deterministic.tar.gz":
             raise ValueError("Snapshot asset differs from target runtime")
-        inputs.update(OPENCLAW_VERSION=version, OPENCLAW_DETERMINISTIC_TAG=patch["ref"],
+        inputs = dict(OPENCLAW_VERSION=version, OPENCLAW_DETERMINISTIC_TAG=patch["ref"],
                       OPENCLAW_UPSTREAM_SHA=snapshot["openclaw_source"]["commit"],
-                      OPENCLAW_DETERMINISTIC_SHA256=patch["sha256"], NOTE_RELEASE_TAG=note["ref"],
-                      NOTE_RELEASE_SHA256=note["sha256"])
+                      OPENCLAW_DETERMINISTIC_SHA256=patch["sha256"])
         selected = snapshot.get("openclaw_source")
         if selected and (selected["version"] != version or selected["commit"] != inputs["OPENCLAW_UPSTREAM_SHA"]):
             raise ValueError("Deterministic release differs from the Core-pre source selection")
@@ -133,30 +125,6 @@ if __name__ == "__main__":
     from pathlib import Path
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", type=Path, required=True)
-    parser.add_argument("--repository")
-    parser.add_argument("--verify-core", type=Path)
-    parser.add_argument("--runtime-assets", action="store_true")
-    parser.add_argument("--runtime-asset-hash")
     args = parser.parse_args()
     snapshot = json.loads(args.manifest.read_text())
     entries = validate_snapshot(snapshot)
-    if args.repository:
-        if args.repository.lower() not in entries:
-            raise SystemExit("Repository missing from prepared source snapshot: " + args.repository)
-        entry = entries[args.repository.lower()]
-        if args.runtime_assets:
-            if not entry.get("runtime_assets"):
-                raise SystemExit("Runtime assets missing from snapshot")
-            print(json.dumps({"assets": entry["runtime_assets"]}))
-        elif args.runtime_asset_hash:
-            assets = [a for a in entry.get("runtime_assets", []) if a["name"] == args.runtime_asset_hash]
-            if len(assets) != 1:
-                raise SystemExit("Runtime asset missing or duplicated in snapshot")
-            print(assets[0]["sha256"])
-        else:
-            print(entry["commit"])
-    if args.verify_core:
-        core = dict(line.split("=", 1) for line in args.verify_core.read_text().splitlines()
-                    if re.match(r"^[A-Z_][A-Z0-9_]*=", line))
-        if any(core.get(k) != v for k, v in build_inputs(snapshot, core).items()):
-            raise SystemExit("Core build inputs differ from the prepared source snapshot")

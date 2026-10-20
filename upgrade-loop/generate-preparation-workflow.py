@@ -256,10 +256,10 @@ if(report.status!=='NO_UPDATE'){
  if(!validation&&!/^[0-9a-f]{40}$/.test(report.build_commit??''))throw new Error('Missing build commit');
  for(const name of ['openclaw','hermes']){
   const sha=report.ephemeral_commits?.[name];
-  if(!/^[0-9a-f]{40}$/.test(sha??'')||report.checks?.[name]?.status!=='PASS'||report.checks[name].generator_commit!==sha||report.build_inputs?.[name.toUpperCase()+'_EPHEMERAL_COMMIT']!==sha)throw new Error('Incomplete generator evidence: '+name);
+  if(!/^[0-9a-f]{40}$/.test(sha??'')||report.checks?.[name]?.status!=='PASS'||report.checks[name].generator_commit!==sha||report.ephemeral_commits?.[name]!==sha)throw new Error('Incomplete generator evidence: '+name);
   if(entries['safrano9999/'+name+'-ephemeral']?.commit!==sha)throw new Error('Generator differs from n8n snapshot');
  }
- for(const [repo,prefix] of [['openclaw-deterministic-latest','OPENCLAW_DETERMINISTIC'],['NOTE','NOTE_RELEASE']]){
+ for(const [repo,prefix] of [['openclaw-deterministic-latest','OPENCLAW_DETERMINISTIC']]){
   const release=entries['safrano9999/'+repo]?.release;
   if(!release||report.build_inputs?.[prefix+'_TAG']!==release.ref||report.build_inputs?.[prefix+'_SHA256']!==release.sha256)throw new Error('Release differs from n8n snapshot');
   if(repo==='openclaw-deterministic-latest'&&report.build_inputs?.OPENCLAW_UPSTREAM_SHA!==report.source_snapshot.openclaw_source?.commit)throw new Error('OpenClaw source differs from n8n snapshot');

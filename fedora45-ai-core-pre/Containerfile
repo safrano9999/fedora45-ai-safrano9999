@@ -1,9 +1,13 @@
+# syntax=docker/dockerfile:1
+FROM scratch AS persistainer-source
+ADD https://github.com/safrano9999/persistainer.git /persistainer/
+
 FROM fedora45-approved-beta AS ai-core-pre
 # The Action supplies this named OCI context from the approved Fedora 45 Beta
 # archive, pinned by SHA256 and manifest digest in build-dependencies-whitelist.json.
 
 ARG WEBHOOK_VERSION
-ARG HERMES_VERSION=0.21.5
+ARG HERMES_VERSION=0.22.2
 ARG VDITOR_VERSION
 ARG FEDORA_REPOMD_KEY
 ARG UV_VERSION
@@ -35,8 +39,8 @@ ARG CLAUDE_CODE_SHA256
 ARG VDITOR_SHA256
 ARG NPM_VERSION
 ARG NPM_SHA256
-ARG OPENCODE_VERSION=1.18.34
-ARG OPENCODE_TELEGRAM_VERSION=0.26.2
+ARG OPENCODE_VERSION=1.19.3
+ARG OPENCODE_TELEGRAM_VERSION=0.26.5
 
 LABEL org.opencontainers.image.title="fedora45-ai-core-pre" \
       org.opencontainers.image.description="Heavy generic Fedora 45 AI toolchain foundation without Safrano project content or ephemeral runtime configuration." \
@@ -100,12 +104,19 @@ RUN --mount=type=cache,target=/root/.npm \
     opencode --version; \
     command -v opencode-telegram
 
+# Keep the installed Python/runtime outside persistent user data. Hermes owns
+# this checkout through its parent directory; the public project path stays stable.
 RUN set -euo pipefail; \
-    HERMES_COMMIT="$(curl -fsSL --retry 3 "https://api.github.com/repos/NousResearch/hermes-agent/commits/$(curl -fsSL --compressed --retry 3 'https://api.github.com/repos/NousResearch/hermes-agent/releases?per_page=100' | jq -er --arg v "$HERMES_VERSION" 'map(select(.draft == false and (.name | startswith("Hermes Agent v" + $v + " ")))) | select(length == 1) | .[0].tag_name')" | jq -er '.sha | select(test("^[0-9a-f]{40}$"))')"; \
+    HERMES_TAG="$(curl -fsSL --retry 3 "https://api.github.com/repos/NousResearch/hermes-agent/releases/tags/v${HERMES_VERSION}" | jq -er --arg tag "v${HERMES_VERSION}" 'select(.draft == false and .prerelease == false and .tag_name == $tag) | .tag_name')"; \
+    HERMES_COMMIT="$(curl -fsSL --retry 3 "https://api.github.com/repos/NousResearch/hermes-agent/commits/${HERMES_TAG}" | jq -er '.sha | select(test("^[0-9a-f]{40}$"))')"; \
     curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_COMMIT}/scripts/install.sh" \
-      | bash -s -- --skip-setup --branch main --commit "${HERMES_COMMIT}" \
- && grep -q "__version__ = \"${HERMES_VERSION}\"" \
-      /usr/local/lib/hermes-agent/hermes_cli/__init__.py \
+      | HERMES_HOME=/usr/local/lib/hermes-runtime bash -s -- --skip-setup \
+        --dir /usr/local/lib/hermes-runtime/hermes-agent --branch main --commit "${HERMES_COMMIT}" \
+ && ln -sfn /usr/local/lib/hermes-runtime/hermes-agent /usr/local/lib/hermes-agent \
+ && test "$(git -C /usr/local/lib/hermes-agent rev-parse HEAD)" = "${HERMES_COMMIT}" \
+ && test "$(jq -er .baseVersion /usr/local/lib/hermes-agent/install-stamp.json)" = "${HERMES_VERSION}" \
+ && test -x /usr/local/lib/hermes-agent/.hermes/bin/hermes \
+ && ln -sfn /usr/local/lib/hermes-agent/.hermes/bin/hermes /usr/local/bin/hermes \
  && npm --prefix /usr/local/lib/hermes-agent run build --workspace web
 
 RUN set -eux; \
@@ -137,7 +148,7 @@ RUN cd /usr/lib/systemd/system/sysinit.target.wants/ 2>/dev/null \
 # Generic systemd runtime owned by Core-pre. Higher layers only add the
 # services tied to their own runtime configuration.
 COPY image/runtime/ /
-COPY build/vendor/persistainer/image/runtime/ /
+COPY --from=persistainer-source /persistainer/image/runtime/ /
 
 RUN chmod 0755 /usr/local/bin/tailscale-state-up.sh \
       /usr/local/bin/tailscale-serve-reset.sh \

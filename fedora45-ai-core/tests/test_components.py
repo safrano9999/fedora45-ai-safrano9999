@@ -145,7 +145,7 @@ class ComponentTests(unittest.TestCase):
         provenance = self.package / "deterministic-build.json"
         provenance.write_text(json.dumps({"version": VERSION, "upstreamCommit": UPSTREAM}))
         source = self.root / "ephemeral"
-        for relative in ("openclaw_ephemeral/__init__.py", "openclaw-ephemeral.py", "runtime/yolo.sh",
+        for relative in ("openclaw_ephemeral/__init__.py", "openclaw-ephemeral.py", "container/runtime/yolo.sh",
                          "image/runtime/etc/systemd/system/openclaw-config.service"):
             path = source / relative
             path.parent.mkdir(parents=True, exist_ok=True)

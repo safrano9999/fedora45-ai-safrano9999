@@ -1,0 +1,314 @@
+# syntax=docker/dockerfile:1
+FROM scratch AS persistainer-source
+ADD https://github.com/safrano9999/persistainer.git /persistainer/
+
+FROM fedora45-approved-beta AS ai-core-pre
+# The Action supplies this named OCI context from the approved Fedora 45 Beta
+# archive, pinned by SHA256 and manifest digest in build-dependencies-whitelist.json.
+
+ARG WEBHOOK_VERSION
+ARG HERMES_VERSION=0.22.2
+ARG VDITOR_VERSION
+ARG FEDORA_REPOMD_KEY
+ARG UV_VERSION
+ARG UV_INSTALLER_SHA256
+ARG FUGU_COMMIT
+ARG CLOUDFLARED_VERSION
+ARG CLOUDFLARED_SHA256
+ARG OPENCLAW_VERSION=2026.9.4
+# Optional source override for this stable version. Empty uses its release tag.
+ARG OPENCLAW_UPSTREAM_SHA=
+ARG CODEX_VERSION
+ARG CLAUDE_CODE_VERSION
+ARG ELECTRUM_VERSION
+ARG LND_VERSION
+ARG GETH_VERSION
+ARG GETH_COMMIT
+ARG ELECTRUM_KEYS_COMMIT
+ARG SOLANA_VERSION
+ARG SOLANA_SHA256
+ARG ELECTRUM_SHA256
+ARG LND_SHA256
+ARG GETH_SHA256
+ARG BIP39_VERSION
+ARG BIP39_SHA256
+ARG WEBHOOK_SHA256
+ARG FUGU_VERSION
+ARG CODEX_SHA256
+ARG CLAUDE_CODE_SHA256
+ARG VDITOR_SHA256
+ARG NPM_VERSION
+ARG NPM_SHA256
+ARG OPENCODE_VERSION=1.19.3
+ARG OPENCODE_TELEGRAM_VERSION=0.26.5
+
+LABEL org.opencontainers.image.title="fedora45-ai-core-pre" \
+      org.opencontainers.image.description="Heavy generic Fedora 45 AI toolchain foundation without Safrano project content or ephemeral runtime configuration." \
+      org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
+      io.safrano9999.openclaw.version="${OPENCLAW_VERSION}"
+
+ENV NODE_EXTRA_CA_CERTS=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    OPENCODE_API_HOST=0.0.0.0 \
+    OPENCODE_API_PORT=4096 \
+    OPENCODE_MODEL_PROVIDER=opencode \
+    OPENCODE_MODEL_ID=mimo-v2.6-flash-free \
+    OPENCODE_START=1
+
+# Keep the package set and order aligned with the existing fedora45-ai image.
+RUN --mount=type=cache,target=/var/cache/dnf \
+    test -n "${FEDORA_REPOMD_KEY}" \
+ && printf 'Fedora repository state: %s\n' "${FEDORA_REPOMD_KEY}" \
+ && dnf -y update && dnf -y install \
+    bash bash-completion shadow-utils sudo \
+    git gh tmux \
+    nano vim-minimal less \
+    curl wget ca-certificates openssl gnupg2 fuse-libs \
+    nodejs26 nodejs26-bin nodejs26-npm \
+    python3 python3-pip python3-devel libpq \
+    make gcc gcc-c++ \
+    ripgrep fd-find jq sqlite unzip tar gzip xz bzip2 which file \
+    iputils iproute procps-ng psmisc util-linux \
+    findutils grep sed gawk diffutils \
+    hostname bind-utils net-tools traceroute \
+    lsof strace tcpdump nmap nmap-ncat \
+    v4l-utils zbar qrencode bc ffmpeg mpv libv4l \
+    dbus-x11 xauth mesa-dri-drivers google-noto-sans-cjk-vf-fonts \
+    cockpit cockpit-podman \
+    tailscale
+
+RUN curl -fsSL --retry 3 "https://registry.npmjs.org/npm/-/npm-${NPM_VERSION}.tgz" -o /tmp/npm.tgz \
+ && echo "${NPM_SHA256}  /tmp/npm.tgz" | sha256sum -c - \
+ && npm install -g /tmp/npm.tgz && rm /tmp/npm.tgz \
+ && node --version && npm --version \
+ && rpm -qf "$(readlink -f "$(command -v node)")" \
+ && node -e 'if (Number(process.versions.node.split(".")[0]) < 26) process.exit(1)'
+
+# OpenCode is a generic core tool. The Telegram bridge is installed here, but
+# its systemd unit only starts when a runtime token and chat/user ID are given.
+# No credentials are baked into the image.
+RUN --mount=type=cache,target=/root/.npm \
+    set -euo pipefail; \
+    case "$(uname -m)" in \
+      x86_64) OPENCODE_NATIVE_PACKAGE=opencode-linux-x64 ;; \
+      aarch64|arm64) OPENCODE_NATIVE_PACKAGE=opencode-linux-arm64 ;; \
+      *) echo "Unsupported OpenCode architecture: $(uname -m)" >&2; exit 1 ;; \
+    esac; \
+    npm install -g --include=optional \
+      --allow-scripts=opencode-ai \
+      "opencode-ai@${OPENCODE_VERSION}" \
+      "${OPENCODE_NATIVE_PACKAGE}@${OPENCODE_VERSION}" \
+      "@grinev/opencode-telegram-bot@${OPENCODE_TELEGRAM_VERSION}"; \
+    test "$(jq -r .version "$(npm root -g)/opencode-ai/package.json")" = "${OPENCODE_VERSION}"; \
+    test "$(jq -r .version "$(npm root -g)/${OPENCODE_NATIVE_PACKAGE}/package.json")" = "${OPENCODE_VERSION}"; \
+    test "$(jq -r .version "$(npm root -g)/@grinev/opencode-telegram-bot/package.json")" = "${OPENCODE_TELEGRAM_VERSION}"; \
+    opencode --version; \
+    command -v opencode-telegram
+
+# Keep the installed Python/runtime outside persistent user data. Hermes owns
+# this checkout through its parent directory; the public project path stays stable.
+RUN set -euo pipefail; \
+    HERMES_TAG="$(curl -fsSL --retry 3 "https://api.github.com/repos/NousResearch/hermes-agent/releases/tags/v${HERMES_VERSION}" | jq -er --arg tag "v${HERMES_VERSION}" 'select(.draft == false and .prerelease == false and .tag_name == $tag) | .tag_name')"; \
+    HERMES_COMMIT="$(curl -fsSL --retry 3 "https://api.github.com/repos/NousResearch/hermes-agent/commits/${HERMES_TAG}" | jq -er '.sha | select(test("^[0-9a-f]{40}$"))')"; \
+    curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_COMMIT}/scripts/install.sh" \
+      | HERMES_HOME=/usr/local/lib/hermes-runtime bash -s -- --skip-setup \
+        --dir /usr/local/lib/hermes-runtime/hermes-agent --branch main --commit "${HERMES_COMMIT}" \
+ && ln -sfn /usr/local/lib/hermes-runtime/hermes-agent /usr/local/lib/hermes-agent \
+ && test "$(git -C /usr/local/lib/hermes-agent rev-parse HEAD)" = "${HERMES_COMMIT}" \
+ && test "$(jq -er .baseVersion /usr/local/lib/hermes-agent/install-stamp.json)" = "${HERMES_VERSION}" \
+ && test -x /usr/local/lib/hermes-agent/.hermes/bin/hermes \
+ && ln -sfn /usr/local/lib/hermes-agent/.hermes/bin/hermes /usr/local/bin/hermes \
+ && npm --prefix /usr/local/lib/hermes-agent run build --workspace web
+
+RUN set -eux; \
+    case "$(uname -m)" in \
+      x86_64) webhook_arch=amd64 ;; \
+      aarch64|arm64) webhook_arch=arm64 ;; \
+      armv7l|armv6l) webhook_arch=arm ;; \
+      i386|i686) webhook_arch=386 ;; \
+      *) echo "Unsupported webhook architecture" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL "https://github.com/adnanh/webhook/releases/download/${WEBHOOK_VERSION}/webhook-linux-${webhook_arch}.tar.gz" \
+        -o /tmp/webhook.tar.gz; \
+    echo "${WEBHOOK_SHA256}  /tmp/webhook.tar.gz" | sha256sum -c -; \
+    tar -xzf /tmp/webhook.tar.gz --strip-components=1 -C /usr/local/bin "webhook-linux-${webhook_arch}/webhook"; \
+    rm /tmp/webhook.tar.gz; \
+    webhook -version
+
+# systemd container baseline from the existing Fedora image.
+RUN cd /usr/lib/systemd/system/sysinit.target.wants/ 2>/dev/null \
+    && for i in *; do [ "$i" = "systemd-tmpfiles-setup.service" ] || rm -f "$i"; done || true \
+ && rm -f /usr/lib/systemd/system/multi-user.target.wants/* \
+ && rm -f /etc/systemd/system/*.wants/* \
+ && rm -f /usr/lib/systemd/system/local-fs.target.wants/* \
+ && rm -f /usr/lib/systemd/system/sockets.target.wants/*udev* \
+ && rm -f /usr/lib/systemd/system/sockets.target.wants/*initctl* \
+ && rm -f /usr/lib/systemd/system/basic.target.wants/* \
+ && rm -f /usr/lib/systemd/system/anaconda.target.wants/*
+
+# Generic systemd runtime owned by Core-pre. Higher layers only add the
+# services tied to their own runtime configuration.
+COPY image/runtime/ /
+COPY --from=persistainer-source /persistainer/image/runtime/ /
+
+RUN chmod 0755 /usr/local/bin/tailscale-state-up.sh \
+      /usr/local/bin/tailscale-serve-reset.sh \
+      /usr/local/bin/persistainer \
+      /usr/local/libexec/import-ca-certificates \
+      /usr/local/libexec/cockpit-prepare \
+      /usr/local/libexec/fedora45-wait-ready \
+ && systemd-sysusers /usr/lib/sysusers.d/cockpit-container.conf \
+ && systemctl enable \
+      ca-certificates-import.service \
+      persistainer.service \
+      tailscaled.service \
+      tailscale-up.service \
+      cloudflared.service \
+      cockpit.service \
+      bip39.service \
+      opencode.service \
+      opencode-telegram.service \
+ && systemctl mask cockpit.socket \
+ && sed -i '1i auth       sufficient   pam_permit.so' /etc/pam.d/cockpit
+
+RUN mkdir -p /tmp/runtime-root \
+ && chmod 700 /tmp/runtime-root
+
+RUN --mount=type=cache,target=/root/.npm \
+    mkdir -p /tmp/vditor /usr/local/lib/vditor \
+ && npm pack "vditor@${VDITOR_VERSION}" --pack-destination /tmp/vditor \
+ && echo "${VDITOR_SHA256}  /tmp/vditor/vditor-${VDITOR_VERSION}.tgz" | sha256sum -c - \
+ && tar -xzf /tmp/vditor/vditor-*.tgz --strip-components=1 -C /usr/local/lib/vditor \
+ && test -f /usr/local/lib/vditor/dist/index.min.js \
+ && rm -rf /tmp/vditor
+
+RUN test -n "${UV_VERSION}" \
+ && test -n "${UV_INSTALLER_SHA256}" \
+ && curl -fsSL --retry 3 "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-installer.sh" -o /tmp/uv-install.sh \
+ && echo "${UV_INSTALLER_SHA256}  /tmp/uv-install.sh" | sha256sum -c - \
+ && UV_UNMANAGED_INSTALL=/usr/local/bin sh /tmp/uv-install.sh \
+ && rm -f /tmp/uv-install.sh \
+ && uv --version
+
+RUN --mount=type=cache,target=/root/.npm \
+    set -euo pipefail; test -n "${CODEX_VERSION}" \
+ && test -n "${CLAUDE_CODE_VERSION}" \
+ && test -n "${OPENCLAW_VERSION}" \
+ && OPENCLAW_SHA256="$(curl -fsSL --retry 3 "https://github.com/openclaw/openclaw/releases/download/v${OPENCLAW_VERSION}/openclaw-${OPENCLAW_VERSION}-release-manifest.json" | jq -er --arg v "$OPENCLAW_VERSION" '.publicationArtifacts.npmPreflight.preparedBundle.package | select(.version == $v) | .sha256 | select(test("^[0-9a-f]{64}$"))')" \
+ && curl -fsSL --retry 3 "https://registry.npmjs.org/openclaw/-/openclaw-${OPENCLAW_VERSION}.tgz" -o /tmp/openclaw.tgz \
+ && printf '%s  /tmp/openclaw.tgz\n' "$OPENCLAW_SHA256" | sha256sum -c - \
+ && curl -fsSL --retry 3 "https://registry.npmjs.org/@openai/codex/-/codex-${CODEX_VERSION}.tgz" -o /tmp/codex.tgz \
+ && echo "${CODEX_SHA256}  /tmp/codex.tgz" | sha256sum -c - \
+ && curl -fsSL --retry 3 "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-${CLAUDE_CODE_VERSION}.tgz" -o /tmp/claude-code.tgz \
+ && echo "${CLAUDE_CODE_SHA256}  /tmp/claude-code.tgz" | sha256sum -c - \
+ && npm install -g --include=optional \
+      --allow-scripts=@anthropic-ai/claude-code,openclaw,@google/genai,koffi,tree-sitter-bash,protobufjs \
+      /tmp/codex.tgz \
+      /tmp/claude-code.tgz \
+      /tmp/openclaw.tgz \
+ && rm -f /tmp/openclaw.tgz /tmp/codex.tgz /tmp/claude-code.tgz \
+ && test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = "${OPENCLAW_VERSION}"
+
+RUN test -n "${FUGU_COMMIT}" \
+ && git init /root/.fugu \
+ && git -C /root/.fugu remote add origin https://github.com/SakanaAI/fugu.git \
+ && git -C /root/.fugu fetch --depth=1 origin "${FUGU_COMMIT}" \
+ && git -C /root/.fugu checkout --detach FETCH_HEAD \
+ && test "$(git -C /root/.fugu rev-parse HEAD)" = "${FUGU_COMMIT}" \
+ && mkdir -p /root/.codex \
+ && cp /root/.fugu/configs/files/fugu.json /root/.codex/fugu.json \
+ && sed 's|{{CODEX_HOME}}|/root/.codex|g' /root/.fugu/configs/formats/modern/files/fugu.config.toml > /root/.codex/fugu.config.toml \
+ && cp /root/.fugu/configs/injects/model_providers.sakana.toml /root/.codex/config.toml \
+ && install -m 0755 /root/.fugu/scripts/codex-fugu /usr/local/bin/codex-fugu
+
+
+RUN test -n "${CLOUDFLARED_VERSION}" \
+ && test -n "${CLOUDFLARED_SHA256}" \
+ && curl -fsSL --retry 3 \
+      "https://github.com/cloudflare/cloudflared/releases/download/${CLOUDFLARED_VERSION}/cloudflared-linux-amd64" \
+      -o /usr/local/bin/cloudflared \
+ && echo "${CLOUDFLARED_SHA256}  /usr/local/bin/cloudflared" | sha256sum -c - \
+ && chmod +x /usr/local/bin/cloudflared \
+ && cloudflared --version
+
+COPY requirements.base.txt /requirements.base.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r /requirements.base.txt python-multipart weasyprint pypdfium2 \
+ && python3 -c 'import dotenv, fastapi, jinja2, multipart, pymysql, psycopg, reportlab, sqlalchemy, uvicorn, yaml'
+
+RUN echo '{"hasCompletedOnboarding":true}' > /root/.claude.json
+
+# Generic crypto and blockchain tooling previously installed in the upper
+# fedora45-ai image is deliberately moved into the reusable core.
+RUN mkdir -p /usr/local/share/bip39 \
+ && curl -fsSL \
+    "https://github.com/iancoleman/bip39/releases/download/${BIP39_VERSION}/bip39-standalone.html" \
+    -o /usr/local/share/bip39/index.html \
+ && echo "${BIP39_SHA256}  /usr/local/share/bip39/index.html" \
+    | sha256sum -c -
+
+RUN mkdir -p /opt/electrum \
+ && cd /opt/electrum \
+ && curl -fsSLO "https://download.electrum.org/${ELECTRUM_VERSION}/electrum-${ELECTRUM_VERSION}-x86_64.AppImage" \
+ && echo "${ELECTRUM_SHA256}  electrum-${ELECTRUM_VERSION}-x86_64.AppImage" | sha256sum -c - \
+ && curl -fsSLO "https://download.electrum.org/${ELECTRUM_VERSION}/electrum-${ELECTRUM_VERSION}-x86_64.AppImage.asc" \
+ && test -n "${ELECTRUM_KEYS_COMMIT}" \
+ && curl -fsSL "https://raw.githubusercontent.com/spesmilo/electrum/${ELECTRUM_KEYS_COMMIT}/pubkeys/ThomasV.asc" | gpg --batch --import \
+ && curl -fsSL "https://raw.githubusercontent.com/spesmilo/electrum/${ELECTRUM_KEYS_COMMIT}/pubkeys/sombernight_releasekey.asc" | gpg --batch --import \
+ && curl -fsSL "https://raw.githubusercontent.com/spesmilo/electrum/${ELECTRUM_KEYS_COMMIT}/pubkeys/Emzy.asc" | gpg --batch --import \
+ && curl -fsSL "https://raw.githubusercontent.com/spesmilo/electrum/${ELECTRUM_KEYS_COMMIT}/pubkeys/felixb_f321x.asc" | gpg --batch --import \
+ && curl -fsSL "https://raw.githubusercontent.com/spesmilo/electrum/${ELECTRUM_KEYS_COMMIT}/pubkeys/svanstaa.asc" | gpg --batch --import \
+ && gpg --batch --verify "electrum-${ELECTRUM_VERSION}-x86_64.AppImage.asc" "electrum-${ELECTRUM_VERSION}-x86_64.AppImage" \
+ && chmod +x "electrum-${ELECTRUM_VERSION}-x86_64.AppImage" \
+ && "./electrum-${ELECTRUM_VERSION}-x86_64.AppImage" --appimage-extract >/dev/null \
+ && rm -f "electrum-${ELECTRUM_VERSION}-x86_64.AppImage" "electrum-${ELECTRUM_VERSION}-x86_64.AppImage.asc" \
+ && printf '%s\n' '#!/usr/bin/env bash' 'cd /opt/electrum/squashfs-root' 'exec ./AppRun "$@"' > /usr/local/bin/electrum \
+ && chmod +x /usr/local/bin/electrum
+
+RUN mkdir -p /tmp/lnd \
+ && curl -fsSL \
+    "https://github.com/lightningnetwork/lnd/releases/download/${LND_VERSION}/lnd-linux-amd64-${LND_VERSION}.tar.gz" \
+    -o "/tmp/lnd/lnd-linux-amd64-${LND_VERSION}.tar.gz" \
+ && echo "${LND_SHA256}  /tmp/lnd/lnd-linux-amd64-${LND_VERSION}.tar.gz" \
+    | sha256sum -c - \
+ && tar -xzf "/tmp/lnd/lnd-linux-amd64-${LND_VERSION}.tar.gz" -C /tmp/lnd \
+ && install -m 0755 "/tmp/lnd/lnd-linux-amd64-${LND_VERSION}/lnd" /usr/local/bin/lnd \
+ && install -m 0755 "/tmp/lnd/lnd-linux-amd64-${LND_VERSION}/lncli" /usr/local/bin/lncli \
+ && rm -rf /tmp/lnd \
+ && lnd --version \
+ && lncli --version
+
+RUN gpgconf --kill all && rm -rf /root/.gnupg \
+ && mkdir -p /tmp/geth \
+ && cd /tmp/geth \
+ && curl -fsSLO "https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
+ && curl -fsSLO "https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz.asc" \
+ && echo "${GETH_SHA256}  geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" | sha256sum -c - \
+ && gpg --batch --keyserver hkps://keyserver.ubuntu.com --recv-keys A61A13569BA28146 \
+ && gpg --batch --verify "geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz.asc" "geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
+ && tar -xzf "geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
+ && install -m 0755 "geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}/geth" /usr/local/bin/geth \
+ && rm -rf /tmp/geth \
+ && geth version
+
+# Resolve the stable channel during preparation; use only its exact archive here.
+RUN mkdir -p "/root/.local/share/solana/install/releases/${SOLANA_VERSION}" \
+ && curl -fsSL --retry 3 \
+      "https://github.com/anza-xyz/agave/releases/download/${SOLANA_VERSION}/solana-release-x86_64-unknown-linux-gnu.tar.bz2" \
+      -o /tmp/solana.tar.bz2 \
+ && echo "${SOLANA_SHA256}  /tmp/solana.tar.bz2" | sha256sum -c - \
+ && tar -xjf /tmp/solana.tar.bz2 -C "/root/.local/share/solana/install/releases/${SOLANA_VERSION}" \
+ && ln -s "releases/${SOLANA_VERSION}/solana-release" /root/.local/share/solana/install/active_release \
+ && rm /tmp/solana.tar.bz2 \
+ && find /root/.local/share/solana/install/active_release/bin -maxdepth 1 -type f -executable \
+      -exec ln -sf {} /usr/local/bin/ \; \
+ && solana --version
+
+RUN rpm -qf "$(readlink -f "$(command -v node)")" \
+ && test ! -x /root/.hermes/node/bin/node \
+ && mkdir -p /README \
+ && node -p 'JSON.stringify({node:process.versions.node,sqlite:process.versions.sqlite,nodeSource:"Fedora RPM"})' > /README/node-runtime.json
+
+USER root
+WORKDIR /root
+STOPSIGNAL SIGRTMIN+3
+CMD ["/sbin/init"]

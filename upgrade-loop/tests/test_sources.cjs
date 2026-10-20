@@ -22,9 +22,9 @@ async function fixture(edits = {}) {
     }
   }
   // These inventory fixtures own a fixed release independently of live build pins.
-  files['fedora45-ai-core/build.conf'] = files['fedora45-ai-core/build.conf']
-    .replace(/^OPENCLAW_VERSION=.*$/m, 'OPENCLAW_VERSION=2026.9.4')
-    .replace(/^OPENCLAW_DETERMINISTIC_TAG=.*$/m, 'OPENCLAW_DETERMINISTIC_TAG=2026.9.4-deterministic.2');
+  files['fedora45-ai-core/Containerfile'] = files['fedora45-ai-core/Containerfile']
+    .replace(/^ARG OPENCLAW_VERSION=.*$/m, 'ARG OPENCLAW_VERSION=2026.9.4')
+    .replace(/^ARG OPENCLAW_DETERMINISTIC_TAG=.*$/m, 'ARG OPENCLAW_DETERMINISTIC_TAG=2026.9.4-deterministic.2');
   files['fedora45-ai-core-pre/Containerfile'] = files['fedora45-ai-core-pre/Containerfile']
     .replace(/^ARG OPENCLAW_VERSION=.*$/m, 'ARG OPENCLAW_VERSION=2026.9.4')
     .replace(/^ARG OPENCLAW_UPSTREAM_SHA=.*$/m, 'ARG OPENCLAW_UPSTREAM_SHA=' + '1'.repeat(40));
@@ -43,11 +43,11 @@ async function fixture(edits = {}) {
   };
 }
 
-test('derive only selected parent chain, provenance, release refs and both generator pins', async () => {
+test('derive the full cascade and direct latest sources with pinned Deterministic', async () => {
   const get = await fixture(), regular = await inventory(get), full = await inventory(get, { target: 'fedora45-ai-safrano9999-full' });
   assert.equal(regular.repositories.length, 24);
   assert.equal(full.repositories.length, 25);
-  assert.ok(regular.repositories.some(r => r.repository === 'f24sales/litellm-free'));
+  assert.ok(regular.repositories.some(r => r.repository === 'safrano9999/litellm-free'));
   assert.ok(regular.repositories.some(r => r.repository === 'safrano9999/opencode-ephemeral'));
   assert.equal(regular.external_base, 'fedora45-approved-beta');
   assert.equal(regular.chain.length, 5);
@@ -55,25 +55,25 @@ test('derive only selected parent chain, provenance, release refs and both gener
   assert.ok(!regular.repositories.some(r => r.repository.endsWith('/VikAI')));
   assert.ok(full.repositories.some(r => r.repository.endsWith('/VikAI')));
   assert.ok(!full.repositories.some(r => r.repository === 'safrano9999/SCRIPTS'));
-  for (const name of ['openclaw', 'hermes']) assert.match(regular.repositories.find(r => r.repository.endsWith('/' + name + '-ephemeral')).ref, /^[a-f0-9]{40}$/);
-  assert.equal(regular.repositories.find(r => r.repository.endsWith('/NOTE')).ref, '2026.8.4');
+  for (const name of ['openclaw', 'hermes']) assert.equal(regular.repositories.find(r => r.repository.endsWith('/' + name + '-ephemeral')).ref, 'HEAD');
+  assert.equal(regular.repositories.find(r => r.repository.endsWith('/NOTE')).ref, 'latest');
   assert.equal(regular.repositories.find(r => r.repository.endsWith('/openclaw-deterministic-latest')).ref, '2026.9.4-deterministic.2');
 });
 
-test('latest preview refreshes every Git source and both release inputs instead of reusing old pins', async () => {
+test('latest preview refreshes Git sources and NOTE while preserving Deterministic', async () => {
   const files = await fixture();
-  const patch = { tag_name: '2026.9.4-deterministic.99', assets: [{ name: 'openclaw-2026.9.4-deterministic.tar.gz', digest: 'sha256:' + 'c'.repeat(64) }] };
+  const patch = { tag_name: '2026.9.4-deterministic.2', assets: [{ name: 'openclaw-2026.9.4-deterministic.tar.gz', digest: 'sha256:' + 'c'.repeat(64) }] };
   const note = { tag_name: '2026.9.99', assets: [{ name: 'note-latest.zip', digest: 'sha256:' + 'd'.repeat(64) }] };
   const get = async url => {
     if (url.endsWith('/NEXTCLOUD/releases/tags/latest')) return {assets:['nextcloud-fedora64-plugin-latest.zip','nextcloud-fedora64-plugin-latest.zip.sha256'].map((name,i)=>({name,id:i+1,digest:'sha256:'+'a'.repeat(64)}))};
-    if (url.endsWith('/openclaw-deterministic-latest/releases/latest')) return { ...patch, tag_name: 'latest' };
+    if (url.endsWith('/openclaw-deterministic-latest/releases/tags/2026.9.4-deterministic.2')) return patch;
     if (url.endsWith('/openclaw-deterministic-latest/releases?per_page=100')) return [patch];
     if (url.endsWith('/NOTE/releases/latest')) return note;
     return files(url);
   };
   const preview = await inventory(get, { latest: true, target: 'fedora45-ai-safrano9999-full' });
   assert.equal(preview.repositories.length, 25);
-  assert.equal(preview.source_policy, 'latest-resolved-for-preview');
+  assert.equal(preview.source_policy, 'containerfile-latest-with-pinned-deterministic');
   for (const entry of preview.repositories) {
     if (entry.repository === IMAGE_REPO) assert.equal(entry.ref, imageCommit);
     else if (entry.repository.endsWith('/NOTE')) {
@@ -84,7 +84,7 @@ test('latest preview refreshes every Git source and both release inputs instead 
       assert.equal(entry.release.sha256, 'c'.repeat(64));
     } else assert.equal(entry.ref, 'HEAD', entry.repository);
   }
-  assert.match(preview.repositories.find(r => r.repository.endsWith('/hermes-ephemeral')).declared_ref, /^[a-f0-9]{40}$/);
+  assert.equal(preview.repositories.find(r => r.repository.endsWith('/hermes-ephemeral')).declared_ref, 'HEAD');
   const resolved = await resolveCommits(async url => url.includes('/contents/build.conf?ref=') ? {
     encoding: 'base64', content: Buffer.from('OPENCLAW_VERSION=2026.9.4\nOPENCLAW_UPSTREAM_SHA=' + '1'.repeat(40) +
       '\nOPENCLAW_DETERMINISTIC_ASSET=openclaw-2026.9.4-deterministic.tar.gz\n').toString('base64'),
@@ -93,7 +93,7 @@ test('latest preview refreshes every Git source and both release inputs instead 
   assert.equal(resolved.openclaw_source.commit, '1'.repeat(40));
 });
 
-test('n8n source adapter resolves the explicitly selected f24sales LiteLLM source', async () => {
+test('n8n source adapter resolves the native Safrano LiteLLM source', async () => {
   const files = await fixture(), seen = [];
   const get = async ({url}) => {
     const endpoint = url.replace('https://api.github.com', '');
@@ -102,7 +102,7 @@ test('n8n source adapter resolves the explicitly selected f24sales LiteLLM sourc
     if (endpoint === '/repos/' + IMAGE_REPO + '/commits/' + imageCommit) return {sha: imageCommit};
     if (endpoint.includes('/commits/')) return {sha: 'b'.repeat(40)};
     if (endpoint.endsWith('/NEXTCLOUD/releases/tags/latest')) return {assets: ['nextcloud-fedora64-plugin-latest.zip','nextcloud-fedora64-plugin-latest.zip.sha256'].map((name,i) => ({name,id:i+1,digest:'sha256:'+'a'.repeat(64)}))};
-    if (endpoint.endsWith('/openclaw-deterministic-latest/releases/latest')) return {tag_name:'2026.9.4-deterministic.99',assets:[{name:'openclaw-2026.9.4-deterministic.tar.gz',digest:'sha256:'+'a'.repeat(64)}]};
+    if (endpoint.endsWith('/openclaw-deterministic-latest/releases/tags/2026.9.4-deterministic.2')) return {tag_name:'2026.9.4-deterministic.2',assets:[{name:'openclaw-2026.9.4-deterministic.tar.gz',digest:'sha256:'+'a'.repeat(64)}]};
     if (endpoint.endsWith('/NOTE/releases/latest')) return {tag_name:'2026.9.99',assets:[{name:'note-latest.zip',digest:'sha256:'+'a'.repeat(64)}]};
     return files(endpoint);
   };
@@ -111,8 +111,8 @@ test('n8n source adapter resolves the explicitly selected f24sales LiteLLM sourc
     getCredentials: async () => ({name:'Authorization',value:'Bearer fixture'}),
     helpers: {httpRequestWithAuthentication: async function(kind, args) { return get(args); }},
   });
-  assert.ok(seen.includes('/repos/f24sales/litellm-free/commits/HEAD'));
-  assert.equal(result[0][0].json.repositories.find(r => r.repository === 'f24sales/litellm-free').commit, 'b'.repeat(40));
+  assert.ok(seen.includes('/repos/safrano9999/litellm-free/commits/HEAD'));
+  assert.equal(result[0][0].json.repositories.find(r => r.repository === 'safrano9999/litellm-free').commit, 'b'.repeat(40));
 });
 
 test('latest release selection checks compatible assets and fails on invalid release evidence', async () => {
@@ -135,14 +135,11 @@ test('missing version-specific patch reports the required asset without selectin
   { message: 'No compatible latest release: safrano9999/openclaw-deterministic-latest (required asset: ' + requested + ')' });
 });
 
-test('repository CSV changes, @branch and deduplication are derived, never a hard-coded list', async () => {
-  const conf = 'AI_CORE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core:latest\nEXTENSIONS="EXAMPLE@feature/topic"\nSTANDALONE="EXAMPLE@feature/topic,NEW_REPO"\n';
-  const result = await inventory(await fixture({ 'fedora45-ai-base/build.conf': conf }), { target: 'fedora45-ai-base' });
-  const entry = result.repositories.find(r => r.repository === 'safrano9999/EXAMPLE');
-  assert.equal(entry.ref, 'feature/topic');
-  assert.equal(entry.sources.length, 2);
-  assert.ok(result.repositories.some(r => r.repository.endsWith('/NEW_REPO')));
-  assert.ok(!result.repositories.some(r => r.repository.endsWith('/WELCOME')));
+test('runtime roles cannot introduce an undeclared source or branch pin', async () => {
+  for (const role of ['EXAMPLE', 'WELCOME@old-branch']) {
+    const conf = 'AI_CORE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core:latest\nEXTENSIONS="' + role + '"\nSTANDALONE=""\n';
+    await assert.rejects(inventory(await fixture({'fedora45-ai-base/build.conf': conf}), {target: 'fedora45-ai-base'}));
+  }
 });
 
 test('dynamic shell declarations and broken/cyclic parent graphs fail closed', async () => {

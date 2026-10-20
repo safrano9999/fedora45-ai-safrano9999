@@ -19,12 +19,12 @@ class PreparationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw, ExitStack() as stack:
             root = Path(raw)
             foundation = root / 'fedora45-ai-core-pre/Containerfile'
-            core = root / 'fedora45-ai-core/build.conf'
+            core = root / 'fedora45-ai-core/Containerfile'
             foundation.parent.mkdir(); core.parent.mkdir(); (root / 'upgrade-loop').mkdir()
             before = 'FROM quay.io/fedora/fedora@sha256:' + 'a'*64 + ' AS ai-core-pre\nARG OPENCLAW_VERSION=2026.9.4\nARG OPENCLAW_UPSTREAM_SHA=\nARG HERMES_VERSION=0.21.2\n'
             foundation.write_text(before)
-            inputs = {'OPENCLAW_UPSTREAM_SHA': 'a'*40, 'OPENCLAW_VERSION': '2026.9.5', 'OPENCLAW_EPHEMERAL_COMMIT': 'b'*40, 'HERMES_EPHEMERAL_COMMIT': 'c'*40}
-            core.write_text(''.join(key + '=old\n' for key in inputs))
+            inputs = {'OPENCLAW_UPSTREAM_SHA': 'a'*40, 'OPENCLAW_VERSION': '2026.9.5', 'OPENCLAW_DETERMINISTIC_TAG': '2026.9.5-deterministic.1', 'OPENCLAW_DETERMINISTIC_SHA256': 'd'*64}
+            core.write_text(''.join('ARG ' + key + '=old\n' for key in inputs))
             selected_base = before.replace('@sha256:' + 'a'*64, ':45@sha256:' + 'd'*64)
             snapshot = {'source_commit': 'e'*40, 'upgrade_build_deps': True,
                         'openclaw_source': {'version':'2026.9.5','override_commit':'','commit':'a'*40},
@@ -40,7 +40,7 @@ class PreparationTests(unittest.TestCase):
             stack.enter_context(patch.dict(prep.os.environ, {'GITHUB_ACTIONS': 'true'}))
             for target, name, value in [
                 (prep, 'REPO', root), (prep, 'ROOT', root / 'upgrade-loop'),
-                (prep, 'validate_snapshot', Mock()), (prep, 'snapshot_build_inputs', Mock(return_value=inputs)),
+                (prep, 'validate_snapshot', Mock(return_value={'safrano9999/openclaw-ephemeral': {'commit': 'b'*40}, 'safrano9999/hermes-ephemeral': {'commit': 'c'*40}})), (prep, 'snapshot_build_inputs', Mock(return_value=inputs)),
                 (prep, 'run', Mock(side_effect=command)),
                 (prep.build_dependencies, 'plan', Mock(return_value=({'required': True}, files))),
                 (prep.importlib.util, 'spec_from_file_location', Mock(return_value=SimpleNamespace(loader=Mock()))),
@@ -117,17 +117,6 @@ class PreparationTests(unittest.TestCase):
         unrelated = {"tag_name": "2026.9.5-deterministic.1", "draft": False, "prerelease": False, "assets": []}
         self.assertEqual(prep.patch_inputs("2026.9.4", {}, [unrelated, compatible], unrelated)["OPENCLAW_DETERMINISTIC_TAG"], compatible["tag_name"])
 
-    def test_latest_note_updates_and_requires_verified_stable_asset(self):
-        core = {"NOTE_RELEASE_TAG": "2026.7.36", "NOTE_RELEASE_ASSET": "note-latest.zip", "NOTE_RELEASE_SHA256": "a" * 64}
-        latest = {"tag_name": "2026.8.4", "draft": False, "prerelease": False,
-                  "assets": [{"name": "note-latest.zip", "digest": "sha256:" + "b" * 64}]}
-        self.assertEqual(prep.note_inputs(core, latest), {"NOTE_RELEASE_TAG": "2026.8.4", "NOTE_RELEASE_SHA256": "b" * 64})
-        for change in ({"assets": []}, {"draft": True}, {"prerelease": True},
-                       {"tag_name": "bad;command"}, {"assets": [{"name": "note-latest.zip"}]},
-                       {"tag_name": core["NOTE_RELEASE_TAG"]}):
-            with self.subTest(change=change), self.assertRaises(ValueError):
-                prep.note_inputs(core, {**latest, **change})
-
     def test_replace_pins_requires_exact_single_match(self):
         with self.assertRaises(ValueError):
             prep.replace_pin("OTHER=1\n", "OPENCLAW_EPHEMERAL_COMMIT", "a" * 40)
@@ -162,15 +151,14 @@ class PreparationTests(unittest.TestCase):
                             "assets": [{"name": "note-latest.zip", "digest": "sha256:" + "d" * 64}]}
             replies = [{"tag_name": "v" + latest["openclaw"]}, {"name": "Hermes Agent v" + latest["hermes"]},
                        {"sha": "a" * 40}, {"sha": "b" * 40}, [patch_release], patch_release,
-                       note_release, {"sha": "8" * 40}]
+                       {"sha": "8" * 40}]
             report = {}
             with self.subTest(changed=changed), patch.dict(prep.os.environ, {"GITHUB_ACTIONS": "true"}), patch.object(prep, "github", side_effect=replies) as gh, patch.object(prep.importlib.util, "spec_from_file_location", side_effect=RuntimeError('before runtime checks')):
                 with self.assertRaisesRegex(RuntimeError, 'before runtime checks'):
                     prep.prepare(report)
-            self.assertEqual(report['build_inputs']['OPENCLAW_EPHEMERAL_COMMIT'], 'a' * 40)
-            self.assertEqual(report['build_inputs']['HERMES_EPHEMERAL_COMMIT'], 'b' * 40)
+            self.assertEqual(report['ephemeral_commits']['openclaw'], 'a' * 40)
+            self.assertEqual(report['ephemeral_commits']['hermes'], 'b' * 40)
             self.assertEqual(report['build_inputs']['OPENCLAW_DETERMINISTIC_TAG'], patch_release['tag_name'])
-            self.assertEqual(report['build_inputs']['NOTE_RELEASE_TAG'], note_release['tag_name'])
             self.assertEqual(report['source_policy'], 'latest-resolved-per-preparation')
             self.assertIn('repos/safrano9999/openclaw-ephemeral/commits/HEAD', [c.args[0] for c in gh.call_args_list])
 
@@ -242,7 +230,7 @@ async function check(report,validation=false,request={}){
  assert.equal((await check(unchanged,false,{auto:true}))[0].json.safrano_build_request,undefined);
  assert.deepEqual((await check(unchanged,false,{auto:true,auto_upgrade:true,build_feedback:false}))[0].json.safrano_upgrade_request,{action:'auto-update',feedback:false});
 
- for(const mutate of [r=>delete r.checks.hermes,r=>r.build_inputs.HERMES_EPHEMERAL_COMMIT='f'.repeat(40),r=>r.container_restarted=true,r=>r.build_commit='',r=>r.status='BLOCKED',r=>r.source_snapshot_id='0'.repeat(64),r=>r.source_snapshot.repositories[0].commit='0'.repeat(40),r=>r.build_inputs.NOTE_RELEASE_SHA256='0'.repeat(64),r=>r.build_inputs.OPENCLAW_UPSTREAM_SHA='0'.repeat(40)]){
+ for(const mutate of [r=>delete r.checks.hermes,r=>r.ephemeral_commits.hermes='f'.repeat(40),r=>r.container_restarted=true,r=>r.build_commit='',r=>r.status='BLOCKED',r=>r.source_snapshot_id='0'.repeat(64),r=>r.source_snapshot.repositories[0].commit='0'.repeat(40),r=>r.build_inputs.OPENCLAW_UPSTREAM_SHA='0'.repeat(40)]){
   const bad=structuredClone(good);mutate(bad);await assert.rejects(check(bad));
  }
  const validated={...good,status:'VALIDATED_ONLY',validate_only:true};delete validated.build_commit;

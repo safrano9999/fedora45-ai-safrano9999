@@ -47,32 +47,28 @@ class SnapshotTests(unittest.TestCase):
             else: bad['repositories'][0]['repository'] = 'someone/FIXTURE'
             with self.assertRaises(ValueError): validate_snapshot(bad)
 
-    def test_actual_build_git_helper_uses_snapshot_even_after_upstream_advances(self):
-        helper = (ROOT.parent/'fedora45-ai-base/build/prepare-build-context.sh').read_text()
-        function = 'sync_repository() {' + helper.split('sync_repository() {', 1)[1].split('\nvalidate_repository_roles()', 1)[0]
+    def test_runtime_assembly_does_not_rewind_a_source_from_an_old_snapshot(self):
+        helper = (ROOT.parent/'fedora45-ai-base/build/assemble-runtime.sh').read_text()
+        function = 'validate_repository() {' + helper.split('validate_repository() {', 1)[1].split('\nvalidate_repository_roles()', 1)[0]
         with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw); upstream = root/'upstream'; sources = root/'sources'; sources.mkdir()
+            root = Path(raw); sources = root/'sources'; sources.mkdir(); checkout = sources/'FIXTURE'
             def git(*args):
                 return subprocess.check_output(['git', *args], cwd=root, text=True, stderr=subprocess.DEVNULL).strip()
-            git('init', '-q', str(upstream))
-            git('-C', str(upstream), 'config', 'user.email', 'fixture@example.invalid')
-            git('-C', str(upstream), 'config', 'user.name', 'Fixture')
+            git('init', '-q', str(checkout))
+            git('-C', str(checkout), 'config', 'user.email', 'fixture@example.invalid')
+            git('-C', str(checkout), 'config', 'user.name', 'Fixture')
             commits = []
-            for value in ('selected', 'newer upstream'):
-                (upstream/'payload').write_text(value)
-                git('-C', str(upstream), 'add', 'payload'); git('-C', str(upstream), 'commit', '-qm', value)
-                commits.append(git('-C', str(upstream), 'rev-parse', 'HEAD'))
+            for value in ('old snapshot', 'current source'):
+                (checkout/'payload').write_text(value)
+                git('-C', str(checkout), 'add', 'payload'); git('-C', str(checkout), 'commit', '-qm', value)
+                commits.append(git('-C', str(checkout), 'rev-parse', 'HEAD'))
             manifest = root/'prepared-sources.json'; manifest.write_text(json.dumps(snapshot(commit=commits[0])))
-            shutil.copyfile(ROOT/'source_snapshot.py', root/'source_snapshot.py')
-            config = root/'gitconfig'
-            config.write_text(f'[url "file://{upstream}"]\n\tinsteadOf = https://github.com/safrano9999/FIXTURE\n[protocol "file"]\n\tallow = always\n')
-            script = 'set -euo pipefail\nrepository_name(){ printf "%s" "${1%@*}"; }\nrepository_branch(){ :; }\n' + function + '\nsync_repository FIXTURE\n'
-            env = {**os.environ, 'SOURCE_DIR': str(sources), 'OFFLINE': 'false', 'NO_CACHE': 'false',
-                   'SAFRANO_SOURCE_MANIFEST': str(manifest), 'GIT_CONFIG_GLOBAL': str(config), 'GIT_CONFIG_NOSYSTEM': '1'}
-            for _ in range(2):
-                subprocess.run(['bash', '-c', script], cwd=root, env=env, check=True, capture_output=True, text=True)
-                self.assertEqual((sources/'FIXTURE/payload').read_text(), 'selected')
-                self.assertEqual(git('-C', str(sources/'FIXTURE'), 'rev-parse', 'HEAD'), commits[0])
+            script = 'set -euo pipefail\nrepository_name(){ printf "%s" "$1"; }\n' + function + '\nvalidate_repository FIXTURE\n'
+            env = {**os.environ, 'SOURCE_DIR': str(sources), 'SAFRANO_SOURCE_MANIFEST': str(manifest)}
+            subprocess.run(['bash', '-c', script], env=env, check=True, capture_output=True)
+            self.assertEqual(git('-C', str(checkout), 'rev-parse', 'HEAD'), commits[1])
+            (checkout/'payload').write_text('unexpected modification')
+            self.assertNotEqual(subprocess.run(['bash', '-c', script], env=env, capture_output=True).returncode, 0)
 
     def test_prepare_consumes_n8n_snapshot_without_resolving_latest_again(self):
         spec = importlib.util.spec_from_file_location('snapshot_prep', ROOT/'prepare-container.py')
@@ -97,10 +93,8 @@ class SnapshotTests(unittest.TestCase):
         with patch.dict(os.environ, {'GITHUB_ACTIONS':'true'}), patch.object(prep,'github',side_effect=AssertionError('must not resolve again')), patch.object(prep,'run',return_value=subprocess.CompletedProcess([],0,'c'*40+'\n')), patch.object(prep.importlib.util,'spec_from_file_location',side_effect=RuntimeError('inputs selected')):
             with self.assertRaisesRegex(RuntimeError,'inputs selected'): prep.prepare(report,snapshot=selected)
         self.assertEqual(report['source_snapshot_id'],snapshot_id(selected))
-        self.assertEqual(report['build_inputs']['OPENCLAW_EPHEMERAL_COMMIT'],'a'*40)
-        self.assertEqual(report['build_inputs']['HERMES_EPHEMERAL_COMMIT'],'b'*40)
-        self.assertEqual(report['build_inputs']['OPENCODE_EPHEMERAL_COMMIT'],'2'*40)
-        self.assertEqual(report['build_inputs']['LITELLM_FREE_COMMIT'],'3'*40)
+        self.assertEqual(report['ephemeral_commits'], {'openclaw': 'a'*40, 'hermes': 'b'*40})
+        self.assertEqual(set(report['build_inputs']), {'OPENCLAW_VERSION', 'OPENCLAW_UPSTREAM_SHA', 'OPENCLAW_DETERMINISTIC_TAG', 'OPENCLAW_DETERMINISTIC_SHA256'})
 
     def test_explicit_source_upgrade_gate_and_earliest_stage_validation(self):
         spec = importlib.util.spec_from_file_location('source_upgrade_prep', ROOT/'prepare-container.py')

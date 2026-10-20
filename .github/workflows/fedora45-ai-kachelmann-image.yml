@@ -10,6 +10,11 @@ on:
         required: false
         default: ""
         type: string
+      build_series:
+        description: 'Containerfile series, e.g. 2026.9.17; empty uses Containerfile'
+        required: false
+        default: ''
+        type: string
       image_tag:
         description: "Fixed YYYY.M.N version. Empty selects the next monthly number."
         required: false
@@ -89,6 +94,25 @@ jobs:
           ref: ${{ steps.source.outputs.commit }}
           fetch-depth: 1
 
+      - name: Select Containerfile
+        id: recipe
+        env:
+          BUILD_SERIES: ${{ inputs.build_series }}
+          REQUESTED_TAG: ${{ inputs.image_tag }}
+        run: |
+          set -euo pipefail
+          file="fedora45-ai-kachelmann/Containerfile"
+          if [ -n "$BUILD_SERIES" ]; then
+            [[ "$BUILD_SERIES" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+$ ]]
+            [[ "$REQUESTED_TAG" == "$BUILD_SERIES."* ]]
+            [[ "${REQUESTED_TAG#"$BUILD_SERIES."}" =~ ^[0-9]+$ ]]
+            file+="$BUILD_SERIES"
+          fi
+          test -f "$file"
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+          echo "CONTAINERFILE=$GITHUB_WORKSPACE/$file" >> "$GITHUB_ENV"
+          echo "BUILD_SERIES=$BUILD_SERIES" >> "$GITHUB_ENV"
+
       - name: Verify source checkout
         shell: bash
         env:
@@ -101,10 +125,6 @@ jobs:
             exit 1
           }
           printf 'Source commit: %s\n' "$actual" >> "$GITHUB_STEP_SUMMARY"
-          if [ -f upgrade-loop/prepared-sources.json ]; then
-            python3 upgrade-loop/source_snapshot.py --manifest upgrade-loop/prepared-sources.json
-            printf 'SAFRANO_SOURCE_MANIFEST=%s/upgrade-loop/prepared-sources.json\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
-          fi
 
       - name: Free runner disk space
         run: .github/scripts/free-runner-disk-space.sh
@@ -116,7 +136,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REQUESTED_TAG: ${{ inputs.image_tag }}
           REPLACE_EXISTING: ${{ inputs.replace_existing }}
-          BASE_TAG: ${{ inputs.base_tag }}
+          BASE_TAG: ${{ inputs.base_tag || (inputs.build_series != '' && inputs.image_tag) || '' }}
           PUSH_STABLE: ${{ inputs.push_stable }}
           PUSH_LATEST: ${{ inputs.push_latest }}
         run: |
@@ -140,39 +160,14 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Configure source authentication
-        env:
-          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
-        run: gh auth setup-git
-
-      - name: Prepare KACHELMANN build context
-        env:
-          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
-        run: fedora45-ai-kachelmann/build/prepare-build-context.sh --no-cache
-
       - name: Stage verified KACHELMANN APK
         id: kachelmann_apk
         env:
           GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
         run: |
+          mkdir -p fedora45-ai-kachelmann/safrano9999/KACHELMANN
           python3 .github/scripts/stage-kachelmann-apk.py \
             --destination fedora45-ai-kachelmann/safrano9999/KACHELMANN
-
-      - name: Resolve KACHELMANN build configuration
-        id: kachelmann_build
-        shell: bash
-        run: |
-          set -euo pipefail
-          resolved=fedora45-ai-kachelmann/.resolved-build.env
-          [ -s "$resolved" ] || {
-            echo "Missing $resolved" >&2
-            exit 1
-          }
-          {
-            echo "build_args<<EOF"
-            cat "$resolved"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -192,11 +187,14 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./fedora45-ai-kachelmann
-          file: ./fedora45-ai-kachelmann/Containerfile
+          file: ${{ steps.recipe.outputs.file }}
           target: ai-kachelmann
           platforms: linux/amd64
           pull: true
           no-cache: true
+          secrets: |
+            GIT_AUTH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
+            GH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
           push: true
           tags: ${{ steps.refs.outputs.tags }}
           labels: |
@@ -206,7 +204,6 @@ jobs:
             io.safrano9999.kachelmann.apk.sha256=${{ steps.kachelmann_apk.outputs.apk_sha256 }}
           build-args: |
             AI_BASE_IMAGE=${{ steps.refs.outputs.base_ref }}
-            ${{ steps.kachelmann_build.outputs.build_args }}
 
       - name: Reclaim space after KACHELMANN build
         run: .github/scripts/prune-container-build-space.sh
@@ -300,6 +297,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --ref "$GITHUB_REF_NAME" \
             -f "build_commit=$BUILD_COMMIT" \
+            -f "build_series=$BUILD_SERIES" \
             -f "image_tag=$IMAGE_TAG" \
             -f "kachelmann_tag=$IMAGE_TAG" \
             -f "push_stable=$PUSH_STABLE" \

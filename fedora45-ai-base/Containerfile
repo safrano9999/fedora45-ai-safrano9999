@@ -1,37 +1,56 @@
+# syntax=docker/dockerfile:1
 ARG AI_CORE_IMAGE
+FROM ${AI_CORE_IMAGE} AS layer-sources
+USER root
+COPY build/ /tmp/fedora45-ai-base/build/
+COPY build.conf fedora45-ai-base.*_example /tmp/fedora45-ai-base/
+# Native Git ADD follows each repository's current default branch.
+ADD --keep-git-dir=true https://github.com/safrano9999/WELCOME.git /tmp/fedora45-ai-base/safrano9999/WELCOME/
+ADD --keep-git-dir=true https://github.com/safrano9999/CITADEL.git /tmp/fedora45-ai-base/safrano9999/CITADEL/
+ADD --keep-git-dir=true https://github.com/safrano9999/NEXTCLOUD.git /tmp/fedora45-ai-base/safrano9999/NEXTCLOUD/
+ADD --keep-git-dir=true https://github.com/safrano9999/CODEANALYST.git /tmp/fedora45-ai-base/safrano9999/CODEANALYST/
+ADD --keep-git-dir=true https://github.com/safrano9999/DIESDAS-.git /tmp/fedora45-ai-base/safrano9999/DIESDAS-/
+ADD --keep-git-dir=true https://github.com/safrano9999/safrano9999-paper.git /tmp/fedora45-ai-base/safrano9999/safrano9999-paper/
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+    gh release download latest --repo safrano9999/NEXTCLOUD \
+      --pattern nextcloud-fedora64-plugin-latest.zip \
+      --pattern nextcloud-fedora64-plugin-latest.zip.sha256 \
+      --dir /tmp/fedora45-ai-base/.fedora45-runtime
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+    /tmp/fedora45-ai-base/build/assemble-runtime.sh \
+ && find /tmp/fedora45-ai-base/safrano9999 -name .git -type d -prune -exec rm -rf {} +
+
 FROM ${AI_CORE_IMAGE} AS ai-base
 
-ARG FEDORA45_AI_BASE_SOURCE_KEY
 
 LABEL org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
       org.opencontainers.image.title="fedora45-ai-base" \
       org.opencontainers.image.description="Fedora 45 AI Base repository and service contributions." \
-      io.safrano9999.parent="fedora45-ai-core" \
-      io.safrano9999.base-source-tags.sha256="${FEDORA45_AI_BASE_SOURCE_KEY}"
+      io.safrano9999.parent="fedora45-ai-core"
 
 USER root
 
-COPY requirements.base.txt /requirements.base.txt
+COPY --from=layer-sources /tmp/fedora45-ai-base/requirements.base.txt /requirements.base.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r /requirements.base.txt \
  && pip check
 
-COPY .fedora45-ai-base-source-tags.tsv /README/fedora45-ai-base-source-tags.tsv
-COPY .fedora45-ai-repositories.list /usr/local/share/fedora45-ai/base-repositories.list
-COPY .fedora45-runtime/manifest.tsv /README/fedora45-ai-base-runtime-assets.tsv
-COPY .fedora45-image-runtime/manifest.tsv /usr/local/share/fedora45-ai/base-runtime-files.tsv
-COPY .fedora45-image-runtime/systemd-enable.list /usr/local/share/fedora45-ai/base-systemd-enable.list
-COPY .fedora45-image-runtime/rootfs/ /
+COPY --from=layer-sources /tmp/fedora45-ai-base/.fedora45-ai-base-source-tags.tsv /README/fedora45-ai-base-source-tags.tsv
+COPY --from=layer-sources /tmp/fedora45-ai-base/.fedora45-ai-repositories.list /usr/local/share/fedora45-ai/base-repositories.list
+COPY --from=layer-sources /tmp/fedora45-ai-base/.fedora45-runtime/manifest.tsv /README/fedora45-ai-base-runtime-assets.tsv
+COPY --from=layer-sources /tmp/fedora45-ai-base/.fedora45-image-runtime/manifest.tsv /usr/local/share/fedora45-ai/base-runtime-files.tsv
+COPY --from=layer-sources /tmp/fedora45-ai-base/.fedora45-image-runtime/systemd-enable.list /usr/local/share/fedora45-ai/base-systemd-enable.list
+COPY --from=layer-sources /tmp/fedora45-ai-base/.fedora45-image-runtime/rootfs/ /
 
-COPY safrano9999/ /opt/safrano9999/
+COPY --from=layer-sources /tmp/fedora45-ai-base/safrano9999/ /opt/safrano9999/
 
 # Exercise the exact interpreter flags used by the generated Citadel service.
 # Fedora hides /usr/local pip packages under -s, so a bare python import test
 # would miss a runtime-only failure in that service's launcher.
 RUN python3 -c 'import pathlib, shlex, subprocess; unit = pathlib.Path("/etc/systemd/system/citadel.service").read_text(); command = next(line.split("=", 1)[1] for line in unit.splitlines() if line.startswith("ExecStart=")); argv = shlex.split(command); launcher = argv[:argv.index("webui.py")]; subprocess.run([*launcher, "-c", "import dotenv, fastapi, jinja2, uvicorn"], check=True)'
 
-COPY .fedora45-runtime/nextcloud-fedora64-plugin-latest.zip \
-     .fedora45-runtime/nextcloud-fedora64-plugin-latest.zip.sha256 \
+COPY --from=layer-sources /tmp/fedora45-ai-base/.fedora45-runtime/nextcloud-fedora64-plugin-latest.zip \
+     /tmp/fedora45-ai-base/.fedora45-runtime/nextcloud-fedora64-plugin-latest.zip.sha256 \
      /tmp/nextcloud-runtime/
 RUN cd /tmp/nextcloud-runtime \
  && sha256sum --check --strict nextcloud-fedora64-plugin-latest.zip.sha256 \
@@ -60,7 +79,7 @@ RUN mkdir -p /opt/safrano9999/CITADEL/extensions/enabled \
     fi \
  && chmod 0755 /opt/safrano9999/CITADEL/scan.sh
 
-COPY .fedora45-image-buildtime/ /tmp/fedora45-image-buildtime/
+COPY --from=layer-sources /tmp/fedora45-ai-base/.fedora45-image-buildtime/ /tmp/fedora45-image-buildtime/
 COPY build/run-container-buildtime.sh /tmp/fedora45-image-buildtime/run-container-buildtime
 RUN --network=none \
     /tmp/fedora45-image-buildtime/run-container-buildtime \

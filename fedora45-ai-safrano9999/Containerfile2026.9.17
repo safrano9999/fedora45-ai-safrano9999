@@ -1,0 +1,69 @@
+# syntax=docker/dockerfile:1
+ARG AI_KACHELMANN_IMAGE=ghcr.io/safrano9999/fedora45-ai-kachelmann:2026.9.17.11
+FROM ${AI_KACHELMANN_IMAGE} AS layer-sources
+USER root
+COPY build/ /tmp/fedora45-ai-safrano9999/build/
+COPY build.conf fedora45-ai-safrano9999.*_example /tmp/fedora45-ai-safrano9999/
+# Native Git ADD follows each repository's current default branch.
+ADD --keep-git-dir=true https://github.com/safrano9999/DAILYNEWS.git /tmp/fedora45-ai-safrano9999/safrano9999/DAILYNEWS/
+ADD --keep-git-dir=true https://github.com/safrano9999/ZEROINBOX.git /tmp/fedora45-ai-safrano9999/safrano9999/ZEROINBOX/
+ADD --keep-git-dir=true https://github.com/safrano9999/SPANKER.git /tmp/fedora45-ai-safrano9999/safrano9999/SPANKER/
+ADD --keep-git-dir=true https://github.com/safrano9999/JUGO.git /tmp/fedora45-ai-safrano9999/safrano9999/JUGO/
+ADD --keep-git-dir=true https://github.com/safrano9999/PV_D-A-CH.git /tmp/fedora45-ai-safrano9999/safrano9999/PV_D-A-CH/
+ADD --keep-git-dir=true https://github.com/safrano9999/KIWIX_BRIDGE.git /tmp/fedora45-ai-safrano9999/safrano9999/KIWIX_BRIDGE/
+ADD --keep-git-dir=true https://github.com/safrano9999/NAPOLEON_HILLS_AI_MASTERMIND_CLASSES.git /tmp/fedora45-ai-safrano9999/safrano9999/NAPOLEON_HILLS_AI_MASTERMIND_CLASSES/
+ADD --keep-git-dir=true https://github.com/safrano9999/SOLANA_AIRGAPPED_DEBIAN_WORKFLOW.git /tmp/fedora45-ai-safrano9999/safrano9999/SOLANA_AIRGAPPED_DEBIAN_WORKFLOW/
+ADD --keep-git-dir=true https://github.com/safrano9999/NaturalGrounding-Tiktok-Ying-Video-Manager.git /tmp/fedora45-ai-safrano9999/safrano9999/NaturalGrounding-Tiktok-Ying-Video-Manager/
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+    /tmp/fedora45-ai-safrano9999/build/assemble-runtime.sh \
+ && find /tmp/fedora45-ai-safrano9999/safrano9999 -name .git -type d -prune -exec rm -rf {} +
+
+FROM ${AI_KACHELMANN_IMAGE} AS ai-safrano9999
+
+
+LABEL org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
+      org.opencontainers.image.title="fedora45-ai-safrano9999" \
+      org.opencontainers.image.description="Fedora 45 AI Safrano repository and service contributions." \
+      io.safrano9999.parent="fedora45-ai-kachelmann"
+
+USER root
+
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/requirements.safrano9999.txt /requirements.safrano9999.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    sed -i 's/psycopg\[binary\]/psycopg/g' /requirements.safrano9999.txt \
+ && pip install -r /requirements.safrano9999.txt \
+ && pip check
+
+ENV ZEROINBOX_DIR=/opt/safrano9999/ZEROINBOX
+
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/.safrano9999-source-tags.tsv /README/safrano9999-source-tags.tsv
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/.fedora45-ai-repositories.list /usr/local/share/fedora45-ai/safrano9999-repositories.list
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/.fedora45-image-runtime/manifest.tsv /usr/local/share/fedora45-ai/safrano9999-runtime-files.tsv
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/.fedora45-image-runtime/systemd-enable.list /usr/local/share/fedora45-ai/safrano9999-systemd-enable.list
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/.fedora45-image-runtime/rootfs/ /
+
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/safrano9999/ /opt/safrano9999/
+RUN sed -i 's/psycopg\[binary\]/psycopg/g' /opt/safrano9999/*/requirements.txt
+
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/.fedora45-image-buildtime/ /tmp/fedora45-image-buildtime/
+COPY build/run-container-buildtime.sh /tmp/fedora45-image-buildtime/run-container-buildtime
+RUN --network=none \
+    /tmp/fedora45-image-buildtime/run-container-buildtime \
+      /tmp/fedora45-image-buildtime \
+      fedora45-ai-safrano9999 \
+      /opt/safrano9999 \
+ && rm -rf /tmp/fedora45-image-buildtime \
+ && rm -rf /opt/safrano9999/*/image/runtime
+
+RUN /usr/local/bin/openclaw-ephemeral.py configure \
+ && find /root/.openclaw -maxdepth 1 -name 'openclaw.json*' -delete
+
+RUN while IFS= read -r unit || [ -n "$unit" ]; do \
+      [ -n "$unit" ] || continue; \
+      systemctl enable "$unit"; \
+    done < /usr/local/share/fedora45-ai/safrano9999-systemd-enable.list
+
+USER root
+WORKDIR /root
+STOPSIGNAL SIGRTMIN+3
+CMD ["/sbin/init"]

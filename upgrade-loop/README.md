@@ -23,8 +23,8 @@ container check is owned by the user and is not implemented by this workflow.
 4. The GitHub runner consumes the snapshot without resolving latest again.
    Test both selected Ephemeral generators against their selected upstream
    releases, including the component whose upstream version did not change.
-   Check Hermes patch applicability; use the selected OpenClaw/NOTE assets.
-5. After checks pass, publish the upstream, generator and release inputs together
+   Check Hermes patch applicability and the selected pinned OpenClaw artifact.
+5. After checks pass, publish the upstream and Deterministic inputs plus compatibility evidence together
    with `upgrade-loop/prepared-sources.json` in one Git commit. Concurrent main
    changes block the push; never force-push or mix different source snapshots.
 6. Verify that the returned snapshot matches the one selected by n8n. Only
@@ -33,20 +33,14 @@ container check is owned by the user and is not implemented by this workflow.
    prepared build commit, which contains the snapshot. Return evidence and the
    clone manifest to Hermes. A missing snapshot or failed sync stops the run.
 
-A version change in OpenClaw therefore also incorporates a new Hermes-Ephemeral
-commit, and vice versa. Both selected generator commits remain fixed throughout
-preparation and become explicit inputs for the subsequent image build.
+The snapshot records the sources used for these compatibility checks. It does
+not select package sources for image builds: each Containerfile fetches current
+Safrano Git default branches and `latest` release payloads directly. Deterministic
+is the explicit exception and remains pinned in Core's Containerfile.
 
-All Safrano components select their latest applicable source once inside n8n,
-after the upstream-update gate: images use `:latest`, Git sources use the current default branch,
-and release payloads use the latest published stable release. The OpenClaw
-payload must match the target OpenClaw version. This also refreshes the
-deterministic patch when only Hermes changed, and refreshes NOTE on either
-upstream update. A matching fixed release tag may represent the exact bytes
-of a rolling `latest` asset; its SHA256 is recorded and verified. The resulting
-pins are a snapshot for that preparation/build, not a policy to stay on an old
-release. NOTE, patch and generator updates alone open the gate only with explicit
-`upgrade-safrano9999`. The default remains the upstream release gate.
+The pinned-series MCP path uses `build_series` and does not invoke n8n. It verifies
+all corresponding `Containerfile<series>` files and builds them at one immutable
+image-repository commit. Package source snapshots are not supplied to Actions.
 
 ## Commit-bound build handoff
 
@@ -155,24 +149,15 @@ Completion feedback remains one empty webhook notification on any final outcome.
 
 ## Source inventory and persistent shallow checkouts
 
-The inventory follows `FROM` through the parent image variables in `build.conf`.
-It reads `EXTENSIONS`, `STANDALONE` (including `repo@branch`) and literal
-`*_REPOSITORY` declarations in the layer's build configuration/preparation helper.
-Configuration is parsed as data; no repository code or shell expressions run.
-Unknown/dynamic declarations, ambiguous parents and conflicting refs stop discovery.
-Only `safrano9999` sources enter the list. External Fedora, OpenClaw/Hermes
-upstream, RPM, npm and PyPI sources are excluded. `SCRIPTS` is build tooling,
-not an image component, so it is not added to the component clone list.
+The inventory follows the final runtime `FROM` through parent image variables
+in `build.conf` and reads native Git `ADD` declarations from each Containerfile.
+Runtime role lists must refer to sources declared by that layer; branch pins in
+those lists are rejected. External upstreams are excluded from the Safrano list.
 
-The regular image currently selects 22 repositories including this image repo;
-`-full` adds `VikAI` for 23. This is derived, not a maintained repository allowlist.
-The preview reports `source_policy: latest-resolved-for-preview`, the previous
-`declared_ref`, the currently selected `ref` and its exact `commit`; release
-assets also record their SHA256. It does not alter published build inputs.
-For a ready build, every dependency uses the same snapshot selected before the
-preparation Action. Clone/sync does not re-query GitHub for newer refs. Image
-build helpers read the identical snapshot from the prepared build commit, so a
-branch or release advancing after selection cannot silently change the build.
+The preview reports `source_policy: containerfile-latest-with-pinned-deterministic`
+and records resolved commits for diagnostics and compatibility tests. Those
+checkouts are separate from the image build: advancing Git branches are consumed
+by BuildKit at build time, while Deterministic keeps its declared release tag.
 
 Checkouts live at `/home/node/.n8n/fedora45-sources/<repository>` in the existing
 n8n named volume. First checkout uses `git clone --depth 1`; updates use

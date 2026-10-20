@@ -1,17 +1,34 @@
+# syntax=docker/dockerfile:1
 ARG AI_KACHELMANN_IMAGE
+FROM ${AI_KACHELMANN_IMAGE} AS layer-sources
+USER root
+COPY build/ /tmp/fedora45-ai-safrano9999/build/
+COPY build.conf fedora45-ai-safrano9999.*_example /tmp/fedora45-ai-safrano9999/
+# Native Git ADD follows each repository's current default branch.
+ADD --keep-git-dir=true https://github.com/safrano9999/DAILYNEWS.git /tmp/fedora45-ai-safrano9999/safrano9999/DAILYNEWS/
+ADD --keep-git-dir=true https://github.com/safrano9999/ZEROINBOX.git /tmp/fedora45-ai-safrano9999/safrano9999/ZEROINBOX/
+ADD --keep-git-dir=true https://github.com/safrano9999/SPANKER.git /tmp/fedora45-ai-safrano9999/safrano9999/SPANKER/
+ADD --keep-git-dir=true https://github.com/safrano9999/JUGO.git /tmp/fedora45-ai-safrano9999/safrano9999/JUGO/
+ADD --keep-git-dir=true https://github.com/safrano9999/PV_D-A-CH.git /tmp/fedora45-ai-safrano9999/safrano9999/PV_D-A-CH/
+ADD --keep-git-dir=true https://github.com/safrano9999/KIWIX_BRIDGE.git /tmp/fedora45-ai-safrano9999/safrano9999/KIWIX_BRIDGE/
+ADD --keep-git-dir=true https://github.com/safrano9999/NAPOLEON_HILLS_AI_MASTERMIND_CLASSES.git /tmp/fedora45-ai-safrano9999/safrano9999/NAPOLEON_HILLS_AI_MASTERMIND_CLASSES/
+ADD --keep-git-dir=true https://github.com/safrano9999/SOLANA_AIRGAPPED_DEBIAN_WORKFLOW.git /tmp/fedora45-ai-safrano9999/safrano9999/SOLANA_AIRGAPPED_DEBIAN_WORKFLOW/
+ADD --keep-git-dir=true https://github.com/safrano9999/NaturalGrounding-Tiktok-Ying-Video-Manager.git /tmp/fedora45-ai-safrano9999/safrano9999/NaturalGrounding-Tiktok-Ying-Video-Manager/
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+    /tmp/fedora45-ai-safrano9999/build/assemble-runtime.sh \
+ && find /tmp/fedora45-ai-safrano9999/safrano9999 -name .git -type d -prune -exec rm -rf {} +
+
 FROM ${AI_KACHELMANN_IMAGE} AS ai-safrano9999
 
-ARG SAFRANO9999_SOURCE_KEY
 
 LABEL org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
       org.opencontainers.image.title="fedora45-ai-safrano9999" \
       org.opencontainers.image.description="Fedora 45 AI Safrano repository and service contributions." \
-      io.safrano9999.parent="fedora45-ai-kachelmann" \
-      io.safrano9999.source-tags.sha256="${SAFRANO9999_SOURCE_KEY}"
+      io.safrano9999.parent="fedora45-ai-kachelmann"
 
 USER root
 
-COPY requirements.safrano9999.txt /requirements.safrano9999.txt
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/requirements.safrano9999.txt /requirements.safrano9999.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     sed -i 's/psycopg\[binary\]/psycopg/g' /requirements.safrano9999.txt \
  && pip install -r /requirements.safrano9999.txt \
@@ -19,16 +36,16 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 ENV ZEROINBOX_DIR=/opt/safrano9999/ZEROINBOX
 
-COPY .safrano9999-source-tags.tsv /README/safrano9999-source-tags.tsv
-COPY .fedora45-ai-repositories.list /usr/local/share/fedora45-ai/safrano9999-repositories.list
-COPY .fedora45-image-runtime/manifest.tsv /usr/local/share/fedora45-ai/safrano9999-runtime-files.tsv
-COPY .fedora45-image-runtime/systemd-enable.list /usr/local/share/fedora45-ai/safrano9999-systemd-enable.list
-COPY .fedora45-image-runtime/rootfs/ /
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/.safrano9999-source-tags.tsv /README/safrano9999-source-tags.tsv
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/.fedora45-ai-repositories.list /usr/local/share/fedora45-ai/safrano9999-repositories.list
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/.fedora45-image-runtime/manifest.tsv /usr/local/share/fedora45-ai/safrano9999-runtime-files.tsv
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/.fedora45-image-runtime/systemd-enable.list /usr/local/share/fedora45-ai/safrano9999-systemd-enable.list
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/.fedora45-image-runtime/rootfs/ /
 
-COPY safrano9999/ /opt/safrano9999/
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/safrano9999/ /opt/safrano9999/
 RUN sed -i 's/psycopg\[binary\]/psycopg/g' /opt/safrano9999/*/requirements.txt
 
-COPY .fedora45-image-buildtime/ /tmp/fedora45-image-buildtime/
+COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/.fedora45-image-buildtime/ /tmp/fedora45-image-buildtime/
 COPY build/run-container-buildtime.sh /tmp/fedora45-image-buildtime/run-container-buildtime
 RUN --network=none \
     /tmp/fedora45-image-buildtime/run-container-buildtime \

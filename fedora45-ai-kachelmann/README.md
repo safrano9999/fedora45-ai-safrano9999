@@ -30,5 +30,5 @@ backends and remains fully ephemeral. SQLite stays local to the Fedora main
 container under the no-shared-volume contract. The application and plugin code
 remain immutable in the image.
 
-Use `./setup.sh` for an instance, `./build/build-local.sh` for a local image, or the
+Use `./setup.sh` for an instance, or the
 `fedora45-ai-kachelmann-image.yml` workflow for the private GHCR image.

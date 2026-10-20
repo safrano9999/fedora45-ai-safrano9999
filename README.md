@@ -51,21 +51,18 @@ Core-pre's `OPENCLAW_VERSION` and optional `OPENCLAW_UPSTREAM_SHA` arguments
 select the source for Deterministic builds and Ephemeral compatibility tests.
 The override is preserved while the stable version is unchanged. An upstream
 version increase clears it, returning to that release's official source.
-The Core-pre image workflow first calls Deterministic with its exact Core-pre
-source selection. Unchanged successful inputs reuse the existing package;
-otherwise it builds/tests/publishes before continuing the image build. Its exact
-release is passed to Core in the cascade. MCP does not manage this dependency.
-There is no source-change or scheduled component trigger; the standalone
-`openclaw-components.yml` entry point remains available for manual use.
+Deterministic is explicitly pinned in Core's Containerfile. The image cascade
+consumes that release; it does not upgrade or rebuild it implicitly.
+The standalone `openclaw-components.yml` entry point remains available for
+explicit component updates.
 
 Core installs Deterministic, the official npm Codex plugin, the pinned local
 voice plugins, and Ephemeral in separate steps. Deterministic installs the
 complete matching OpenClaw npm package; Core then installs Codex and the voice
 plugins in later layers. Ephemeral supplies configuration and startup code and
-discovers optional local models even without API keys. The prepared inputs in
-`fedora45-ai-core/build.conf` are checked against Core-pre's source selection.
-The old prepared snapshot is retained as a test fixture; a fresh snapshot must
-be prepared once the new runtime bundle has been built and published.
+discovers optional local models even without API keys. The Containerfiles fetch all other Safrano Git sources from their current
+default branches and release payloads from `latest`. No prepared source snapshot
+or external generator commit lock overrides these declarations.
 
 | Fixed component | Previous | New stable pin |
 |---|---|---|
@@ -89,6 +86,13 @@ interactive OAuth. Its 16 API-key regressions and 169 related upstream checks
 pass, including the default chat transport and optional native Messages transport.
 
 ## Publishing and deployment
+
+Each layer provides `Containerfile` for the normal line and
+`Containerfile2026.9.17` for the pinned OpenClaw/Fedora line. SAFRANO_MCP accepts
+`build_series="2026.9.17"`, reserves one next revision (for example `.10` → `.11`),
+and passes the same series, tag and matching parent tags through Core-pre → Full.
+Only Deterministic is explicitly version-pinned among the Safrano components.
+The existing OpenClaw and Fedora foundation pins remain intact.
 
 The planned n8n workflow for repeatable builds, regression tests and corrections
 across the entire Fedora45 image chain is described in

@@ -1,12 +1,12 @@
 # fedora45-ai-base
 
 `ghcr.io/safrano9999/fedora45-ai-base` is built directly from
-`fedora45-ai-core`. `EXTENSIONS` and `STANDALONE` in `build.conf` are the only
-repository lists used by build preparation. `EXTENSIONS` contains OpenClaw
+`fedora45-ai-core`. The Containerfile declares each current Git source directly with `ADD`.
+`EXTENSIONS` and `STANDALONE` in `build.conf` describe their runtime roles. `EXTENSIONS` contains OpenClaw
 manifest repositories; `STANDALONE` contains complete application repositories.
 
-`build/prepare-build-context.sh` syncs exactly those repositories into the ignored
-`safrano9999/` directory, records immutable source commits, merges their Python
+`build/assemble-runtime.sh` runs inside the source stage on the GitHub runner.
+It consumes the Git sources already fetched by BuildKit, records their commits, merges their Python
 requirements, and directly merges each owner's rootfs-shaped `image/runtime/`
 tree. Unsafe paths, symlinks, unsupported types, permission conflicts, and
 cross-repository file collisions fail preparation. The resulting file manifest
@@ -26,4 +26,5 @@ The cumulative `fedora45-ai-base.*_example` triple is generated from the
 Base additional triple, the current Core triple, and the repositories listed
 in `fedora45-ai-base-additional.repos`. `setup.sh` uses those local files
 directly and keeps generated instances below `CONTAINER/<name>/`; it performs
-no example download or merge. Use `--config-only`, `--pull`, or `--build`.
+no example download or merge. Use `--config-only` to render instances. Image builds use GitHub Actions;
+host image pulls use Smart1.

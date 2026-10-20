@@ -10,6 +10,11 @@ on:
         required: false
         default: ""
         type: string
+      build_series:
+        description: 'Containerfile series, e.g. 2026.9.17; empty uses Containerfile'
+        required: false
+        default: ''
+        type: string
       image_tag:
         description: "Fixed YYYY.M.N or YYYY.M.N.P version. Empty selects the next monthly number."
         required: false
@@ -55,23 +60,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  component-source:
-    runs-on: ubuntu-latest
-    outputs:
-      core_sha: ${{ steps.source.outputs.core_sha }}
-    steps:
-      - id: source
-        env:
-          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
-          REQUESTED_BUILD_COMMIT: ${{ inputs.build_commit }}
-        run: |
-          set -euo pipefail
-          core_sha="${REQUESTED_BUILD_COMMIT:-$GITHUB_SHA}"
-          [[ "$core_sha" =~ ^[0-9a-f]{40}$ ]]
-          echo "core_sha=$core_sha" >> "$GITHUB_OUTPUT"
-
   build-and-push:
-    needs: component-source
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -101,6 +90,25 @@ jobs:
           ref: ${{ steps.source.outputs.commit }}
           fetch-depth: 1
 
+      - name: Select Containerfile
+        id: recipe
+        env:
+          BUILD_SERIES: ${{ inputs.build_series }}
+          REQUESTED_TAG: ${{ inputs.image_tag }}
+        run: |
+          set -euo pipefail
+          file="fedora45-ai-core-pre/Containerfile"
+          if [ -n "$BUILD_SERIES" ]; then
+            [[ "$BUILD_SERIES" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+$ ]]
+            [[ "$REQUESTED_TAG" == "$BUILD_SERIES."* ]]
+            [[ "${REQUESTED_TAG#"$BUILD_SERIES."}" =~ ^[0-9]+$ ]]
+            file+="$BUILD_SERIES"
+          fi
+          test -f "$file"
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+          echo "CONTAINERFILE=$GITHUB_WORKSPACE/$file" >> "$GITHUB_ENV"
+          echo "BUILD_SERIES=$BUILD_SERIES" >> "$GITHUB_ENV"
+
       - name: Verify source checkout
         shell: bash
         env:
@@ -113,10 +121,6 @@ jobs:
             exit 1
           }
           printf 'Source commit: %s\n' "$actual" >> "$GITHUB_STEP_SUMMARY"
-          if [ -f upgrade-loop/prepared-sources.json ]; then
-            python3 upgrade-loop/source_snapshot.py --manifest upgrade-loop/prepared-sources.json
-            printf 'SAFRANO_SOURCE_MANIFEST=%s/upgrade-loop/prepared-sources.json\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
-          fi
 
       - name: Configure private repository access
         shell: bash
@@ -170,12 +174,8 @@ jobs:
           set -euo pipefail
           cd fedora45-ai-core-pre
           ./build/prepare-build-context.sh
-          test -f build/vendor/persistainer/image/runtime/etc/systemd/system/persistainer.service
-          test -x build/vendor/persistainer/image/runtime/usr/local/bin/persistainer
           PYTHONDONTWRITEBYTECODE=1 \
             python3 -m unittest discover -s tests -p 'test_*.py'
-          grep -Fqx 'Type=oneshot' \
-            build/vendor/persistainer/image/runtime/etc/systemd/system/persistainer.service
           grep -Fqx 'Requires=persistainer.service' \
             image/runtime/etc/systemd/system/tailscaled.service
           grep -Fqx 'After=network.target persistainer.service' \
@@ -198,7 +198,8 @@ jobs:
             UV_VERSION UV_INSTALLER_SHA256 CLOUDFLARED_VERSION CLOUDFLARED_SHA256 \
             WEBHOOK_VERSION WEBHOOK_SHA256 FUGU_VERSION FUGU_COMMIT \
             CODEX_VERSION CODEX_SHA256 CLAUDE_CODE_VERSION CLAUDE_CODE_SHA256 \
-            VDITOR_VERSION VDITOR_SHA256 NPM_VERSION NPM_SHA256; do
+            VDITOR_VERSION VDITOR_SHA256 NPM_VERSION NPM_SHA256 \
+            OPENCODE_VERSION OPENCODE_TELEGRAM_VERSION; do
             [ -n "${!name:-}" ] || {
               echo "Missing required Core-pre input: $name" >&2
               exit 1
@@ -208,6 +209,8 @@ jobs:
             echo "openclaw_version=$OPENCLAW_VERSION"
             echo "build_args<<EOF"
             echo "HERMES_VERSION=$HERMES_VERSION"
+            echo "OPENCODE_VERSION=$OPENCODE_VERSION"
+            echo "OPENCODE_TELEGRAM_VERSION=$OPENCODE_TELEGRAM_VERSION"
             echo "ELECTRUM_VERSION=$ELECTRUM_VERSION"
             echo "LND_VERSION=$LND_VERSION"
             echo "GETH_VERSION=$GETH_VERSION"
@@ -243,12 +246,15 @@ jobs:
           labels: |
             org.opencontainers.image.revision=${{ steps.source.outputs.commit }}
           context: ./fedora45-ai-core-pre
-          file: ./fedora45-ai-core-pre/Containerfile
+          file: ${{ steps.recipe.outputs.file }}
           target: ai-core-pre
           platforms: linux/amd64
           build-contexts: ${{ steps.fedora.outputs.context }}
           pull: true
           no-cache: true
+          secrets: |
+            GIT_AUTH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
+            GH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
           push: true
           tags: ${{ steps.tags.outputs.tags }}
           build-args: ${{ steps.build.outputs.build_args }}
@@ -276,6 +282,10 @@ jobs:
               nmap lnd lncli geth solana electrum persistainer ffmpeg; do
               command -v "$command" >/dev/null
             done
+            test "$(readlink -f /usr/local/lib/hermes-agent)" = /usr/local/lib/hermes-runtime/hermes-agent
+            test -x /usr/local/lib/hermes-agent/.hermes/bin/hermes
+            timeout 90 hermes --version
+            HERMES_HOME=/tmp/hermes-smoke-home timeout 90 hermes --version
             test -x /usr/local/libexec/fedora45-wait-ready
             /usr/local/libexec/fedora45-wait-ready --help >/dev/null
             env -i PATH=/usr/local/bin:/usr/bin:/bin persistainer
@@ -358,6 +368,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --ref "$GITHUB_REF_NAME" \
             -f "build_commit=$BUILD_COMMIT" \
+            -f "build_series=$BUILD_SERIES" \
             -f "image_tag=$IMAGE_TAG" \
             -f "core_pre_tag=$IMAGE_TAG" \
             -f "push_stable=$PUSH_STABLE" \

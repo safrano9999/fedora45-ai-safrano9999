@@ -43,9 +43,9 @@
       "repository": "ethereum/go-ethereum",
       "release_line": "stable",
       "pins": {
-        "GETH_VERSION": "1.17.7",
-        "GETH_COMMIT": "3d858f85",
-        "GETH_SHA256": "d9973f609e44e97f4d55f8cb644586cabc2542096e1fcb1c7334a0cba00a89e8"
+        "GETH_VERSION": "1.17.8",
+        "GETH_COMMIT": "a5790770",
+        "GETH_SHA256": "eb864b9ce79afac5e6f57ca10866eb65477b41be62cc8843b219c2ff11d49557"
       }
     },
     {
@@ -62,8 +62,8 @@
       "repository": "astral-sh/uv",
       "release_line": "stable",
       "pins": {
-        "UV_VERSION": "0.12.22",
-        "UV_INSTALLER_SHA256": "58488ae8dbd0773134c92c85e901430e33f99d975bd7f929d26aa9ab0c2f9390"
+        "UV_VERSION": "0.13.3",
+        "UV_INSTALLER_SHA256": "320a286374f5306c4f8c807bd6a7d504dc318841457cf8f2194bee37fe02a2bd"
       }
     },
     {
@@ -71,8 +71,8 @@
       "repository": "cloudflare/cloudflared",
       "release_line": "stable",
       "pins": {
-        "CLOUDFLARED_VERSION": "2026.9.3",
-        "CLOUDFLARED_SHA256": "77e26d8d900e0b8469f416239d14b5f296525fdf79fee6f511ef55609e3fbac2"
+        "CLOUDFLARED_VERSION": "2026.10.2",
+        "CLOUDFLARED_SHA256": "35fbdd2beb378436c7da377d7358cea8e33f9c94a6705d1d8036bf9b0d6d8005"
       }
     },
     {
@@ -98,8 +98,8 @@
       "repository": "@openai/codex",
       "release_line": "stable",
       "pins": {
-        "CODEX_VERSION": "0.160.0",
-        "CODEX_SHA256": "373517768e912eeb5054024ae9215e2c90a1420957b66fe134ef745a00948d4a"
+        "CODEX_VERSION": "0.163.0",
+        "CODEX_SHA256": "1a71db36560bb446d2c2e63ae675c4a3018c38ace38ca533f8d1b25d3e6555b4"
       }
     },
     {
@@ -107,8 +107,8 @@
       "repository": "@anthropic-ai/claude-code",
       "release_line": "stable",
       "pins": {
-        "CLAUDE_CODE_VERSION": "2.1.288",
-        "CLAUDE_CODE_SHA256": "13ad0dd7d50855682082e8d0c4d4d45822170cbb5bebde5f4d024611a0c94842"
+        "CLAUDE_CODE_VERSION": "2.1.304",
+        "CLAUDE_CODE_SHA256": "94dcc84341b99d0b5f76d6c6ca24feb4109250a2bdba728fa2163aeb7fba00ac"
       }
     },
     {
@@ -116,8 +116,8 @@
       "repository": "vditor",
       "release_line": "stable",
       "pins": {
-        "VDITOR_VERSION": "4.0.0",
-        "VDITOR_SHA256": "d88108b759c744648c950eed55c91d845805ef80ca82a2ba6628aa0bc2d7d1ed"
+        "VDITOR_VERSION": "4.0.1",
+        "VDITOR_SHA256": "b72767473a6220c0363abda5845a21762574190a247d07f27281caa07f66745b"
       }
     },
     {

@@ -154,11 +154,8 @@ case "$IMG_CHOICE" in
         render_image "$REGISTRY_IMAGE"
         ;;
     2)
-        arguments=()
-        $NO_CACHE && arguments+=(--no-cache)
-        env "$OUTPUT_IMAGE_KEY=$LOCAL_IMAGE" \
-            "$ROOT/build/build-local.sh" "${arguments[@]}"
-        render_image "$LOCAL_IMAGE"
+        echo "Build this Fedora45 image with the GitHub Actions cascade in SCRIPTS/githubactions." >&2
+        exit 2
         ;;
     *)
         echo "Invalid image choice: $IMG_CHOICE" >&2

@@ -65,8 +65,9 @@ class FedoraBetaTests(unittest.TestCase):
         self.assertEqual(pin['release_line'], '45_Beta-1.3')
         self.assertEqual(pin['source_archive']['sha256'], 'c9bacf3e467932a035233b123836ddee11bdcede60a9f8bb8d9d6560fae1e5b8')
         self.assertEqual(pin['digest'], 'sha256:5f6c3c965a3af6b0faa21efc46ab46b9acfb1e1a8f69cec63fd6e44bdcf270cb')
-        self.assertEqual((ROOT / 'fedora45-ai-core-pre/Containerfile').read_text().splitlines()[0],
-                         'FROM fedora45-approved-beta AS ai-core-pre')
+        for name in ('Containerfile', 'Containerfile2026.9.17'):
+            self.assertIn('FROM fedora45-approved-beta AS ai-core-pre',
+                          (ROOT / 'fedora45-ai-core-pre' / name).read_text().splitlines())
 
 
 if __name__ == '__main__':

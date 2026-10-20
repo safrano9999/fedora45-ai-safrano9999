@@ -126,19 +126,11 @@ def patch_inputs(target, core, releases, latest=None):
             "OPENCLAW_DETERMINISTIC_SHA256": digest}
 
 
-def note_inputs(core, latest):
-    digest = release_asset(latest, core["NOTE_RELEASE_ASSET"])
-    if (latest["tag_name"] == core.get("NOTE_RELEASE_TAG") != "latest"
-            and core.get("NOTE_RELEASE_SHA256") != digest):
-        raise ValueError("Published NOTE artifact differs from the existing pin")
-    return {"NOTE_RELEASE_TAG": latest["tag_name"], "NOTE_RELEASE_SHA256": digest}
-
-
 def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upgrade_safrano9999=False, upgrade_build_deps=False):
     if os.environ.get("GITHUB_ACTIONS") != "true":
         raise ValueError("Preparation must run on GitHub Actions")
     foundation = REPO / "fedora45-ai-core-pre/Containerfile"
-    core_path = REPO / "fedora45-ai-core/build.conf"
+    core_path = REPO / "fedora45-ai-core/Containerfile"
     before_foundation, before_core = foundation.read_text(), core_path.read_text()
     current = current_versions(before_foundation)
     if snapshot is not None:
@@ -175,11 +167,12 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
     if not report["update"] and not source_update and not dependency_update and not validate_only and not force_prepare:
         report["status"] = "NO_UPDATE"
         return
-    core = dict(line.split("=", 1) for line in before_core.splitlines()
-                if re.match(r"^[A-Z_][A-Z0-9_]*=", line))
+    core = dict(line[4:].split("=", 1) for line in before_core.splitlines()
+                if re.match(r"^ARG [A-Z_][A-Z0-9_]*=", line))
     if snapshot is not None:
-        inputs = snapshot_build_inputs(snapshot, core)
-        commits = {name: inputs[name.upper() + "_EPHEMERAL_COMMIT"] for name in COMPONENTS}
+        inputs = snapshot_build_inputs(snapshot)
+        entries = validate_snapshot(snapshot)
+        commits = {name: entries[f"safrano9999/{name}-ephemeral"]["commit"] for name in COMPONENTS}
     else:
         commits = {name: exact_commit(github(f"repos/safrano9999/{name}-ephemeral/commits/HEAD")["sha"])
                    for name in COMPONENTS}
@@ -187,8 +180,6 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
         inputs = patch_inputs(latest["openclaw"], core,
                               github("repos/safrano9999/openclaw-deterministic-latest/releases?per_page=100"),
                               github("repos/safrano9999/openclaw-deterministic-latest/releases/latest"))
-        inputs.update(note_inputs(core, github(f"repos/{core['NOTE_REPOSITORY']}/releases/latest")))
-        inputs.update({name.upper() + "_EPHEMERAL_COMMIT": sha for name, sha in commits.items()})
     report["ephemeral_commits"] = commits
     override = openclaw_override(before_foundation, latest["openclaw"])
     if snapshot is not None:
@@ -238,7 +229,7 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
     for name in ("hermes",):
         after_foundation = replace_pin(after_foundation, name.upper() + "_VERSION", latest[name], "ARG ")
     for key, value in inputs.items():
-        after_core = replace_pin(after_core, key, value)
+        after_core = replace_pin(after_core, key, value, "ARG ")
     if validate_only:
         report["status"] = "VALIDATED_ONLY"
         return

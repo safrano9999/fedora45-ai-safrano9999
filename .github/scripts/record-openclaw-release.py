@@ -10,7 +10,7 @@ import sys
 sys.path.insert(0, "upgrade-loop")
 from source_snapshot import update_openclaw_source
 
-foundation_text = Path("fedora45-ai-core-pre/Containerfile").read_text()
+foundation_text = Path("fedora45-ai-core-pre/Containerfile" + os.environ.get("BUILD_SERIES", "")).read_text()
 versions = re.findall(r"^ARG OPENCLAW_VERSION=(\d+\.\d+\.\d+)$", foundation_text, re.M)
 overrides = re.findall(r"^ARG OPENCLAW_UPSTREAM_SHA=((?:[0-9a-f]{40})?)$", foundation_text, re.M)
 if len(versions) != 1 or len(overrides) != 1:
@@ -49,15 +49,15 @@ if release["draft"] or release["prerelease"] or len(assets) != 1:
 digest = assets[0].get("digest", "")
 if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
     raise ValueError("Missing runtime checksum")
-path = Path("fedora45-ai-core/build.conf")
+path = Path("fedora45-ai-core/Containerfile" + os.environ.get("BUILD_SERIES", ""))
 text = path.read_text()
 for key, value in {"OPENCLAW_VERSION": version, "OPENCLAW_UPSTREAM_SHA": upstream,
                    "OPENCLAW_DETERMINISTIC_TAG": tag, "OPENCLAW_DETERMINISTIC_SHA256": digest[7:]}.items():
-    text, count = re.subn(r"^" + key + r"=.*$", key + "=" + value, text, flags=re.M)
+    text, count = re.subn(r"^ARG " + key + r"=.*$", "ARG " + key + "=" + value, text, flags=re.M)
     if count != 1:
         raise ValueError("Missing or duplicate Core pin: " + key)
 text = text.replace("# The runtime bundle has not been built yet. Preparation resolves its published\n# SHA-256 from the exact release asset and verifies it before installation.\n", "")
-foundation = Path("fedora45-ai-core-pre/Containerfile")
+foundation = Path("fedora45-ai-core-pre/Containerfile" + os.environ.get("BUILD_SERIES", ""))
 updated = update_openclaw_source(foundation.read_text(), version, allow_downgrade=allow_downgrade)
 path.write_text(text)
 foundation.write_text(updated)

@@ -12,8 +12,6 @@ IMAGE_RUNTIME_STAGE="$ROOT/.fedora${FEDORA_VERSION}-image-runtime"
 BUILDTIME_STAGE="$ROOT/.fedora${FEDORA_VERSION}-image-buildtime"
 RUNTIME_STAGE="$ROOT/.fedora${FEDORA_VERSION}-runtime"
 REPOSITORY_LIST="$ROOT/.fedora${FEDORA_VERSION}-ai-repositories.list"
-OFFLINE=false
-NO_CACHE=false
 IMAGE_RUNTIME_TEMPORARY=""
 BUILDTIME_TEMPORARY=""
 RUNTIME_TEMPORARY=""
@@ -26,28 +24,24 @@ cleanup() {
 trap cleanup EXIT
 
 case "$LAYER" in
-    fedora${FEDORA_VERSION}-ai-base)
+    fedora[0-9]*-ai-base)
         SOURCE_MANIFEST="$ROOT/.fedora${FEDORA_VERSION}-ai-base-source-tags.tsv"
         REQUIREMENTS="$ROOT/requirements.base.txt"
-        SOURCE_KEY_NAME="FEDORA${FEDORA_VERSION}_AI_BASE_SOURCE_KEY"
         READY_NAME=Base
         ;;
-    fedora${FEDORA_VERSION}-ai-safrano9999)
+    fedora[0-9]*-ai-safrano9999)
         SOURCE_MANIFEST="$ROOT/.safrano9999-source-tags.tsv"
         REQUIREMENTS="$ROOT/requirements.safrano9999.txt"
-        SOURCE_KEY_NAME=SAFRANO9999_SOURCE_KEY
         READY_NAME=Safrano
         ;;
-    fedora${FEDORA_VERSION}-ai-safrano9999-full)
+    fedora[0-9]*-ai-safrano9999-full)
         SOURCE_MANIFEST="$ROOT/.safrano9999-full-source-tags.tsv"
         REQUIREMENTS="$ROOT/requirements.safrano9999-full.txt"
-        SOURCE_KEY_NAME=SAFRANO9999_FULL_SOURCE_KEY
         READY_NAME="Safrano Full"
         ;;
-    fedora${FEDORA_VERSION}-ai-kachelmann)
+    fedora[0-9]*-ai-kachelmann)
         SOURCE_MANIFEST="$ROOT/.kachelmann-source-tags.tsv"
         REQUIREMENTS="$ROOT/requirements.kachelmann.txt"
-        SOURCE_KEY_NAME=KACHELMANN_SOURCE_KEY
         READY_NAME=KACHELMANN
         ;;
     *)
@@ -55,27 +49,6 @@ case "$LAYER" in
         exit 2
         ;;
 esac
-
-show_help() {
-    cat <<EOF
-Usage: $LAYER/build/prepare-build-context.sh [--offline] [--no-cache]
-
-Repository selection is read exclusively from the EXTENSIONS and STANDALONE
-CSV lists in $LAYER/build.conf. Each selected repository's image/runtime tree
-is validated and merged directly into the staged image root filesystem.
-Optional image/buildtime hooks use the documented host/run and container/run
-contract; host hooks write only to their per-repository artifact directory.
-EOF
-}
-
-for argument in "$@"; do
-    case "$argument" in
-        --offline) OFFLINE=true ;;
-        --no-cache) NO_CACHE=true ;;
-        --help|-h) show_help; exit 0 ;;
-        *) echo "Unknown option: $argument" >&2; exit 2 ;;
-    esac
-done
 
 [ -f "$BUILD_CONFIG" ] && [ ! -L "$BUILD_CONFIG" ] || {
     echo "Missing or unsafe build configuration: $BUILD_CONFIG" >&2
@@ -88,17 +61,6 @@ for command in git python3 sha256sum; do
         exit 1
     }
 done
-if ! $OFFLINE; then
-    command -v gh >/dev/null 2>&1 || {
-        echo "Missing build preparation dependency: gh" >&2
-        exit 1
-    }
-    gh auth status --hostname github.com >/dev/null 2>&1 || {
-        echo "GitHub CLI authentication is required for online preparation" >&2
-        exit 1
-    }
-fi
-
 unset EXTENSIONS STANDALONE
 set -a
 # shellcheck source=/dev/null
@@ -117,15 +79,7 @@ trim() {
 }
 
 valid_repository_specification() {
-    local specification="$1" branch=""
-
-    [[ "$specification" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*(@[A-Za-z0-9][A-Za-z0-9._/-]*)?$ ]] ||
-        return 1
-    if [[ "$specification" == *@* ]]; then
-        branch="${specification#*@}"
-        [[ "/$branch/" != */../* && "/$branch/" != */./* && "$branch" != */ ]] ||
-            return 1
-    fi
+    [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
 }
 
 parse_csv() {
@@ -160,13 +114,7 @@ repositories=("${extension_repositories[@]}" "${standalone_repositories[@]}")
 }
 
 repository_name() {
-    printf '%s\n' "${1%@*}"
-}
-
-repository_branch() {
-    if [[ "$1" == *@* ]]; then
-        printf '%s\n' "${1#*@}"
-    fi
+    printf '%s\n' "$1"
 }
 
 declare -A selected_repositories=()
@@ -205,154 +153,19 @@ prune_unselected_sources() {
     done < <(find "$SOURCE_DIR" -mindepth 1 -maxdepth 1 -print0)
 }
 
-sync_repository() {
-    local specification="$1" repository branch path expected_origin origin
-    local checkout_root current_branch target_branch remote_default clean_state
-    repository="$(repository_name "$specification")"
-    branch="$(repository_branch "$specification")"
+validate_repository() {
+    local repository path
+    repository="$(repository_name "$1")"
     path="$SOURCE_DIR/$repository"
-    expected_origin="https://github.com/safrano9999/$repository"
-    local locked_commit=""
-    if [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ]; then
-        locked_commit="$(python3 "${SAFRANO_SOURCE_MANIFEST%/*}/source_snapshot.py" \
-            --manifest "$SAFRANO_SOURCE_MANIFEST" --repository "safrano9999/$repository")"
-    fi
-
-    if $OFFLINE; then
-        [ -d "$path" ] && [ ! -L "$path" ] &&
-            [ -d "$path/.git" ] && [ ! -L "$path/.git" ] || {
-            echo "Offline source is not a real Git checkout: $path" >&2
-            return 1
-        }
-        checkout_root="$(git -C "$path" rev-parse --show-toplevel 2>/dev/null)" || {
-            echo "Cannot resolve offline Git checkout: $path" >&2
-            return 1
-        }
-        [ "$checkout_root" = "$(cd -- "$path" && pwd -P)" ] || {
-            echo "Offline Git checkout has an unexpected worktree: $path" >&2
-            return 1
-        }
-        origin="$(git -C "$path" remote get-url origin 2>/dev/null)" || {
-            echo "Offline Git checkout has no origin: $path" >&2
-            return 1
-        }
-        [ "$origin" = "$expected_origin" ] || [ "$origin" = "$expected_origin.git" ] || {
-            echo "Offline Git checkout has the wrong origin: $repository" >&2
-            return 1
-        }
-        if [ -n "$locked_commit" ]; then
-            [ "$(git -C "$path" rev-parse HEAD)" = "$locked_commit" ] &&
-                [ -z "$(git -C "$path" status --porcelain=v1 --untracked-files=all --ignored=matching)" ] || {
-                echo "Offline source differs from prepared snapshot: $repository" >&2
-                return 1
-            }
-            return 0
-        fi
-        current_branch="$(git -C "$path" symbolic-ref --quiet --short HEAD)" || {
-            echo "Offline Git checkout is detached: $repository" >&2
-            return 1
-        }
-        if [ -n "$branch" ]; then
-            target_branch="$branch"
-        else
-            remote_default="$(
-                git -C "$path" symbolic-ref --quiet --short refs/remotes/origin/HEAD
-            )" || {
-                echo "Offline Git checkout has no recorded default branch: $repository" >&2
-                return 1
-            }
-            target_branch="${remote_default#origin/}"
-            [ "$target_branch" != "$remote_default" ] || {
-                echo "Invalid offline default branch reference: $repository/$remote_default" >&2
-                return 1
-            }
-        fi
-        [ "$current_branch" = "$target_branch" ] &&
-            [ "$(git -C "$path" rev-parse HEAD)" = \
-              "$(git -C "$path" rev-parse "refs/remotes/origin/$target_branch")" ] || {
-            echo "Offline checkout does not match its selected branch: $repository@$target_branch" >&2
-            return 1
-        }
-        clean_state="$(
-            git -C "$path" status --porcelain=v1 --untracked-files=all --ignored=matching
-        )"
-        [ -z "$clean_state" ] || {
-            echo "Offline checkout contains dirty, untracked, or ignored files: $repository" >&2
-            return 1
-        }
-        return 0
-    fi
-
-    if $NO_CACHE && { [ -e "$path" ] || [ -L "$path" ]; }; then
-        rm -rf -- "$path"
-    fi
-    if [ -e "$path" ] || [ -L "$path" ]; then
-        if [ -d "$path" ] && [ ! -L "$path" ] &&
-            [ -d "$path/.git" ] && [ ! -L "$path/.git" ]; then
-            checkout_root="$(git -C "$path" rev-parse --show-toplevel 2>/dev/null || true)"
-            origin="$(git -C "$path" remote get-url origin 2>/dev/null || true)"
-        else
-            checkout_root=""
-            origin=""
-        fi
-        if [ "$checkout_root" != "$(cd -- "$path" 2>/dev/null && pwd -P)" ] ||
-            { [ "$origin" != "$expected_origin" ] && [ "$origin" != "$expected_origin.git" ]; }; then
-            rm -rf -- "$path"
-        fi
-    fi
-
-    if [ ! -d "$path/.git" ]; then
-        [ ! -e "$path" ] && [ ! -L "$path" ] || rm -rf -- "$path"
-        git clone --quiet --depth 1 "$expected_origin" "$path"
-        printf '  [%s] cloned\n' "$repository"
-    fi
-
-    if [ -n "$locked_commit" ]; then
-        git -C "$path" -c core.hooksPath=/dev/null reset --hard --quiet
-        git -C "$path" -c core.hooksPath=/dev/null clean -ffdx --quiet
-        git -C "$path" fetch --quiet --depth 1 --no-tags origin "$locked_commit"
-        git -C "$path" -c core.hooksPath=/dev/null checkout --quiet -f --detach "$locked_commit"
-        [ "$(git -C "$path" rev-parse HEAD)" = "$locked_commit" ] || {
-            echo "Source differs from prepared snapshot: $repository" >&2
-            return 1
-        }
-        printf '  [%s] staged prepared commit %s\n' "$repository" "$locked_commit"
-        return 0
-    fi
-    remote_default="$(
-        git -C "$path" ls-remote --symref origin HEAD |
-            awk '$1 == "ref:" && $3 == "HEAD" {sub(/^refs\/heads\//, "", $2); print $2; exit}'
-    )"
-    [ -n "$remote_default" ] &&
-        git check-ref-format --branch "$remote_default" >/dev/null 2>&1 || {
-        echo "Cannot resolve remote default branch: $repository" >&2
+    [ -d "$path" ] && [ ! -L "$path" ] && [ -d "$path/.git" ] || {
+        echo "Missing Containerfile Git source: $repository" >&2
         return 1
     }
-    target_branch="${branch:-$remote_default}"
-    git check-ref-format --branch "$target_branch" >/dev/null 2>&1 || {
-        echo "Invalid selected branch: $repository@$target_branch" >&2
+    git -C "$path" rev-parse --verify HEAD >/dev/null
+    [ -z "$(git -C "$path" status --porcelain=v1 --untracked-files=all)" ] || {
+        echo "Dirty Containerfile Git source: $repository" >&2
         return 1
     }
-    git -C "$path" -c core.hooksPath=/dev/null reset --hard --quiet
-    git -C "$path" -c core.hooksPath=/dev/null clean -ffdx --quiet
-    git -C "$path" fetch --quiet --prune --depth 1 origin \
-        "+refs/heads/$target_branch:refs/remotes/origin/$target_branch"
-    if [ "$remote_default" != "$target_branch" ]; then
-        git -C "$path" fetch --quiet --depth 1 origin \
-            "+refs/heads/$remote_default:refs/remotes/origin/$remote_default"
-    fi
-    git -C "$path" symbolic-ref refs/remotes/origin/HEAD \
-        "refs/remotes/origin/$remote_default"
-    git -C "$path" config remote.origin.fetch \
-        "+refs/heads/*:refs/remotes/origin/*"
-    git -C "$path" -c core.hooksPath=/dev/null checkout --quiet -f -B \
-        "$target_branch" "refs/remotes/origin/$target_branch"
-    git -C "$path" branch --quiet --set-upstream-to="origin/$target_branch" \
-        "$target_branch"
-    git -C "$path" -c core.hooksPath=/dev/null reset --hard --quiet \
-        "refs/remotes/origin/$target_branch"
-    git -C "$path" -c core.hooksPath=/dev/null clean -ffdx --quiet
-    printf '  [%s] synchronized at %s\n' "$repository" "$target_branch"
 }
 
 validate_repository_roles() {
@@ -389,11 +202,7 @@ write_source_manifest() {
             echo "Source is not a Git checkout: $path" >&2
             return 1
         }
-        if $OFFLINE; then
-            refs="$(git -C "$path" show-ref --tags 2>/dev/null || true)"
-        else
-            refs="$(git -C "$path" ls-remote --tags --refs origin 'refs/tags/20*.*.*')"
-        fi
+        refs="$(git -C "$path" show-ref --tags 2>/dev/null || true)"
         version="$(awk '
             $2 ~ /^refs\/tags\/20[0-9][0-9][.][0-9]+[.][0-9]+$/ {
                 sub(/^refs\/tags\//, "", $2)
@@ -436,41 +245,6 @@ write_requirements() {
     ' "${requirement_files[@]}" > "$REQUIREMENTS"
 }
 
-release_asset_ids() {
-    python3 - "$1" "$2" "$3" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-metadata = Path(sys.argv[1])
-wanted = (sys.argv[2], sys.argv[3])
-try:
-    payload = json.loads(metadata.read_text(encoding="utf-8"))
-except (OSError, UnicodeError, json.JSONDecodeError) as error:
-    raise SystemExit(f"Invalid GitHub release metadata: {error}") from error
-assets = payload.get("assets")
-if not isinstance(assets, list):
-    raise SystemExit("Invalid GitHub release metadata: assets is not a list")
-matches: dict[str, list[int]] = {name: [] for name in wanted}
-for asset in assets:
-    if not isinstance(asset, dict):
-        continue
-    name = asset.get("name")
-    identifier = asset.get("id")
-    if name in matches and isinstance(identifier, int):
-        matches[name].append(identifier)
-counts = tuple(len(matches[name]) for name in wanted)
-if counts == (0, 0):
-    print("missing")
-elif counts != (1, 1):
-    raise SystemExit(
-        f"Release asset pair is incomplete or ambiguous: "
-        f"{wanted[0]}={counts[0]}, {wanted[1]}={counts[1]}"
-    )
-else:
-    print(f"present\t{matches[wanted[0]][0]}\t{matches[wanted[1]][0]}")
-PY
-}
 
 stage_buildtime() {
     local suffix source target repository hook artifact_directory
@@ -785,23 +559,20 @@ stage_image_runtime() {
     mkdir -p -- "$IMAGE_RUNTIME_TEMPORARY/rootfs"
 
     python3 - "$SOURCE_DIR" "$IMAGE_RUNTIME_TEMPORARY/rootfs" \
-        "$IMAGE_RUNTIME_TEMPORARY/manifest.tsv" \
-        "$ROOT/build/patches/VikAI-openclaw-2026.9.4.patch" "${repositories[@]}" <<'PY'
+        "$IMAGE_RUNTIME_TEMPORARY/manifest.tsv" "${repositories[@]}" <<'PY'
 from __future__ import annotations
 
 import hashlib
 import os
 import shutil
 import stat
-import subprocess
 import sys
 from pathlib import Path
 
 source_root = Path(sys.argv[1])
 destination = Path(sys.argv[2])
 manifest = Path(sys.argv[3])
-vikai_compatibility_patch = Path(sys.argv[4]).resolve()
-repositories = [specification.split("@", 1)[0] for specification in sys.argv[5:]]
+repositories = [specification.split("@", 1)[0] for specification in sys.argv[4:]]
 maximum_entries = 65536
 maximum_size = 2 * 1024 * 1024 * 1024
 unsafe_characters = {"\t", "\r", "\n", "\\"}
@@ -911,13 +682,6 @@ try:
             with entry.open("rb") as source, target.open("xb") as output:
                 shutil.copyfileobj(source, output)
             os.chmod(target, mode)
-            # Keep the pinned checkout clean; hash the installed compatibility fix.
-            if repository == "VikAI" and relative.as_posix() == "usr/local/bin/vikai-bootstrap-openclaw-agents":
-                subprocess.run(
-                    ["git", "apply", "--whitespace=error", "-p3", str(vikai_compatibility_patch)],
-                    cwd=destination,
-                    check=True,
-                )
             digest = sha256(target)
             installed_files[relative] = repository
             manifest_rows.append(
@@ -930,7 +694,7 @@ try:
         handle.write("repository\tinstalled_path\tmode\tsha256\n")
         for row in manifest_rows:
             handle.write("\t".join(row) + "\n")
-except (OSError, ValueError, subprocess.CalledProcessError) as error:
+except (OSError, ValueError) as error:
     raise SystemExit(f"Invalid owner image metadata: {error}") from error
 PY
 
@@ -1005,108 +769,19 @@ PY
 stage_runtime_assets() {
     local repository=NEXTCLOUD
     local asset=nextcloud-fedora64-plugin-latest.zip
-    local checksum_asset="$asset.sha256"
-    local metadata metadata_error state asset_id checksum_id archive checksum
-    local expected actual api_path
-
-    RUNTIME_TEMPORARY="$(mktemp -d "$ROOT/.fedora${FEDORA_VERSION}-runtime.XXXXXX")"
-    printf 'repository\tasset\tsha256\tstatus\n' > "$RUNTIME_TEMPORARY/manifest.tsv"
-
-    if [ -z "${selected_repositories[$repository]+x}" ]; then
-        rm -rf -- "$RUNTIME_STAGE"
-        mv -- "$RUNTIME_TEMPORARY" "$RUNTIME_STAGE"
-        RUNTIME_TEMPORARY=""
-        return 0
-    fi
-
-    if $OFFLINE; then
-        archive="$RUNTIME_STAGE/$asset"
-        checksum="$RUNTIME_STAGE/$checksum_asset"
-        [ -d "$RUNTIME_STAGE" ] && [ ! -L "$RUNTIME_STAGE" ] &&
-            [ -f "$archive" ] && [ ! -L "$archive" ] &&
-            [ -f "$checksum" ] && [ ! -L "$checksum" ] &&
-            [ -f "$RUNTIME_STAGE/manifest.tsv" ] || {
-            echo "Offline NEXTCLOUD runtime asset cache is missing: $RUNTIME_STAGE" >&2
-            return 1
-        }
-        expected="$(read_asset_checksum "$checksum" "$asset")"
-        actual="$(sha256sum "$archive" | cut -d' ' -f1)"
-        [ "$actual" = "$expected" ] || {
-            echo "Cached NEXTCLOUD runtime checksum mismatch" >&2
-            return 1
-        }
-        [ "$(wc -l < "$RUNTIME_STAGE/manifest.tsv")" -eq 2 ] &&
-            grep -Fqx $'repository\tasset\tsha256\tstatus' \
-                "$RUNTIME_STAGE/manifest.tsv" &&
-            grep -Fqx "$repository"$'\t'"$asset"$'\t'"$expected"$'\tcomplete' \
-                "$RUNTIME_STAGE/manifest.tsv" || {
-            echo "Invalid cached NEXTCLOUD runtime manifest" >&2
-            return 1
-        }
-        validate_nextcloud_runtime_archive "$archive"
-        printf '%s  %s\n' "$expected" "$asset" > "$checksum"
-        rm -rf -- "$RUNTIME_TEMPORARY"
-        RUNTIME_TEMPORARY=""
-        printf '  [NEXTCLOUD] reusing verified offline runtime asset\n'
-        return 0
-    fi
-
-    metadata="$RUNTIME_TEMPORARY/release.json"
-    metadata_error="$RUNTIME_TEMPORARY/release.error"
-    api_path="repos/safrano9999/$repository/releases/tags/latest"
-    if [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ]; then
-        python3 "${SAFRANO_SOURCE_MANIFEST%/*}/source_snapshot.py" \
-            --manifest "$SAFRANO_SOURCE_MANIFEST" --repository "safrano9999/$repository" \
-            --runtime-assets > "$metadata"
-    elif ! gh api "$api_path" > "$metadata" 2> "$metadata_error"; then
-        sed 's/^/  /' "$metadata_error" >&2
-        echo "Cannot query NEXTCLOUD runtime release" >&2
-        return 1
-    fi
-    state="$(release_asset_ids "$metadata" "$asset" "$checksum_asset")"
-    [ "$state" != missing ] || {
-        echo "NEXTCLOUD runtime release asset pair is missing: $asset" >&2
-        return 1
-    }
-    IFS=$'\t' read -r state asset_id checksum_id <<< "$state"
-    [ "$state" = present ] &&
-        [[ "$asset_id" =~ ^[0-9]+$ ]] && [[ "$checksum_id" =~ ^[0-9]+$ ]] || {
-        echo "Invalid NEXTCLOUD runtime release metadata" >&2
-        return 1
-    }
-
-    archive="$RUNTIME_TEMPORARY/$asset"
-    checksum="$RUNTIME_TEMPORARY/$checksum_asset"
-    gh api -H 'Accept: application/octet-stream' \
-        "repos/safrano9999/$repository/releases/assets/$asset_id" > "$archive"
-    gh api -H 'Accept: application/octet-stream' \
-        "repos/safrano9999/$repository/releases/assets/$checksum_id" > "$checksum"
-    expected="$(read_asset_checksum "$checksum" "$asset")"
-    actual="$(sha256sum "$archive" | cut -d' ' -f1)"
+    local expected actual
+    mkdir -p "$RUNTIME_STAGE"
+    printf 'repository\tasset\tsha256\tstatus\n' > "$RUNTIME_STAGE/manifest.tsv"
+    [ -n "${selected_repositories[$repository]+x}" ] || return 0
+    expected="$(read_asset_checksum "$RUNTIME_STAGE/$asset.sha256" "$asset")"
+    actual="$(sha256sum "$RUNTIME_STAGE/$asset" | cut -d' ' -f1)"
     [ "$actual" = "$expected" ] || {
-        echo "NEXTCLOUD runtime release checksum mismatch" >&2
+        echo "NEXTCLOUD runtime checksum mismatch" >&2
         return 1
     }
-    if [ -n "${SAFRANO_SOURCE_MANIFEST:-}" ]; then
-        local prepared_hash
-        prepared_hash="$(python3 "${SAFRANO_SOURCE_MANIFEST%/*}/source_snapshot.py" \
-            --manifest "$SAFRANO_SOURCE_MANIFEST" --repository "safrano9999/$repository" \
-            --runtime-asset-hash "$asset")"
-        [ "$actual" = "$prepared_hash" ] || {
-            echo "NEXTCLOUD runtime asset differs from prepared source snapshot" >&2
-            return 1
-        }
-    fi
-    validate_nextcloud_runtime_archive "$archive"
-    printf '%s  %s\n' "$expected" "$asset" > "$checksum"
-    printf '%s\t%s\t%s\tcomplete\n' "$repository" "$asset" "$expected" \
-        >> "$RUNTIME_TEMPORARY/manifest.tsv"
-    rm -f -- "$metadata" "$metadata_error"
-
-    rm -rf -- "$RUNTIME_STAGE"
-    mv -- "$RUNTIME_TEMPORARY" "$RUNTIME_STAGE"
-    RUNTIME_TEMPORARY=""
-    printf '  [NEXTCLOUD] verified and staged %s\n' "$asset"
+    validate_nextcloud_runtime_archive "$RUNTIME_STAGE/$asset"
+    printf '%s  %s\n' "$expected" "$asset" > "$RUNTIME_STAGE/$asset.sha256"
+    printf '%s\t%s\t%s\tcomplete\n' "$repository" "$asset" "$expected" >> "$RUNTIME_STAGE/manifest.tsv"
 }
 
 write_enable_list() {
@@ -1170,37 +845,11 @@ print(match.group(1).lower())
 PY
 }
 
-write_resolved_build_environment() {
-    local source_key temporary
-
-    source_key="$(python3 - "$BUILD_CONFIG" "$SOURCE_MANIFEST" \
-        "$IMAGE_RUNTIME_STAGE/manifest.tsv" "$RUNTIME_STAGE/manifest.tsv" \
-        "$BUILDTIME_STAGE/manifest.tsv" "$REPOSITORY_LIST" <<'PY'
-import hashlib
-import sys
-from pathlib import Path
-
-digest = hashlib.sha256()
-for name in sys.argv[1:]:
-    payload = Path(name).read_bytes()
-    digest.update(len(payload).to_bytes(8, "big"))
-    digest.update(payload)
-print(digest.hexdigest())
-PY
-)"
-    [[ "$source_key" =~ ^[0-9a-f]{64}$ ]] || {
-        echo "Invalid resolved source key for $LAYER" >&2
-        return 1
-    }
-    temporary="$(mktemp "$ROOT/.resolved-build.env.XXXXXX")"
-    printf '%s=%s\n' "$SOURCE_KEY_NAME" "$source_key" > "$temporary"
-    mv -f -- "$temporary" "$ROOT/.resolved-build.env"
-}
 
 write_repository_list
 prune_unselected_sources
 for specification in "${repositories[@]}"; do
-    sync_repository "$specification"
+    validate_repository "$specification"
 done
 validate_repository_roles
 write_source_manifest
@@ -1208,6 +857,5 @@ write_requirements
 stage_buildtime
 stage_runtime_assets
 stage_image_runtime
-write_resolved_build_environment
 
 printf '%s build context ready: %s\n' "$READY_NAME" "$ROOT"
