@@ -64,7 +64,12 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     nano vim-minimal less \
     curl wget ca-certificates openssl gnupg2 fuse-libs \
     nodejs26 nodejs26-bin nodejs26-npm \
-    python3 python3-pip python3-devel libpq \
+    python3 python3-libs python3-pip python3-devel libpq \
+    python3-dotenv python3-pyyaml python3-reportlab tldr \
+    python3-fastapi python3-uvicorn+standard python3-jinja2 \
+    python3-icalendar python3-requests python3-sqlalchemy \
+    python3-psycopg3 python3-PyMySQL python3-python-multipart \
+    python3-weasyprint \
     make gcc gcc-c++ \
     ripgrep fd-find jq sqlite unzip tar gzip xz bzip2 which file \
     iputils iproute procps-ng psmisc util-linux \
@@ -246,10 +251,15 @@ RUN test -n "${CLOUDFLARED_VERSION}" \
  && chmod +x /usr/local/bin/cloudflared \
  && cloudflared --version
 
-COPY requirements.base.txt /requirements.base.txt
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r /requirements.base.txt python-multipart weasyprint pypdfium2 \
- && python3 -c 'import dotenv, fastapi, jinja2, multipart, pymysql, psycopg, reportlab, sqlalchemy, uvicorn, yaml'
+# Fedora supplies the base Python libraries above, including prebuilt PyYAML.
+# Only these two libraries are absent from the Fedora repositories. Use the
+# same system interpreter as Hermes; no application virtualenv is created.
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system --python /usr/bin/python3 recurring-ical-events pypdfium2 \
+ && /usr/bin/python3 -c 'import sys, json, traceback, dotenv, fastapi, jinja2, multipart, pymysql, psycopg, reportlab, sqlalchemy, uvicorn, yaml, icalendar, recurring_ical_events, weasyprint, pypdfium2; assert sys.prefix == sys.base_prefix' \
+ && /usr/bin/python3 -I -c 'import json, traceback, yaml' \
+ && rpm -q python3-libs python3-pyyaml \
+ && timeout 90 hermes --version
 
 RUN echo '{"hasCompletedOnboarding":true}' > /root/.claude.json
 
