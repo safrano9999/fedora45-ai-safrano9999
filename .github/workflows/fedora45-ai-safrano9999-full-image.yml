@@ -206,7 +206,6 @@ jobs:
             test -x /usr/local/bin/openclaw-ephemeral-yolo
             test -x /usr/local/bin/hermes-ephemeral
             test -x /usr/local/bin/persistainer
-            /usr/local/lib/hermes-agent/venv/bin/python -c "import sqlalchemy"
             test -f /root/.openclaw/extensions/note/openclaw.plugin.json
             test -d /opt/safrano9999/VikAI
             test -d /opt/safrano9999/KACHELMANN

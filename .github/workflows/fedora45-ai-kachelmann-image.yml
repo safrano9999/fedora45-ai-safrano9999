@@ -240,7 +240,6 @@ jobs:
             test "$(sha256sum "$apk" | cut -d " " -f 1)" = "$EXPECTED_APK_SHA256"
             python3 -c "import sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); n=set(z.namelist()); assert {\"AndroidManifest.xml\",\"classes.dex\"} <= n; assert z.testzip() is None" "$apk"
             python3 -c "import fastapi, sqlalchemy, uvicorn"
-            /usr/local/lib/hermes-agent/venv/bin/python -c "import sqlalchemy"
             for project in JUGO VikAI PV_D-A-CH KIWIX_BRIDGE \
               NAPOLEON_HILLS_AI_MASTERMIND_CLASSES \
               SOLANA_AIRGAPPED_DEBIAN_WORKFLOW \

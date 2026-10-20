@@ -104,20 +104,43 @@ RUN --mount=type=cache,target=/root/.npm \
     opencode --version; \
     command -v opencode-telegram
 
-# Keep the installed Python/runtime outside persistent user data. Hermes owns
-# this checkout through its parent directory; the public project path stays stable.
+RUN test -n "${UV_VERSION}" \
+ && test -n "${UV_INSTALLER_SHA256}" \
+ && curl -fsSL --retry 3 "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-installer.sh" -o /tmp/uv-install.sh \
+ && echo "${UV_INSTALLER_SHA256}  /tmp/uv-install.sh" | sha256sum -c - \
+ && UV_UNMANAGED_INSTALL=/usr/local/bin sh /tmp/uv-install.sh \
+ && rm -f /tmp/uv-install.sh \
+ && uv --version
+
+# Install Hermes and its dependencies into Fedora's system Python. Keep the
+# source and built UI outside persistent user data; image builds own updates.
 RUN set -euo pipefail; \
     HERMES_TAG="$(curl -fsSL --retry 3 "https://api.github.com/repos/NousResearch/hermes-agent/releases/tags/v${HERMES_VERSION}" | jq -er --arg tag "v${HERMES_VERSION}" 'select(.draft == false and .prerelease == false and .tag_name == $tag) | .tag_name')"; \
     HERMES_COMMIT="$(curl -fsSL --retry 3 "https://api.github.com/repos/NousResearch/hermes-agent/commits/${HERMES_TAG}" | jq -er '.sha | select(test("^[0-9a-f]{40}$"))')"; \
-    curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_COMMIT}/scripts/install.sh" \
-      | HERMES_HOME=/usr/local/lib/hermes-runtime bash -s -- --skip-setup \
-        --dir /usr/local/lib/hermes-runtime/hermes-agent --branch main --commit "${HERMES_COMMIT}" \
+    git init /usr/local/lib/hermes-runtime/hermes-agent \
+ && git -C /usr/local/lib/hermes-runtime/hermes-agent remote add origin https://github.com/NousResearch/hermes-agent.git \
+ && git -C /usr/local/lib/hermes-runtime/hermes-agent fetch --depth 1 origin "${HERMES_COMMIT}" \
+ && git -C /usr/local/lib/hermes-runtime/hermes-agent checkout --detach FETCH_HEAD \
  && ln -sfn /usr/local/lib/hermes-runtime/hermes-agent /usr/local/lib/hermes-agent \
  && test "$(git -C /usr/local/lib/hermes-agent rev-parse HEAD)" = "${HERMES_COMMIT}" \
+ && /usr/bin/python3 /usr/local/lib/hermes-agent/scripts/write_install_stamp.py \
+      --output /usr/local/lib/hermes-agent/install-stamp.json \
+      --commit "${HERMES_COMMIT}" --base-version "${HERMES_VERSION}" --distance 0 \
+      --source ci --distribution docker --update-mechanism external \
+ && uv pip install --system --python /usr/bin/python3 \
+      --editable '/usr/local/lib/hermes-runtime/hermes-agent[all,messaging]' \
  && test "$(jq -er .baseVersion /usr/local/lib/hermes-agent/install-stamp.json)" = "${HERMES_VERSION}" \
- && test -x /usr/local/lib/hermes-agent/.hermes/bin/hermes \
- && ln -sfn /usr/local/lib/hermes-agent/.hermes/bin/hermes /usr/local/bin/hermes \
- && npm --prefix /usr/local/lib/hermes-agent run build --workspace web
+ && test -x /usr/local/bin/hermes \
+ && mkdir -p /usr/local/lib/hermes-agent/.hermes/bin \
+ && ln -s /usr/local/bin/hermes /usr/local/lib/hermes-agent/.hermes/bin/hermes \
+ && npm --prefix /usr/local/lib/hermes-agent ci --workspace web --workspace ui-tui --include-workspace-root \
+ && npm --prefix /usr/local/lib/hermes-agent run build:ink --workspace ui-tui \
+ && npm --prefix /usr/local/lib/hermes-agent run build --workspace ui-tui \
+ && npm --prefix /usr/local/lib/hermes-agent run build --workspace web \
+ && /usr/bin/python3 -c 'import sys, hermes_cli, telegram, mcp; assert sys.prefix == sys.base_prefix' \
+ && timeout 90 hermes --version \
+ && HERMES_HOME=/tmp/hermes-smoke-home timeout 90 hermes --version \
+ && rm -rf /tmp/hermes-smoke-home
 
 RUN set -eux; \
     case "$(uname -m)" in \
@@ -180,14 +203,6 @@ RUN --mount=type=cache,target=/root/.npm \
  && tar -xzf /tmp/vditor/vditor-*.tgz --strip-components=1 -C /usr/local/lib/vditor \
  && test -f /usr/local/lib/vditor/dist/index.min.js \
  && rm -rf /tmp/vditor
-
-RUN test -n "${UV_VERSION}" \
- && test -n "${UV_INSTALLER_SHA256}" \
- && curl -fsSL --retry 3 "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-installer.sh" -o /tmp/uv-install.sh \
- && echo "${UV_INSTALLER_SHA256}  /tmp/uv-install.sh" | sha256sum -c - \
- && UV_UNMANAGED_INSTALL=/usr/local/bin sh /tmp/uv-install.sh \
- && rm -f /tmp/uv-install.sh \
- && uv --version
 
 RUN --mount=type=cache,target=/root/.npm \
     set -euo pipefail; test -n "${CODEX_VERSION}" \

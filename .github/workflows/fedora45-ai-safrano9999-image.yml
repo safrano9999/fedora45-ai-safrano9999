@@ -212,7 +212,6 @@ jobs:
             test -x /usr/local/bin/openclaw-ephemeral-yolo
             test -x /usr/local/bin/hermes-ephemeral
             test -x /usr/local/bin/persistainer
-            /usr/local/lib/hermes-agent/venv/bin/python -c "import sqlalchemy"
             test -f /root/.openclaw/extensions/note/openclaw.plugin.json
             for project in WELCOME CODEANALYST CITADEL DIESDAS- NEXTCLOUD \
               JUGO PV_D-A-CH KIWIX_BRIDGE \
