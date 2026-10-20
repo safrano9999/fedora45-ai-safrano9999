@@ -79,6 +79,13 @@ RUN mkdir -p /opt/safrano9999/CITADEL/extensions/enabled \
     fi \
  && chmod 0755 /opt/safrano9999/CITADEL/scan.sh
 
+# Source contract tests require image/runtime; run before removing that tree.
+RUN cd /opt/safrano9999/CITADEL \
+ && python3 -m unittest discover -s tests \
+ && node --check index.js \
+ && node --test workers/cloudflare-api/worker.test.mjs \
+ && test -f image/init/citadel-refresh.py
+
 COPY --from=layer-sources /tmp/fedora45-ai-base/.fedora45-image-buildtime/ /tmp/fedora45-image-buildtime/
 COPY build/run-container-buildtime.sh /tmp/fedora45-image-buildtime/run-container-buildtime
 RUN --network=none \

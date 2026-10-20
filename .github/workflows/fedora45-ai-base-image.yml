@@ -193,7 +193,7 @@ jobs:
           build-args: |
             AI_CORE_IMAGE=${{ steps.refs.outputs.core_ref }}
 
-      - name: Verify consumed CITADEL refactoring on the runner
+      - name: Verify installed CITADEL runtime on the runner
         shell: bash
         run: |
           set -euo pipefail
@@ -202,10 +202,13 @@ jobs:
             set -euo pipefail
             grep CITADEL /README/fedora45-ai-base-source-tags.tsv
             cd /opt/safrano9999/CITADEL
-            python3 -m unittest discover -s tests
-            node --check index.js
-            node --test workers/cloudflare-api/worker.test.mjs
+            test ! -e image/runtime
             test -f image/init/citadel-refresh.py
+            test -x /usr/local/bin/tailscale-serve-reset.sh
+            /bin/sh -n /usr/local/bin/tailscale-serve-reset.sh
+            test -f /etc/systemd/system/tailscale-up.service.d/tailscale-serve-reset.conf
+            test -f /etc/systemd/system/tailscaled.service.d/citadel-state.conf
+            python3 -c "import grpc, typing_extensions"
             systemd-analyze verify /etc/systemd/system/citadel.service /etc/systemd/system/citadel-scan.service
           '
 
