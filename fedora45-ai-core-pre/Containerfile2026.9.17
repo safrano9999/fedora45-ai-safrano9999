@@ -133,10 +133,11 @@ RUN set -euo pipefail; \
  && test -x /usr/local/bin/hermes \
  && mkdir -p /usr/local/lib/hermes-agent/.hermes/bin \
  && ln -s /usr/local/bin/hermes /usr/local/lib/hermes-agent/.hermes/bin/hermes \
- && npm --prefix /usr/local/lib/hermes-agent ci --workspace web --workspace ui-tui --include-workspace-root \
- && npm --prefix /usr/local/lib/hermes-agent run build:ink --workspace ui-tui \
- && npm --prefix /usr/local/lib/hermes-agent run build --workspace ui-tui \
- && npm --prefix /usr/local/lib/hermes-agent run build --workspace web \
+ && cd /usr/local/lib/hermes-runtime/hermes-agent \
+ && npm ci --workspace web --workspace ui-tui --include-workspace-root \
+ && npm run build:ink --workspace ui-tui \
+ && npm run build --workspace ui-tui \
+ && npm run build --workspace web \
  && /usr/bin/python3 -c 'import sys, hermes_cli, telegram, mcp; assert sys.prefix == sys.base_prefix' \
  && timeout 90 hermes --version \
  && HERMES_HOME=/tmp/hermes-smoke-home timeout 90 hermes --version \
