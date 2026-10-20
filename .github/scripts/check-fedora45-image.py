@@ -10,8 +10,16 @@ roots = ("/etc", "/usr/local/bin", "/usr/local/libexec", "/usr/lib/systemd/syste
          "/usr/local/share", "/opt/safrano9999", "/README")
 failures, checked, pdfs = set(), 0, 0
 distribution_keys = []
+historical_archive = "/opt/safrano9999/safrano9999-paper/safrano9999-env"
+excluded_archives = []
 for root in roots:
     for directory, dirs, files in os.walk(root, followlinks=False):
+        # The August 2026 paper preserves historical Fedora 44 source snapshots.
+        # Exempt only this archive; current documentation and runtime stay checked.
+        if directory == historical_archive:
+            dirs[:] = []
+            excluded_archives.append(directory)
+            continue
         dirs[:] = [name for name in dirs if name not in (".git", "__pycache__", "node_modules", ".venv", "venv")]
         for name in dirs + files:
             path = Path(directory) / name
@@ -53,5 +61,6 @@ for root in roots:
                         previous = block[-32:]
 print(json.dumps({"status": "FAIL" if failures else "PASS", "files_checked": checked,
                   "pdfs_checked": pdfs, "stale_names": sorted(failures),
-                  "distribution_trust_keys": distribution_keys}, indent=2))
+                  "distribution_trust_keys": distribution_keys,
+                  "excluded_historical_archives": excluded_archives}, indent=2))
 raise SystemExit(bool(failures))
