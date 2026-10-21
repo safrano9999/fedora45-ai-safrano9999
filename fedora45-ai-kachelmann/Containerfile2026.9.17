@@ -6,6 +6,11 @@ COPY build/ /tmp/fedora45-ai-kachelmann/build/
 COPY build.conf fedora45-ai-kachelmann.*_example /tmp/fedora45-ai-kachelmann/
 # Native Git ADD follows each repository's current default branch.
 ADD --keep-git-dir=true https://github.com/safrano9999/KACHELMANN.git /tmp/fedora45-ai-kachelmann/safrano9999/KACHELMANN/
+# Install the KACHELMANN agent integration for OpenClaw only.
+# Exclude Hermes before assembly so the runtime manifest stays accurate.
+RUN rm -rf /tmp/fedora45-ai-kachelmann/safrano9999/KACHELMANN/hermes \
+ && rm -f /tmp/fedora45-ai-kachelmann/safrano9999/KACHELMANN/image/runtime/etc/systemd/system/hermes.service.d/30-kachelmann.conf \
+          /tmp/fedora45-ai-kachelmann/safrano9999/KACHELMANN/image/runtime/usr/local/bin/kachelmann-hermes-enable
 RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
     /tmp/fedora45-ai-kachelmann/build/assemble-runtime.sh \
  && find /tmp/fedora45-ai-kachelmann/safrano9999 -name .git -type d -prune -exec rm -rf {} +

@@ -229,9 +229,9 @@ jobs:
             test -f /opt/safrano9999/KACHELMANN/openclaw.plugin.json
             test "$(jq -r .id \
               /opt/safrano9999/KACHELMANN/openclaw.plugin.json)" = kachelmann
-            test -f /opt/safrano9999/KACHELMANN/hermes/plugin.yaml
-            test -x /usr/local/bin/kachelmann-hermes-enable
-            test -f /etc/systemd/system/hermes.service.d/30-kachelmann.conf
+            test ! -e /opt/safrano9999/KACHELMANN/hermes
+            test ! -e /usr/local/bin/kachelmann-hermes-enable
+            test ! -e /etc/systemd/system/hermes.service.d/30-kachelmann.conf
             mapfile -t apks < <(find /opt/safrano9999/KACHELMANN -maxdepth 1 \
               -type f -name "kachelmann-20*.apk" -printf "%f\n" | sort)
             test "${#apks[@]}" -eq 1
