@@ -7,12 +7,20 @@ FROM scratch AS node-release
 ADD --checksum=sha256:6170b2d474e1c626f43cff3adc118df9fe3b573258a4fc3d850c8dbc6b079bbd \
     https://nodejs.org/dist/v26.12.1/node-v26.12.1-linux-x64.tar.xz /node.tar.xz
 
+# Official pip wheel, verified before the container's Python trust store is used.
+FROM scratch AS pip-release
+ADD --checksum=sha256:fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70 \
+    https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl /pip-26.2.2-py3-none-any.whl
+
 FROM fedora45-approved-beta AS ai-core-pre
 # The Action supplies this named OCI context from the approved Fedora 45 Beta
 # archive, pinned by SHA256 and manifest digest in build-dependencies-whitelist.json.
 
 ARG WEBHOOK_VERSION
-ARG HERMES_VERSION=0.22.2
+# Pinned snapshot of upstream main (2026-10-22T18:29:13Z).
+ARG HERMES_VERSION=0.22.4
+ARG HERMES_COMMIT=c73cbcc4cbbdbfc7371a86287db1ff729f23837b
+ARG HERMES_DISTANCE=135
 ARG VDITOR_VERSION
 ARG FEDORA_REPOMD_KEY
 ARG UV_VERSION
@@ -65,13 +73,13 @@ RUN --mount=type=bind,from=node-release,source=/node.tar.xz,target=/tmp/node.tar
     --mount=type=cache,target=/var/cache/dnf \
     test -n "${FEDORA_REPOMD_KEY}" \
  && printf 'Fedora repository state: %s\n' "${FEDORA_REPOMD_KEY}" \
- && dnf -y update && dnf -y install \
+ && dnf -y update && dnf -y --exclude=python3-pip --exclude=python-pip-wheel install \
     bash bash-completion shadow-utils sudo \
     git gh tmux \
     nano vim-minimal less \
     curl wget ca-certificates openssl gnupg2 fuse-libs \
     libatomic libstdc++ \
-    python3 python3-libs python3-pip python3-devel libpq \
+    python3 python3-libs python3-devel libpq \
     python3-dotenv python3-pyyaml python3-reportlab tldr \
     python3-fastapi python3-uvicorn+standard python3-jinja2 \
     python3-icalendar python3-requests python3-sqlalchemy \
@@ -93,6 +101,13 @@ RUN --mount=type=bind,from=node-release,source=/node.tar.xz,target=/tmp/node.tar
  && ln -s /usr/local/bin/npm /usr/bin/npm \
  && ln -s /usr/local/bin/npx /usr/bin/npx \
  && test "$(/usr/bin/node --version)" = "v26.12.1"
+
+# Bootstrap pip directly from the verified wheel; no RPM pip or application venv.
+RUN --mount=type=bind,from=pip-release,source=/pip-26.2.2-py3-none-any.whl,target=/tmp/pip-26.2.2-py3-none-any.whl \
+    PYTHONPATH=/tmp/pip-26.2.2-py3-none-any.whl /usr/bin/python3 -m pip install \
+      --break-system-packages --no-index /tmp/pip-26.2.2-py3-none-any.whl \
+ && /usr/bin/python3 -c "import sys, pip, pip._vendor.certifi as certifi; assert sys.prefix == sys.base_prefix; assert pip.__version__ == '26.2.2'; assert certifi.__version__ == '2026.10.19'" \
+ && ! rpm -q python3-pip
 
 RUN curl -fsSL --retry 3 "https://registry.npmjs.org/npm/-/npm-${NPM_VERSION}.tgz" -o /tmp/npm.tgz \
  && echo "${NPM_SHA256}  /tmp/npm.tgz" | sha256sum -c - \
@@ -133,8 +148,8 @@ RUN test -n "${UV_VERSION}" \
 # Install Hermes and its dependencies into Fedora's system Python. Keep the
 # source and built UI outside persistent user data; image builds own updates.
 RUN set -euo pipefail; \
-    HERMES_TAG="$(curl -fsSL --retry 3 "https://api.github.com/repos/NousResearch/hermes-agent/releases/tags/v${HERMES_VERSION}" | jq -er --arg tag "v${HERMES_VERSION}" 'select(.draft == false and .prerelease == false and .tag_name == $tag) | .tag_name')"; \
-    HERMES_COMMIT="$(curl -fsSL --retry 3 "https://api.github.com/repos/NousResearch/hermes-agent/commits/${HERMES_TAG}" | jq -er '.sha | select(test("^[0-9a-f]{40}$"))')"; \
+    [[ "$HERMES_COMMIT" =~ ^[0-9a-f]{40}$ ]]; \
+    [[ "$HERMES_DISTANCE" =~ ^[0-9]+$ ]]; \
     git init /usr/local/lib/hermes-runtime/hermes-agent \
  && git -C /usr/local/lib/hermes-runtime/hermes-agent remote add origin https://github.com/NousResearch/hermes-agent.git \
  && git -C /usr/local/lib/hermes-runtime/hermes-agent fetch --depth 1 origin "${HERMES_COMMIT}" \
@@ -143,7 +158,7 @@ RUN set -euo pipefail; \
  && test "$(git -C /usr/local/lib/hermes-agent rev-parse HEAD)" = "${HERMES_COMMIT}" \
  && /usr/bin/python3 /usr/local/lib/hermes-agent/scripts/write_install_stamp.py \
       --output /usr/local/lib/hermes-agent/install-stamp.json \
-      --commit "${HERMES_COMMIT}" --base-version "${HERMES_VERSION}" --distance 0 \
+      --commit "${HERMES_COMMIT}" --branch main --base-version "${HERMES_VERSION}" --distance "${HERMES_DISTANCE}" \
       --source ci --distribution docker --update-mechanism external \
  && uv pip install --system --python /usr/bin/python3 \
       --editable '/usr/local/lib/hermes-runtime/hermes-agent[all,messaging]' \
@@ -156,7 +171,7 @@ RUN set -euo pipefail; \
  && npm run build:ink --workspace ui-tui \
  && npm run build --workspace ui-tui \
  && npm run build --workspace web \
- && /usr/bin/python3 -c 'import sys, hermes_cli, telegram, mcp; assert sys.prefix == sys.base_prefix' \
+ && /usr/bin/python3 -c "import sys, certifi, hermes_cli, telegram, mcp; assert sys.prefix == sys.base_prefix; assert certifi.__version__ == '2026.10.19'" \
  && timeout 90 hermes --version \
  && HERMES_HOME=/tmp/hermes-smoke-home timeout 90 hermes --version \
  && rm -rf /tmp/hermes-smoke-home
