@@ -12,12 +12,6 @@
     ]
   },
   {
-    "image": "ghcr.io/safrano9999/litellm-database-chatgpt-reasoning:latest",
-    "scope": [
-      "smart1_inventory"
-    ]
-  },
-  {
     "image": "ghcr.io/huggingface/text-embeddings-inference@sha256:ad950d30878eceb72aaf32024d26fa2b1d04a75304fa0b4776b49aa1941fea07",
     "scope": [
       "smart1_inventory"

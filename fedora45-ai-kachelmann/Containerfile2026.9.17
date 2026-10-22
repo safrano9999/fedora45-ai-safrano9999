@@ -31,7 +31,7 @@ COPY --from=layer-sources /tmp/fedora45-ai-kachelmann/requirements.kachelmann.tx
 RUN --mount=type=cache,target=/root/.cache/pip \
     sed -i 's/psycopg\[binary\]/psycopg/g' /requirements.kachelmann.txt \
  && pip install -r /requirements.kachelmann.txt \
- && pip check
+ && check-python-dependencies
 
 ENV KACHELMANN_DIR=/opt/safrano9999/KACHELMANN \
     KACHELMANN_PYTHON=/usr/bin/python3

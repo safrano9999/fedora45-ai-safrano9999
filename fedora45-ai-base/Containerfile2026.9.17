@@ -31,9 +31,10 @@ LABEL org.opencontainers.image.source="https://github.com/safrano9999/fedora45-a
 USER root
 
 COPY --from=layer-sources /tmp/fedora45-ai-base/requirements.base.txt /requirements.base.txt
+COPY --chmod=0755 build/check-python-dependencies.py /usr/local/bin/check-python-dependencies
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r /requirements.base.txt \
- && pip check
+ && check-python-dependencies
 
 COPY --from=layer-sources /tmp/fedora45-ai-base/.fedora45-ai-base-source-tags.tsv /README/fedora45-ai-base-source-tags.tsv
 COPY --from=layer-sources /tmp/fedora45-ai-base/.fedora45-ai-repositories.list /usr/local/share/fedora45-ai/base-repositories.list

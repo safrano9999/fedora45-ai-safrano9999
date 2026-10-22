@@ -23,7 +23,7 @@ USER root
 COPY --from=layer-sources /tmp/fedora45-ai-safrano9999-full/requirements.safrano9999-full.txt /requirements.safrano9999-full.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r /requirements.safrano9999-full.txt \
- && pip check
+ && check-python-dependencies
 
 COPY --from=layer-sources /tmp/fedora45-ai-safrano9999-full/.safrano9999-full-source-tags.tsv /README/safrano9999-full-source-tags.tsv
 COPY --from=layer-sources /tmp/fedora45-ai-safrano9999-full/.fedora45-ai-repositories.list /usr/local/share/fedora45-ai/safrano9999-full-repositories.list

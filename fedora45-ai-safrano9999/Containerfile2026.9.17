@@ -32,7 +32,7 @@ COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/requirements.safrano9999.
 RUN --mount=type=cache,target=/root/.cache/pip \
     sed -i 's/psycopg\[binary\]/psycopg/g' /requirements.safrano9999.txt \
  && pip install -r /requirements.safrano9999.txt \
- && pip check
+ && check-python-dependencies
 
 ENV ZEROINBOX_DIR=/opt/safrano9999/ZEROINBOX
 
