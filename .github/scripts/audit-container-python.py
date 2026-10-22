@@ -22,7 +22,22 @@ except ImportError:
 r = dict(version=sys.version.split()[0], executable=sys.executable,
  real_executable=os.path.realpath(sys.executable), prefix=sys.prefix,
  base_prefix=getattr(sys, 'base_prefix', sys.prefix), openssl=ssl.OPENSSL_VERSION,
- ssl_default_paths=ssl.get_default_verify_paths()._asdict(), packages={})
+ ssl_default_paths=ssl.get_default_verify_paths()._asdict(), packages={}, uid=os.getuid(), sys_path=sys.path)
+try:
+ import ensurepip, sysconfig
+ from pathlib import Path
+ seed_dir=Path(sysconfig.get_config_var('WHEEL_PKG_DIR') or Path(ensurepip.__file__).with_name('_bundled'))
+ r['ensurepip']={'version':ensurepip.version(),'directory':str(seed_dir),'wheels':sorted(p.name for p in seed_dir.glob('pip-*.whl'))}
+except Exception as e:
+ r['ensurepip']={'error':type(e).__name__}
+try:
+ ctx=ssl.create_default_context()
+ bad={'emSign ECC Root CA - G3','AAA Certificate Services','emSign Root CS CA - G3'}
+ names={v for c in ctx.get_ca_certs() for row in c['subject'] for k,v in row if k=='commonName'}
+ r['native_trust']={'certificates':len(ctx.get_ca_certs()),'distrusted_roots_present':sorted(names & bad)}
+except Exception as e:
+ r['native_trust']={'error':type(e).__name__}
+
 for name in ('pip','certifi','requests','urllib3','uv','httpx','litellm','hermes-agent','fastapi','mcp'):
  try:
   d=metadata.distribution(name)
@@ -67,8 +82,10 @@ def command(args, timeout=120):
   return 124,'','command timed out'
 
 
-def sandbox(image, entrypoint, *args):
- return ['docker','run','--rm','--pull=never','--read-only','--tmpfs','/tmp:rw,nosuid,nodev,size=64m','--network','none','--cap-drop','ALL','--security-opt','no-new-privileges','--user','0','--entrypoint',entrypoint,image,*args]
+def sandbox(image, entrypoint, *args, app_user=False):
+ cmd=['docker','run','--rm','--pull=never','--read-only','--tmpfs','/tmp:rw,nosuid,nodev,size=64m','--network','none','--cap-drop','ALL','--security-opt','no-new-privileges']
+ if not app_user: cmd+=['--user','0']
+ return cmd+['--entrypoint',entrypoint,image,*args]
 
 
 def exported_paths(image):
@@ -113,7 +130,7 @@ def main():
    sections={}
    current=None
    for line in stdout.splitlines():
-    if re.fullmatch('__\w+__',line):
+    if re.fullmatch(r'__\w+__',line):
      current=line
      sections[current]=[]
     elif current: sections[current].append(line)
@@ -128,9 +145,10 @@ def main():
     result['errors'].append(err)
     result['status']='discovery_incomplete'
   result['candidate_interpreters']=paths
+  result['probe_mode']='configured Python startup as image default user'
   seen=set()
   for path in paths:
-   code,stdout,stderr=command(sandbox(ns.image,path,'-I','-c',PROBE),45)
+   code,stdout,stderr=command(sandbox(ns.image,path,'-c',PROBE,app_user=True),45)
    if code:
     vc,vo,ve=command(sandbox(ns.image,path,'--version'),15)
     result['errors'].append({'executable':path,'probe_error':stderr,'version_output':(vo+ve).strip()[:300] if vc==0 else None})

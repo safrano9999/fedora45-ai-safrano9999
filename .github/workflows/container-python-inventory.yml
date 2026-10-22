@@ -8,6 +8,11 @@ on:
         description: Event monitor correlation id
         required: true
         type: string
+      images_json:
+        description: Optional JSON array of image references; blank audits the inventory
+        required: false
+        default: ""
+        type: string
 permissions:
   contents: read
   packages: read
@@ -19,11 +24,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: matrix
+        env:
+          AUDIT_IMAGES_JSON: ${{ inputs.images_json }}
         run: |
           python3 - <<'PYCODE'
           import json, os
           from pathlib import Path
-          images=json.loads(Path('.github/scripts/python-audit-images.json').read_text())
+          selected=os.environ.get('AUDIT_IMAGES_JSON','').strip()
+          images=[{'image':x} for x in json.loads(selected)] if selected else json.loads(Path('.github/scripts/python-audit-images.json').read_text())
+          assert images and all(isinstance(x['image'],str) and x['image'].startswith(('ghcr.io/','docker.io/')) and not any(c.isspace() for c in x['image']) for x in images)
           matrix={'include':[{'id':str(i),'image':x['image']} for i,x in enumerate(images)]}
           with open(os.environ['GITHUB_OUTPUT'],'a') as f:
               f.write('images='+json.dumps(matrix)+'\n')
