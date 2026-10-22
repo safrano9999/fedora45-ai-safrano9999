@@ -73,7 +73,7 @@ RUN --mount=type=bind,from=node-release,source=/node.tar.xz,target=/tmp/node.tar
     --mount=type=cache,target=/var/cache/dnf \
     test -n "${FEDORA_REPOMD_KEY}" \
  && printf 'Fedora repository state: %s\n' "${FEDORA_REPOMD_KEY}" \
- && dnf -y update && dnf -y --exclude=python3-pip --exclude=python-pip-wheel install \
+ && dnf -y update && dnf -y --exclude=python3-pip install \
     bash bash-completion shadow-utils sudo \
     git gh tmux \
     nano vim-minimal less \
@@ -102,9 +102,14 @@ RUN --mount=type=bind,from=node-release,source=/node.tar.xz,target=/tmp/node.tar
  && ln -s /usr/local/bin/npx /usr/bin/npx \
  && test "$(/usr/bin/node --version)" = "v26.12.1"
 
-# Bootstrap pip directly from the verified wheel; no RPM pip or application venv.
+# Fedora's Python requires the python-pip-wheel data package. Replace its seed
+# wheel too, then install pip directly; no RPM pip executable or application venv.
 RUN --mount=type=bind,from=pip-release,source=/pip-26.2.2-py3-none-any.whl,target=/tmp/pip-26.2.2-py3-none-any.whl \
-    PYTHONPATH=/tmp/pip-26.2.2-py3-none-any.whl /usr/bin/python3 -m pip install \
+    /usr/bin/python3 -c "import sysconfig; assert sysconfig.get_config_var('WHEEL_PKG_DIR') == '/usr/share/python-wheels/' or sysconfig.get_config_var('WHEEL_PKG_DIR') == '/usr/share/python-wheels'" \
+ && find /usr/share/python-wheels -maxdepth 1 -type f -name 'pip-*.whl' -delete \
+ && install -m 0644 /tmp/pip-26.2.2-py3-none-any.whl /usr/share/python-wheels/ \
+ && /usr/bin/python3 -c "import ensurepip; assert ensurepip.version() == '26.2.2'" \
+ && PYTHONPATH=/tmp/pip-26.2.2-py3-none-any.whl /usr/bin/python3 -m pip install \
       --break-system-packages --no-index /tmp/pip-26.2.2-py3-none-any.whl \
  && /usr/bin/python3 -c "import sys, pip, pip._vendor.certifi as certifi; assert sys.prefix == sys.base_prefix; assert pip.__version__ == '26.2.2'; assert certifi.__version__ == '2026.10.19'" \
  && ! rpm -q python3-pip
