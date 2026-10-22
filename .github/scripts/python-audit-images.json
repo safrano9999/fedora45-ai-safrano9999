@@ -1,0 +1,260 @@
+[
+  {
+    "image": "docker.io/texlive/texlive@sha256:e8148b126545105c4aeeaa212f8a7bd02d05b500351372881055e1e59ae67d33",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/berriai/litellm-database@sha256:070df884f52600352a4aedda059180be141f3645c61c59b89b0ee35c17a4ea84",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/litellm-database-chatgpt-reasoning:latest",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/huggingface/text-embeddings-inference@sha256:ad950d30878eceb72aaf32024d26fa2b1d04a75304fa0b4776b49aa1941fea07",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/speaches-ai/speaches@sha256:21e3df06d842fb7802ab470dd77c25f0e8c0d22950e8d8c6ae886e851af53ef8",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "docker.io/fireflyiii/core@sha256:4409f9f0f87378ba95d40811352f4f49338d276bb638c1e6d18a5579f332fbe8",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "docker.io/fireflyiii/data-importer@sha256:59f2f26ddf6eb55e84ce0d571259c9aabd6ddfcc23dd4d3825ab01ad79e34930",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "docker.io/azinupoatemaine/firefly-iii-mcp@sha256:5e0d1b15f49f33e5d4b2346a808508fd485ec4555a12630cf6e980e8e227e14b",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "docker.io/library/redis@sha256:077ba791400f390cb96d9d419d90259d5e72e697fca7abc3bbde6d83285d7346",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/socialmedia-syncher-firefox:latest",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/qdm12/gluetun@sha256:fa19cc76b2af13d57a8d3dc3066f2ada061b1c761b8aecf989b3877c0486e027",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "docker.io/sigoden/dufs@sha256:e5152c04e41d5a9d785546278b632bf035c8a08c52d7e8d35f4b59681f5ff35a",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/safrano9999-gsc-mcp:latest",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "docker.io/dataforseo/mcp@sha256:23f9e790c12cbf49ea8c50189f23c9b6f569db6ff0c2a3792bab84afe94bcbb0",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "docker.io/library/caddy@sha256:226d1f059b75399fe19182893c7184591c07b97afc8dfcf44eeb80c9a77a530f",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/barryw/paperlessmcp@sha256:ca72110d7ada1fe3519fb3c74ccb3f3b7e26636fb234651a5444f84e87a33931",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/krzysztof318/mailfathom@sha256:27203012741eeb323a0b5b071a44eebc65cf68a79353f31aacce9368075ee146",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/thunderbird-mcp-alpine:latest",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/safrano9999-mtg:latest",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/dnviti/archidekt-mcp-server@sha256:40faa0f80522162eb1465bad112ba82e1c46dd04536f21419248bfcb49266f8d",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "docker.io/swimmwatch/cloakbrowser-mcp@sha256:1a260471836857bc2ad6a2e3b98387fe0ab4c600e3b4a951064791d9daeee161",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "docker.io/allinurl/goaccess@sha256:83f4cd4de54a74dbfda52f422a1a13e9573a52c46a97faa3bd626eaffb727e68",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "docker.io/library/adminer@sha256:4e3a6514c26c625de2020c549d1eb24ddd2515f18311aa4bf32c823713c2f6fe",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "quay.io/fedora/postgresql-18@sha256:7dc4c801f581404fdfe92c8205ea36b9e5c9487679fee2be8ab8f4e832fdf0f1",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "docker.io/n8nio/n8n@sha256:d02752c6ab446ae9db8deec2f9cc887c378f77cdcad31650814df936b7386dfb",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/paperless-ngx/paperless-ngx@sha256:dba0242c1df1843643df4eb50ce5639f3a7900f414879088fd5bed8eaf2d456d",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "docker.io/library/nextcloud@sha256:9dbdc711cef21e1767a6e45a97e318e654d9e2ab2c1f1c570bb9cafc94529a18",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/cbcoutinho/nextcloud-mcp-server@sha256:b7faa131d1c4c4dbb1da7c24ccd96d35dcb41ad6f0ac6bcd5abd69282b8cd4b8",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/citadel:latest",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/kachelmann-mcp:latest",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/paperlessmcp:latest",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/safrano9999-hibiscus:latest",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/litellm-free-webui:latest",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/open-webui/open-webui@sha256:1565038903151ced924b5a3226f73f40f16963df4b910441f6391f10144afdaa",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/firefly-mcp-bridge:latest",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "docker.io/vikunja/vikunja@sha256:e2204a1c1c6a81e833c2b3a5442be182ca2335b54c2e7e37578cc3fe12a27cfc",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/f24sales/litellm-mcp-switcher-safrano9999:latest",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/fedora45-ai-core-pre:2026.9.17.12",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/fedora45-ai-core:2026.9.17.12",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/fedora45-ai-base:2026.9.17.12",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/fedora45-ai-kachelmann:2026.9.17.12",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/safrano9999/fedora45-ai-safrano9999:2026.9.17.12",
+    "scope": [
+      "smart1_inventory"
+    ]
+  },
+  {
+    "image": "ghcr.io/berriai/litellm-database@sha256:35f2cec3a14bb297e08bfab56c1fc377432bc4071aaf71978fdff043a5d91e79",
+    "scope": [
+      "smart1_inventory"
+    ]
+  }
+]

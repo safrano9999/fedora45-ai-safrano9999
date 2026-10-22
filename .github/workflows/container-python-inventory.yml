@@ -1,0 +1,91 @@
+# Source of truth: SCRIPTS/githubactions. Read-only hosted-runner audit.
+name: Container Python inventory
+run-name: 'Container Python inventory [monitor:${{ inputs.monitor_id }}:true]'
+on:
+  workflow_dispatch:
+    inputs:
+      monitor_id:
+        description: Event monitor correlation id
+        required: true
+        type: string
+permissions:
+  contents: read
+  packages: read
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    outputs:
+      images: ${{ steps.matrix.outputs.images }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: matrix
+        run: |
+          python3 - <<'PYCODE'
+          import json, os
+          from pathlib import Path
+          images=json.loads(Path('.github/scripts/python-audit-images.json').read_text())
+          matrix={'include':[{'id':str(i),'image':x['image']} for i,x in enumerate(images)]}
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write('images='+json.dumps(matrix)+'\n')
+          PYCODE
+  audit:
+    needs: inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix: ${{ fromJSON(needs.inventory.outputs.images) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free hosted runner disk space
+        run: .github/scripts/free-runner-disk-space.sh
+      - name: Authenticate to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u safrano9999 --password-stdin
+      - name: Inspect image without starting application
+        env:
+          AUDIT_IMAGE: ${{ matrix.image }}
+        run: python3 .github/scripts/audit-container-python.py "$AUDIT_IMAGE" --out "reports/${{ matrix.id }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: python-audit-${{ matrix.id }}
+          path: reports/*.json
+          retention-days: 14
+  report:
+    if: always()
+    needs: [inventory, audit]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: python-audit-*
+          path: reports
+          merge-multiple: true
+      - name: Summarize audited images
+        run: |
+          python3 - <<'PYCODE'
+          import json, os
+          from pathlib import Path
+          rows=[json.loads(p.read_text()) for p in Path('reports').glob('*.json')]
+          rows.sort(key=lambda x:x['image'])
+          Path('reports/all-images.json').write_text(json.dumps(rows,indent=2)+'\n')
+          lines=['| Image | Result | Python | certifi | pip |','|---|---|---|---|---|']
+          for r in rows:
+              envs=r.get('interpreters',[])
+              versions=', '.join(sorted({x['version'] for x in envs})) or '—'
+              certifi=', '.join(sorted({x.get('certifi',{}).get('version') or 'absent' for x in envs})) or '—'
+              pip=', '.join(sorted({x.get('packages',{}).get('pip',{}).get('version','absent') for x in envs})) or '—'
+              lines.append('| '+r['image']+' | '+r['status']+' | '+versions+' | '+certifi+' | '+pip+' |')
+          text='\n'.join(lines)+'\n'
+          Path('reports/summary.md').write_text(text)
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f: f.write(text)
+          PYCODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-audit-complete
+          path: reports/
+          retention-days: 14
