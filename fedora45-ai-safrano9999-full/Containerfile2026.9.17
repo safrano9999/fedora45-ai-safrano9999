@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-ARG AI_SAFRANO9999_IMAGE
+ARG AI_SAFRANO9999_IMAGE=ghcr.io/safrano9999/fedora45-ai-safrano9999:2026.9.17.12
 FROM ${AI_SAFRANO9999_IMAGE} AS layer-sources
 USER root
 COPY build/ /tmp/fedora45-ai-safrano9999-full/build/

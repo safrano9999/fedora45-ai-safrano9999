@@ -129,3 +129,13 @@ For deployment, check the new image version, service readiness, Citadel and
 the configured MCP connections. The Telegram-agent setup inherits
 `OPENCLAW_TELEGRAM_HEARTBEAT_MINUTES=0` (disabled) from Ephemeral; positive
 values enable an interval in minutes for that configured agent.
+
+### Pinned 2026.9.17.12 runtime refresh
+
+The complete six-stage cascade keeps OpenClaw **2026.9.4** and the approved
+Fedora **45 Beta-1.3** base. Core-pre installs official Node.js **26.12.1**
+directly from its SHA-256-pinned Linux x64 archive rather than DNF. Existing
+`/usr/bin/node`, `npm` and `npx` paths remain available through links, and the
+existing npm release pin remains in effect. Each subsequent series recipe
+uses its parent at **2026.9.17.12**; build retries reuse this exact version.
+GitHub Actions verifies the runtime and the absence of Fedora Node packages.

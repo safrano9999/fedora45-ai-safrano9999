@@ -2,6 +2,11 @@
 FROM scratch AS persistainer-source
 ADD https://github.com/safrano9999/persistainer.git /persistainer/
 
+# Official Linux x64 runtime; mounted into the Fedora build without retaining the archive.
+FROM scratch AS node-release
+ADD --checksum=sha256:6170b2d474e1c626f43cff3adc118df9fe3b573258a4fc3d850c8dbc6b079bbd \
+    https://nodejs.org/dist/v26.12.1/node-v26.12.1-linux-x64.tar.xz /node.tar.xz
+
 FROM fedora45-approved-beta AS ai-core-pre
 # The Action supplies this named OCI context from the approved Fedora 45 Beta
 # archive, pinned by SHA256 and manifest digest in build-dependencies-whitelist.json.
@@ -45,6 +50,7 @@ ARG OPENCODE_TELEGRAM_VERSION=0.26.5
 LABEL org.opencontainers.image.title="fedora45-ai-core-pre" \
       org.opencontainers.image.description="Heavy generic Fedora 45 AI toolchain foundation without Safrano project content or ephemeral runtime configuration." \
       org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
+      io.safrano9999.nodejs.version="26.12.1" \
       io.safrano9999.openclaw.version="${OPENCLAW_VERSION}"
 
 ENV NODE_EXTRA_CA_CERTS=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
@@ -55,7 +61,8 @@ ENV NODE_EXTRA_CA_CERTS=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     OPENCODE_START=1
 
 # Keep the package set and order aligned with the existing fedora45-ai image.
-RUN --mount=type=cache,target=/var/cache/dnf \
+RUN --mount=type=bind,from=node-release,source=/node.tar.xz,target=/tmp/node.tar.xz \
+    --mount=type=cache,target=/var/cache/dnf \
     test -n "${FEDORA_REPOMD_KEY}" \
  && printf 'Fedora repository state: %s\n' "${FEDORA_REPOMD_KEY}" \
  && dnf -y update && dnf -y install \
@@ -63,7 +70,7 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     git gh tmux \
     nano vim-minimal less \
     curl wget ca-certificates openssl gnupg2 fuse-libs \
-    nodejs26 nodejs26-bin nodejs26-npm \
+    libatomic libstdc++ \
     python3 python3-libs python3-pip python3-devel libpq \
     python3-dotenv python3-pyyaml python3-reportlab tldr \
     python3-fastapi python3-uvicorn+standard python3-jinja2 \
@@ -79,14 +86,20 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     v4l-utils zbar qrencode bc ffmpeg mpv libv4l \
     dbus-x11 xauth mesa-dri-drivers google-noto-sans-cjk-vf-fonts \
     cockpit cockpit-podman \
-    tailscale
+    tailscale \
+ && tar --extract --xz --file=/tmp/node.tar.xz --directory=/usr/local \
+      --strip-components=1 --no-same-owner \
+ && ln -s /usr/local/bin/node /usr/bin/node \
+ && ln -s /usr/local/bin/npm /usr/bin/npm \
+ && ln -s /usr/local/bin/npx /usr/bin/npx \
+ && test "$(/usr/bin/node --version)" = "v26.12.1"
 
 RUN curl -fsSL --retry 3 "https://registry.npmjs.org/npm/-/npm-${NPM_VERSION}.tgz" -o /tmp/npm.tgz \
  && echo "${NPM_SHA256}  /tmp/npm.tgz" | sha256sum -c - \
  && npm install -g /tmp/npm.tgz && rm /tmp/npm.tgz \
  && node --version && npm --version \
- && rpm -qf "$(readlink -f "$(command -v node)")" \
- && node -e 'if (Number(process.versions.node.split(".")[0]) < 26) process.exit(1)'
+ && test "$(node --version)" = "v26.12.1" \
+ && test "$(readlink -f /usr/bin/node)" = /usr/local/bin/node
 
 # OpenCode is a generic core tool. The Telegram bridge is installed here, but
 # its systemd unit only starts when a runtime token and chat/user ID are given.
@@ -329,10 +342,10 @@ RUN mkdir -p "/root/.local/share/solana/install/releases/${SOLANA_VERSION}" \
       -exec ln -sf {} /usr/local/bin/ \; \
  && solana --version
 
-RUN rpm -qf "$(readlink -f "$(command -v node)")" \
+RUN test "$(node --version)" = "v26.12.1" \
  && test ! -x /root/.hermes/node/bin/node \
  && mkdir -p /README \
- && node -p 'JSON.stringify({node:process.versions.node,sqlite:process.versions.sqlite,nodeSource:"Fedora RPM"})' > /README/node-runtime.json
+ && node -p 'JSON.stringify({node:process.versions.node,sqlite:process.versions.sqlite,nodeSource:"Official Node.js binary"})' > /README/node-runtime.json
 
 USER root
 WORKDIR /root
