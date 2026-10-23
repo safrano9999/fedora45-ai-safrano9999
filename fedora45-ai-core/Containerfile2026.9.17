@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-ARG AI_CORE_PRE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core-pre:2026.9.17.13
+ARG AI_CORE_PRE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core-pre:2026.9.17.14
 FROM ${AI_CORE_PRE_IMAGE} AS core-sources
 # No Git fragment: BuildKit fetches the current default branch directly.
 ADD https://github.com/safrano9999/openclaw-ephemeral.git /sources/openclaw-ephemeral/
