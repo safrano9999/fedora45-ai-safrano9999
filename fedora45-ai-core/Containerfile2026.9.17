@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-ARG AI_CORE_PRE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core-pre:2026.9.17.14
+ARG AI_CORE_PRE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core-pre:2026.9.17.15
 FROM ${AI_CORE_PRE_IMAGE} AS core-sources
 ARG MCP_BRIDGE_RELEASE=2026.10.24.2
 ARG MCP_BRIDGE_SHA256=4fa9cb420235e9fff8f2ce065d97bd5557a5e954555e2bcce7f43f62c357a54d
