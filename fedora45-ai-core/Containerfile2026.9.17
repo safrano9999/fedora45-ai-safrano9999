@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
-ARG AI_CORE_PRE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core-pre:2026.9.17.19
+ARG AI_CORE_PRE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core-pre:2026.9.17.20
 FROM ${AI_CORE_PRE_IMAGE} AS core-sources
-ARG MCP_BRIDGE_RELEASE=2026.10.2
-ARG MCP_BRIDGE_SHA256=72499bba2deb4ab3eaa9b7d4b1519a818ab861a6faf087bad6b8379f23cb60ca
+ARG MCP_BRIDGE_RELEASE=2026.10.3
+ARG MCP_BRIDGE_SHA256=90bb61bdbeebe4c6a47e55fe212bfabfa4f23e931f3171707e157075616847d7
 # No Git fragment: BuildKit fetches the current default branch directly.
 ADD https://github.com/safrano9999/openclaw-ephemeral.git /sources/openclaw-ephemeral/
 ADD https://github.com/safrano9999/hermes-ephemeral.git /sources/hermes-ephemeral/
@@ -22,7 +22,7 @@ RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
 FROM ${AI_CORE_PRE_IMAGE} AS ai-core
 
 ARG OPENCLAW_VERSION=2026.9.4
-ARG MCP_BRIDGE_RELEASE=2026.10.2
+ARG MCP_BRIDGE_RELEASE=2026.10.3
 ARG OPENCLAW_UPSTREAM_SHA=3a9d69db306cd7f081e06254cb89c4bcc14a7107
 ARG OPENCLAW_DETERMINISTIC_TAG=2026.9.4-deterministic.4
 ARG OPENCLAW_DETERMINISTIC_SHA256=4a6e0423c7fc93993155df004c0b6d091eb573ae0e7f7f6a431fe416a407a49a
@@ -96,7 +96,8 @@ RUN set -euo pipefail; \
     openclaw plugins install --force --accept-capabilities /tmp/openclaw-mcp-server-bridge-latest.zip; \
     test -f /root/.openclaw/extensions/openclaw-mcp-server-bridge/openclaw.plugin.json; \
     test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/dist/index.js; \
-    test "$(jq -r .version /root/.openclaw/extensions/openclaw-mcp-server-bridge/package.json)" = 0.3.0; \
+    test "$(jq -r .version /root/.openclaw/extensions/openclaw-mcp-server-bridge/package.json)" = 0.3.1; \
+    test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/assets/favicon.jpeg; \
     install -Dm0755 /root/.openclaw/extensions/openclaw-mcp-server-bridge/image/init/20-openclaw-mcp-bridge.py \
       /usr/local/libexec/openclaw-mcp-bridge-init.py; \
     install -d /etc/systemd/system/openclaw-config.service.d; \
