@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 ARG AI_CORE_PRE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core-pre:2026.9.17.14
 FROM ${AI_CORE_PRE_IMAGE} AS core-sources
+ARG MCP_BRIDGE_RELEASE=2026.10.24.2
+ARG MCP_BRIDGE_SHA256=4fa9cb420235e9fff8f2ce065d97bd5557a5e954555e2bcce7f43f62c357a54d
 # No Git fragment: BuildKit fetches the current default branch directly.
 ADD https://github.com/safrano9999/openclaw-ephemeral.git /sources/openclaw-ephemeral/
 ADD https://github.com/safrano9999/hermes-ephemeral.git /sources/hermes-ephemeral/
@@ -10,10 +12,17 @@ RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
     gh release download latest --repo safrano9999/NOTE \
       --pattern note-latest.zip --pattern note-latest.zip.sha256 --dir /sources/note \
  && cd /sources/note && sha256sum -c note-latest.zip.sha256
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+    gh release download "${MCP_BRIDGE_RELEASE}" --repo safrano9999/openclaw-mcp-server-bridge \
+      --pattern openclaw-mcp-server-bridge-latest.zip \
+      --pattern openclaw-mcp-server-bridge-latest.zip.sha256 --dir /sources/mcp-bridge \
+ && cd /sources/mcp-bridge && sha256sum -c openclaw-mcp-server-bridge-latest.zip.sha256 \
+ && echo "${MCP_BRIDGE_SHA256}  openclaw-mcp-server-bridge-latest.zip" | sha256sum -c -
 
 FROM ${AI_CORE_PRE_IMAGE} AS ai-core
 
 ARG OPENCLAW_VERSION=2026.9.4
+ARG MCP_BRIDGE_RELEASE=2026.10.24.2
 ARG OPENCLAW_UPSTREAM_SHA=3a9d69db306cd7f081e06254cb89c4bcc14a7107
 ARG OPENCLAW_DETERMINISTIC_TAG=2026.9.4-deterministic.4
 ARG OPENCLAW_DETERMINISTIC_SHA256=4a6e0423c7fc93993155df004c0b6d091eb573ae0e7f7f6a431fe416a407a49a
@@ -25,7 +34,7 @@ RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
  && echo "${OPENCLAW_DETERMINISTIC_SHA256}  /tmp/openclaw-deterministic.tar.gz" | sha256sum -c -
 
 LABEL org.opencontainers.image.title="fedora45-ai-core" \
-      org.opencontainers.image.description="Small ephemeral OpenClaw, NOTE, Hermes configuration, and systemd runtime layer on fedora45-ai-core-pre." \
+      org.opencontainers.image.description="Ephemeral OpenClaw with NOTE and MCP server bridge, Hermes configuration, and systemd runtime on fedora45-ai-core-pre." \
       org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
       io.safrano9999.parent="fedora45-ai-core-pre" \
       io.safrano9999.openclaw.version="${OPENCLAW_VERSION}" \
@@ -33,7 +42,9 @@ LABEL org.opencontainers.image.title="fedora45-ai-core" \
       io.safrano9999.openclaw.upstream-commit="${OPENCLAW_UPSTREAM_SHA}" \
       io.safrano9999.openclaw.deterministic-release="${OPENCLAW_DETERMINISTIC_TAG}" \
       io.safrano9999.note.repository="safrano9999/NOTE" \
-      io.safrano9999.note.release="latest"
+      io.safrano9999.note.release="latest" \
+      io.safrano9999.mcp-bridge.repository="safrano9999/openclaw-mcp-server-bridge" \
+      io.safrano9999.mcp-bridge.release="${MCP_BRIDGE_RELEASE}"
 
 # Assemble the distro-neutral OpenClaw payload directly on Fedora.
 ENV HOME=/root \
@@ -75,12 +86,18 @@ RUN --mount=type=bind,source=build,target=/tmp/core-build \
     python3 /tmp/core-build/install-opencode-ephemeral.py /tmp/opencode-ephemeral
 
 COPY --from=core-sources /sources/note/note-latest.zip /tmp/note-latest.zip
+COPY --from=core-sources /sources/mcp-bridge/openclaw-mcp-server-bridge-latest.zip /tmp/openclaw-mcp-server-bridge-latest.zip
 
 RUN set -euo pipefail; \
     openclaw_root="$(npm root -g)/openclaw"; \
     codex_root="$(openclaw plugins inspect codex --json | jq -er '.install.installPath')"; \
     test -f "$codex_root/openclaw.plugin.json"; \
     test -f "$codex_root/$(jq -er '.openclaw.runtimeExtensions[0] // .openclaw.extensions[0]' "$codex_root/package.json")"; \
+    openclaw plugins install --force --accept-capabilities /tmp/openclaw-mcp-server-bridge-latest.zip; \
+    test -f /root/.openclaw/extensions/openclaw-mcp-server-bridge/openclaw.plugin.json; \
+    test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/dist/index.js; \
+    openclaw plugins inspect openclaw-mcp-server-bridge --json | jq -e '.plugin.id == "openclaw-mcp-server-bridge"' >/dev/null; \
+    rm -f /tmp/openclaw-mcp-server-bridge-latest.zip; \
     openclaw plugins install \
       --force \
       --accept-capabilities \
@@ -108,7 +125,7 @@ with sqlite3.connect(database_path.as_uri() + "?mode=ro", uri=True) as database:
         ("plugins.installedIndex",),
     ).fetchone()
 records = json.loads(row[0])["index"]["installRecords"]
-assert {"codex", "brave", "mai-transcribe", "speaches", "note"} <= records.keys()
+assert {"codex", "brave", "mai-transcribe", "speaches", "note", "openclaw-mcp-server-bridge"} <= records.keys()
 for record in records.values():
     package = json.loads((Path(record["installPath"]) / "package.json").read_text())
     assert package["version"] == record["version"]
