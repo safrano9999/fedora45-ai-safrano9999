@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-ARG AI_BASE_IMAGE=ghcr.io/safrano9999/fedora45-ai-base:2026.9.17.16
+ARG AI_BASE_IMAGE=ghcr.io/safrano9999/fedora45-ai-base:2026.9.17.17
 FROM ${AI_BASE_IMAGE} AS layer-sources
 USER root
 COPY build/ /tmp/fedora45-ai-kachelmann/build/
