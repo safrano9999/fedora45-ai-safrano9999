@@ -206,6 +206,14 @@ TS_USERSPACE=0
 #default-preset: 1
 CITADEL_LOGO_PERSISTENT=1
 
+# Maximum HTML report download size in MiB; empty uses 5.
+#default-preset: 5
+CITADEL_REPORT_MAX_MB=
+
+# HTTP status codes excluded from service discovery; empty uses 404,502.
+#default-preset: 404,502
+CITADEL_BLACKLIST_STATUS=
+
 # Optional: leave empty to disable subnet routes.
 CITADEL_SUBNET_IP=
 
@@ -218,6 +226,30 @@ CITADEL_HTTPS_ONLY=0
 #default-preset: Mozilla/5.0 (compatible; CITADEL/1.0)
 CITADEL_USER_AGENT=Mozilla/5.0 (compatible; CITADEL/1.0)
 
+# OAuth for email entries in CLOUDFLARE-API_access.json. Bearer entries work independently.
+# Client callbacks: CLOUDFLARE_OAUTH_Whitelist.json (copy the .json.example).
+#choices: 0 1
+#default-preset: 0
+CITADEL_CLOUDFLARE_API_OAUTH=0
+
+# Creation preset for new Managed OAuth applications only; existing grants are preserved.
+# Whole hours from 1h to 720h. 24h = one day; 720h = thirty days.
+# Access tokens remain short-lived and are renewed through the OAuth refresh token.
+#default-preset: 24h
+CITADEL_CLOUDFLARE_OAUTH_GRANT_DURATION=24h
+
+# Published authentication modes: both (default), bearer, or oauth.
+# OAuth also requires CITADEL_CLOUDFLARE_API_OAUTH=1 and client callbacks.
+#choices: both bearer oauth
+#default-preset: both
+CITADEL_CLOUDFLARE_API_MODE=both
+
+# Keep published OAuth/Bearer MCP routes and skip their probes; empty uses 1.
+# Set 0 to rediscover them and remove endpoints that no longer respond.
+#choices: 0 1
+#default-preset: 1
+CITADEL_KEEP_API_MCP_ROUTES=
+
 #default-preset: insert later
 CITADEL_CLOUDFLARE_DOMAIN=
 
@@ -228,6 +260,12 @@ CITADEL_CLOUDFLARE_WWW443=0
 
 #default-preset: 0
 CITADEL_CLOUDFLARE_DOMAIN443=0
+
+# Redirect the bare domain to https://www.<domain> (301, path/query preserved).
+# Requires WWW443=1, DOMAIN443=1 and Cloudflare Dynamic URL Redirects Edit.
+# Set 0 to remove this tunnel's redirect; unrelated rules are preserved.
+#default-preset: 0
+CITADEL_CLOUDFLARE_REDIRECT_TO_WWW=0
 
 #default-preset: insert later
 CITADEL_CLOUDFLARE_ACCOUNT_ID=
