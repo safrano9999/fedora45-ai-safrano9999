@@ -1,9 +1,15 @@
 # syntax=docker/dockerfile:1
-ARG AI_CORE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core:2026.9.17.20
+ARG AI_CORE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core:2026.9.17.21
 FROM ${AI_CORE_IMAGE} AS layer-sources
+ARG MCP_BRIDGE_RELEASE=2026.10.5
+ARG MCP_BRIDGE_SHA256=170b3be9ef0984c847f47f57c94fb164dda79d8a160e35384a56cb31252a0c6f
 USER root
 COPY build/ /tmp/fedora45-ai-base/build/
 COPY build.conf fedora45-ai-base.*_example /tmp/fedora45-ai-base/
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+    gh release download "${MCP_BRIDGE_RELEASE}" --repo safrano9999/openclaw-mcp-server-bridge \
+      --pattern openclaw-mcp-server-bridge-latest.zip --dir /tmp/mcp-bridge \
+ && echo "${MCP_BRIDGE_SHA256}  /tmp/mcp-bridge/openclaw-mcp-server-bridge-latest.zip" | sha256sum -c -
 # Native Git ADD follows each repository's current default branch.
 ADD --keep-git-dir=true https://github.com/safrano9999/WELCOME.git /tmp/fedora45-ai-base/safrano9999/WELCOME/
 ADD --keep-git-dir=true https://github.com/safrano9999/CITADEL.git /tmp/fedora45-ai-base/safrano9999/CITADEL/
@@ -21,14 +27,19 @@ RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
  && find /tmp/fedora45-ai-base/safrano9999 -name .git -type d -prune -exec rm -rf {} +
 
 FROM ${AI_CORE_IMAGE} AS ai-base
-
+ARG MCP_BRIDGE_RELEASE=2026.10.5
 
 LABEL org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
       org.opencontainers.image.title="fedora45-ai-base" \
       org.opencontainers.image.description="Fedora 45 AI Base repository and service contributions." \
-      io.safrano9999.parent="fedora45-ai-core"
+      io.safrano9999.parent="fedora45-ai-core" \
+      io.safrano9999.mcp-bridge.release="${MCP_BRIDGE_RELEASE}"
 
 USER root
+
+COPY --from=layer-sources /tmp/mcp-bridge/openclaw-mcp-server-bridge-latest.zip /tmp/openclaw-mcp-server-bridge-latest.zip
+RUN --mount=type=bind,source=build,target=/tmp/base-build \
+    python3 /tmp/base-build/install-mcp-bridge.py /tmp/openclaw-mcp-server-bridge-latest.zip 0.3.3
 
 COPY --from=layer-sources /tmp/fedora45-ai-base/requirements.base.txt /requirements.base.txt
 COPY --chmod=0755 build/check-python-dependencies.py /usr/local/bin/check-python-dependencies

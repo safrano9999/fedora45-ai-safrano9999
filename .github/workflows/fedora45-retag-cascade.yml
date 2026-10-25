@@ -13,9 +13,17 @@ on:
         type: boolean
         default: false
       build_commit:
-        description: Exact source revision of completed Core-pre, Core and Base
+        description: Exact source revision of completed Core and Base
         required: true
         type: string
+      core_and_core_pre_only:
+        description: Retag Core-pre and Core unchanged before rebuilding Base and above
+        type: boolean
+        default: false
+      core_pre_build_commit:
+        description: Core-pre source revision when it differs from build_commit
+        type: string
+        default: ""
       upper_build_commit:
         description: Source revision for Kachelmann and above; blank uses build_commit
         type: string
@@ -43,6 +51,8 @@ jobs:
           BUILD_COMMIT: ${{ inputs.build_commit }}
           UPPER_BUILD_COMMIT: ${{ inputs.upper_build_commit }}
           CORE_PRE_ONLY: ${{ inputs.core_pre_only }}
+          CORE_AND_CORE_PRE_ONLY: ${{ inputs.core_and_core_pre_only }}
+          CORE_PRE_BUILD_COMMIT: ${{ inputs.core_pre_build_commit }}
         shell: bash
         run: |
           set -euo pipefail
@@ -51,17 +61,23 @@ jobs:
           [[ "$SOURCE_TAG" != "$TARGET_TAG" && "$BUILD_COMMIT" =~ ^[0-9a-f]{40}$ ]]
           UPPER_BUILD_COMMIT="${UPPER_BUILD_COMMIT:-$BUILD_COMMIT}"
           [[ "$UPPER_BUILD_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          CORE_PRE_BUILD_COMMIT="${CORE_PRE_BUILD_COMMIT:-$BUILD_COMMIT}"
+          [[ "$CORE_PRE_BUILD_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$CORE_PRE_ONLY" != true || "$CORE_AND_CORE_PRE_ONLY" != true ]]
           declare -A digests
           stages=(core-pre core base kachelmann safrano9999 safrano9999-full)
           if [[ "$CORE_PRE_ONLY" == true ]]; then
             stages=(core-pre)
+          elif [[ "$CORE_AND_CORE_PRE_ONLY" == true ]]; then
+            stages=(core-pre core)
           fi
           for stage in "${stages[@]}"; do
             image="ghcr.io/safrano9999/fedora45-ai-$stage"
             digest="$(docker buildx imagetools inspect "$image:$SOURCE_TAG" --format '{{json .Manifest}}' | jq -er .digest)"
             [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
             case "$stage" in
-              core-pre|core|base) revision="$BUILD_COMMIT" ;;
+              core-pre) revision="$CORE_PRE_BUILD_COMMIT" ;;
+              core|base) revision="$BUILD_COMMIT" ;;
               *) revision="$UPPER_BUILD_COMMIT" ;;
             esac
             docker buildx imagetools inspect "$image@$digest" --format '{{json .Image}}' |
