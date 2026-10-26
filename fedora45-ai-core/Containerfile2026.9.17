@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-ARG AI_CORE_PRE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core-pre:2026.9.17.23
+ARG AI_CORE_PRE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core-pre:2026.9.17.24
 FROM ${AI_CORE_PRE_IMAGE} AS core-sources
 ARG MCP_BRIDGE_RELEASE=latest
 # No Git fragment: BuildKit fetches the current default branch directly.
