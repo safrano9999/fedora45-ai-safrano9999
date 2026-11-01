@@ -1,0 +1,85 @@
+name: Fedora 45 AI ARM64 image aliases
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_tag:
+        description: "Existing ARM64 cascade tag to alias"
+        required: true
+        default: "2026.9.17.6"
+        type: string
+      publish_latest:
+        description: "Alias the source latest tags as latest"
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: fedora45-ai-arm64-alias
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io/safrano9999
+
+jobs:
+  alias:
+    name: Publish ARM64 image aliases
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Alias existing ARM64 manifests
+        env:
+          SOURCE_TAG: ${{ inputs.source_tag }}
+          PUBLISH_LATEST: ${{ inputs.publish_latest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_TAG" =~ ^20[0-9]{2}\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]
+
+          declare -A source_images=(
+            [core-pre]="fedora45-ai-core-pre-arm64"
+            [core]="fedora45-ai-core-arm64"
+            [base]="fedora45-ai-base-arm64"
+            [kachelmann]="fedora45-ai-kachelmann-arm64"
+            [safrano9999]="fedora45-ai-safrano9999-arm64"
+            [full]="fedora45-ai-safrano9999-full-arm64"
+          )
+          declare -A alias_images=(
+            [core-pre]="fedora45-ai-arm64-core-pre"
+            [core]="fedora45-ai-arm64-core"
+            [base]="fedora45-ai-arm64-base"
+            [kachelmann]="fedora45-ai-arm64-kachelmann"
+            [safrano9999]="fedora45-ai-arm64-safrano9999"
+            [full]="fedora45-ai-arm64-full"
+          )
+
+          for stage in core-pre core base kachelmann safrano9999 full; do
+            source="${REGISTRY}/${source_images[$stage]}"
+            alias="${REGISTRY}/${alias_images[$stage]}"
+            digest="$(docker buildx imagetools inspect "$source:$SOURCE_TAG" --format '{{json .Manifest}}' | jq -er .digest)"
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+            docker buildx imagetools create \
+              --prefer-index=false \
+              --tag "$alias:$SOURCE_TAG" \
+              "$source@$digest"
+
+            if [[ "$PUBLISH_LATEST" == true ]]; then
+              latest_digest="$(docker buildx imagetools inspect "$source:latest" --format '{{json .Manifest}}' | jq -er .digest)"
+              [[ "$latest_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+              docker buildx imagetools create \
+                --prefer-index=false \
+                --tag "$alias:latest" \
+                "$source@$latest_digest"
+            fi
+
+            printf '%s → %s:%s\n' "$source:$SOURCE_TAG" "$alias" "$SOURCE_TAG" >> "$GITHUB_STEP_SUMMARY"
+          done

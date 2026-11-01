@@ -163,6 +163,8 @@ jobs:
           tags: |
             ghcr.io/safrano9999/fedora45-ai-core-pre-arm64:${{ env.CASCADE_TAG }}
             ghcr.io/safrano9999/fedora45-ai-core-pre-arm64:latest
+            ghcr.io/safrano9999/fedora45-ai-arm64-core-pre:${{ env.CASCADE_TAG }}
+            ghcr.io/safrano9999/fedora45-ai-arm64-core-pre:latest
           build-args: ${{ steps.pins.outputs.build_args }}
 
       - name: Smoke-test Core-pre ARM64
@@ -216,6 +218,8 @@ jobs:
           tags: |
             ghcr.io/safrano9999/fedora45-ai-core-arm64:${{ env.CASCADE_TAG }}
             ghcr.io/safrano9999/fedora45-ai-core-arm64:latest
+            ghcr.io/safrano9999/fedora45-ai-arm64-core:${{ env.CASCADE_TAG }}
+            ghcr.io/safrano9999/fedora45-ai-arm64-core:latest
           build-args: |
             AI_CORE_PRE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core-pre-arm64:${{ env.CASCADE_TAG }}
 
@@ -268,6 +272,8 @@ jobs:
           tags: |
             ghcr.io/safrano9999/fedora45-ai-base-arm64:${{ env.CASCADE_TAG }}
             ghcr.io/safrano9999/fedora45-ai-base-arm64:latest
+            ghcr.io/safrano9999/fedora45-ai-arm64-base:${{ env.CASCADE_TAG }}
+            ghcr.io/safrano9999/fedora45-ai-arm64-base:latest
           build-args: |
             AI_CORE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core-arm64:${{ env.CASCADE_TAG }}
             ARM64_TOOLCHAINS_RELEASE=arm64-electrum-4.8.2-agave-4.3.2
@@ -319,6 +325,8 @@ jobs:
           tags: |
             ghcr.io/safrano9999/fedora45-ai-kachelmann-arm64:${{ env.CASCADE_TAG }}
             ghcr.io/safrano9999/fedora45-ai-kachelmann-arm64:latest
+            ghcr.io/safrano9999/fedora45-ai-arm64-kachelmann:${{ env.CASCADE_TAG }}
+            ghcr.io/safrano9999/fedora45-ai-arm64-kachelmann:latest
           build-args: |
             AI_BASE_IMAGE=ghcr.io/safrano9999/fedora45-ai-base-arm64:${{ env.CASCADE_TAG }}
 
@@ -359,6 +367,8 @@ jobs:
           tags: |
             ghcr.io/safrano9999/fedora45-ai-safrano9999-arm64:${{ env.CASCADE_TAG }}
             ghcr.io/safrano9999/fedora45-ai-safrano9999-arm64:latest
+            ghcr.io/safrano9999/fedora45-ai-arm64-safrano9999:${{ env.CASCADE_TAG }}
+            ghcr.io/safrano9999/fedora45-ai-arm64-safrano9999:latest
           build-args: |
             AI_KACHELMANN_IMAGE=ghcr.io/safrano9999/fedora45-ai-kachelmann-arm64:${{ env.CASCADE_TAG }}
 
@@ -399,6 +409,8 @@ jobs:
           tags: |
             ghcr.io/safrano9999/fedora45-ai-safrano9999-full-arm64:${{ env.CASCADE_TAG }}
             ghcr.io/safrano9999/fedora45-ai-safrano9999-full-arm64:latest
+            ghcr.io/safrano9999/fedora45-ai-arm64-full:${{ env.CASCADE_TAG }}
+            ghcr.io/safrano9999/fedora45-ai-arm64-full:latest
           build-args: |
             AI_SAFRANO9999_IMAGE=ghcr.io/safrano9999/fedora45-ai-safrano9999-arm64:${{ env.CASCADE_TAG }}
 
