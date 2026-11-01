@@ -28,3 +28,7 @@ in `fedora45-ai-base-additional.repos`. `setup.sh` uses those local files
 directly and keeps generated instances below `CONTAINER/<name>/`; it performs
 no example download or merge. Use `--config-only` to render instances. Image builds use GitHub Actions;
 host image pulls use Smart1.
+
+On an ARM64 build, the Base layer installs the DIESDAS Electrum and
+Agave/Solana bundles from the exact release and SHA-256 values in `build.conf`.
+The installer is a no-op on x86 images, so the normal cascade stays unchanged.

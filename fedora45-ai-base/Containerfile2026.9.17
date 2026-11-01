@@ -22,12 +22,28 @@ RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
 
 FROM ${AI_CORE_IMAGE} AS ai-base
 
+ARG ARM64_TOOLCHAINS_RELEASE=
+ARG ARM64_ELECTRUM_VERSION=4.8.2
+ARG ARM64_AGAVE_VERSION=v4.3.2
+ARG ARM64_ELECTRUM_SHA256=
+ARG ARM64_AGAVE_SHA256=
+
 LABEL org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
       org.opencontainers.image.title="fedora45-ai-base" \
       org.opencontainers.image.description="Fedora 45 AI Base repository and service contributions." \
       io.safrano9999.parent="fedora45-ai-core"
 
 USER root
+
+COPY --from=layer-sources /tmp/fedora45-ai-base/build/install-arm64-toolchains.sh /usr/local/libexec/install-arm64-toolchains
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+ chmod 0755 /usr/local/libexec/install-arm64-toolchains \
+ && ARM64_TOOLCHAINS_RELEASE="${ARM64_TOOLCHAINS_RELEASE}" \
+    ARM64_ELECTRUM_VERSION="${ARM64_ELECTRUM_VERSION}" \
+    ARM64_AGAVE_VERSION="${ARM64_AGAVE_VERSION}" \
+    ARM64_ELECTRUM_SHA256="${ARM64_ELECTRUM_SHA256}" \
+    ARM64_AGAVE_SHA256="${ARM64_AGAVE_SHA256}" \
+    /usr/local/libexec/install-arm64-toolchains
 
 # The current MCP bridge is inherited from Core.
 COPY --from=layer-sources /tmp/fedora45-ai-base/requirements.base.txt /requirements.base.txt
