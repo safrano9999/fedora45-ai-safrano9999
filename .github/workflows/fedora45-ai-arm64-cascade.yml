@@ -110,7 +110,7 @@ jobs:
             FEDORA_BASE_IMAGE FEDORA_REPOMD_KEY ARM64_TOOLCHAINS_RELEASE \
             ARM64_ELECTRUM_VERSION ARM64_AGAVE_VERSION ARM64_ELECTRUM_SHA256 \
             ARM64_AGAVE_SHA256 CLOUDFLARED_ARM64_SHA256 LND_ARM64_SHA256 \
-            GETH_ARM64_SHA256; do
+            GETH_ARM64_SHA256 WEBHOOK_ARM64_SHA256; do
             test -n "${!name:-}" || { echo "Missing $name" >&2; exit 1; }
           done
           test "$OPENCLAW_VERSION" = "2026.9.4"
@@ -127,7 +127,7 @@ jobs:
               FEDORA_BASE_IMAGE FEDORA_REPOMD_KEY ARM64_TOOLCHAINS_RELEASE \
               ARM64_ELECTRUM_VERSION ARM64_AGAVE_VERSION ARM64_ELECTRUM_SHA256 \
               ARM64_AGAVE_SHA256 CLOUDFLARED_ARM64_SHA256 LND_ARM64_SHA256 \
-              GETH_ARM64_SHA256; do
+              GETH_ARM64_SHA256 WEBHOOK_ARM64_SHA256; do
               printf '%s=%s\n' "$name" "${!name}"
             done
             echo 'EOF'

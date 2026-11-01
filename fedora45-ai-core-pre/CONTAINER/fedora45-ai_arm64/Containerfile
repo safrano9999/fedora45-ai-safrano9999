@@ -42,6 +42,7 @@ ARG GETH_ARM64_SHA256=ac2d92dd632796ed39d80ea373f61ddc147981e479ac5111e53d810e6e
 ARG BIP39_VERSION
 ARG BIP39_SHA256
 ARG WEBHOOK_SHA256
+ARG WEBHOOK_ARM64_SHA256=960187f361ca49403e0d3fce546c0a1999095a4ee6934a57ab8fef3170f2ddc8
 ARG FUGU_VERSION
 ARG CODEX_SHA256
 ARG CLAUDE_CODE_SHA256
@@ -150,7 +151,7 @@ RUN set -eux; \
     esac; \
     curl -fsSL "https://github.com/adnanh/webhook/releases/download/${WEBHOOK_VERSION}/webhook-linux-${webhook_arch}.tar.gz" \
         -o /tmp/webhook.tar.gz; \
-    echo "${WEBHOOK_SHA256}  /tmp/webhook.tar.gz" | sha256sum -c -; \
+    echo "${WEBHOOK_ARM64_SHA256}  /tmp/webhook.tar.gz" | sha256sum -c -; \
     tar -xzf /tmp/webhook.tar.gz --strip-components=1 -C /usr/local/bin "webhook-linux-${webhook_arch}/webhook"; \
     rm /tmp/webhook.tar.gz; \
     webhook -version
