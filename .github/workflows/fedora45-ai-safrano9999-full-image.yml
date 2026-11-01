@@ -142,15 +142,20 @@ jobs:
           [ -z "$SAFRANO9999_TAG" ] || safrano9999_ref="${AI_SAFRANO9999_IMAGE%:*}:$SAFRANO9999_TAG"
           image="${FEDORA45_AI_SAFRANO9999_FULL_IMAGE%:*}"
           version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG" "$REPLACE_EXISTING")"
+          arch_image="${image}-amd64"
 
           {
             echo "version=$version"
             echo "safrano9999_ref=$safrano9999_ref"
             echo "image=$image"
+            echo "arch_image=$arch_image"
             echo "tags<<EOF"
             echo "${image}:${version}"
+            echo "${arch_image}:${version}"
             [ "$PUSH_LATEST" != true ] || echo "${image}:latest"
+            [ "$PUSH_LATEST" != true ] || echo "${arch_image}:latest"
             [ "$PUSH_STABLE" != true ] || echo "${image}:stable"
+            [ "$PUSH_STABLE" != true ] || echo "${arch_image}:stable"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 

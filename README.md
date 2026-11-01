@@ -28,6 +28,23 @@ Run `fedora45-ai-safrano9999/setup.sh` for Safrano without VikAI, or use
 KACHELMANN is inherited by both. The shared `config.sh` remains the setup source
 of truth; layer setup defaults to the matching GHCR image with the `latest` tag.
 
+The setup scripts are architecture-aware and use the host architecture by
+default. On x86_64 they select the regular image names; on aarch64/ARM64 they
+select the `fedora45-ai-arm64-*` aliases. Override explicitly when preparing a
+deployment for another host:
+
+```bash
+./setup.sh --arch arm64 --pull
+./setup.sh --arch amd64 --config-only
+```
+
+The common resolver lives in `scripts/fedora-architecture.sh`; all layer
+wrappers use the shared `scripts/layer-setup.sh`. After both architecture
+cascades publish the same version, dispatch
+`.github/workflows/fedora45-ai-multiarch-manifest.yml` to publish the generic
+multi-architecture tags. `IMAGE_ARCH=multi` then selects those manifests
+without duplicating setup logic.
+
 ## Sources
 
 Core-pre runs the shared `tailscale-serve-reset.sh` helper after Tailscale up.
@@ -38,7 +55,8 @@ and does not run when only the Citadel WebUI restarts. Script and systemd
 drop-in have their SOT in `SCRIPTS/safrano9999-lib/tailscale/`; dev-init restores
 their hardlinks. The Citadel runtime orders its WebUI after Tailscale up.
 
-- Workflow SOT: [SCRIPTS/githubactions/fedora45-ai-safrano9999](https://github.com/safrano9999/SCRIPTS/tree/main/githubactions/fedora45-ai-safrano9999).
+- x86_64 workflow SOT: [SCRIPTS/githubactions/fedora45-ai-safrano9999](https://github.com/safrano9999/SCRIPTS/tree/main/githubactions/fedora45-ai-safrano9999).
+- ARM64 workflow SOT: [SCRIPTS/githubactions/fedora45-ai-safrano9999-arm64](https://github.com/safrano9999/SCRIPTS/tree/main/githubactions/fedora45-ai-safrano9999-arm64).
 - [openclaw-deterministic-latest](https://github.com/safrano9999/openclaw-deterministic-latest).
 - [openclaw-ephemeral](https://github.com/safrano9999/openclaw-ephemeral).
 - [hermes-ephemeral](https://github.com/safrano9999/hermes-ephemeral).
