@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1
+ARG FEDORA_BASE_IMAGE=fedora:45
 FROM scratch AS persistainer-source
 ADD https://github.com/safrano9999/persistainer.git /persistainer/
 
@@ -7,7 +8,6 @@ FROM scratch AS node-release
 ADD --checksum=sha256:42aa04922591ee5d4dbc7740d452621acf28508239daa512f5ee8c47ee224fdb \
     https://nodejs.org/dist/v26.12.1/node-v26.12.1-linux-arm64.tar.xz /node.tar.xz
 
-ARG FEDORA_BASE_IMAGE=fedora:45
 FROM ${FEDORA_BASE_IMAGE} AS ai-core-pre
 # The ARM64 cascade uses the official Fedora 45 ARM64 base. The image
 # reference is resolved by the ARM GitHub runner and is never built locally.
