@@ -7,6 +7,11 @@ on:
         description: "Fixed 2026.9.17.N; empty selects the next revision across both architectures"
         type: string
         default: ""
+      start_layer:
+        description: "Resume an unpublished layer using image_tag and its already published parent"
+        type: choice
+        options: [core, base, kachelmann, safrano9999, full]
+        default: core
       core_pre_tag:
         description: "Existing ARM64 Core-pre foundation; this workflow starts at Core"
         type: string
@@ -35,13 +40,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REQUESTED_TAG: ${{ inputs.image_tag }}
+          START_LAYER: ${{ inputs.start_layer }}
         run: |
           set -euo pipefail
-          version="$(.github/scripts/resolve-fedora-image-tag.sh ghcr.io/safrano9999/fedora45-ai-arm64-core "$REQUESTED_TAG")"
+          [[ "$START_LAYER" = core || -n "$REQUESTED_TAG" ]] || { echo "Resuming requires image_tag" >&2; exit 1; }
+          version="$(.github/scripts/resolve-fedora-image-tag.sh "ghcr.io/safrano9999/fedora45-ai-arm64-$START_LAYER" "$REQUESTED_TAG")"
           [[ "$version" =~ ^2026[.]9[.]17[.][1-9][0-9]*$ ]]
           echo "version=$version" >> "$GITHUB_OUTPUT"
   core:
     name: Build ARM64 core
+    if: inputs.start_layer == 'core'
     needs: resolve
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
@@ -97,6 +105,7 @@ jobs:
           '
   base:
     name: Build ARM64 base
+    if: ${{ !cancelled() && needs.resolve.result == 'success' && (needs.core.result == 'success' || inputs.start_layer == 'base') }}
     needs: [resolve, core]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
@@ -118,6 +127,15 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
+      - name: Read pinned ARM64 toolchain inputs
+        id: toolchains
+        run: |
+          set -euo pipefail
+          . fedora45-ai-base/build.conf
+          for name in ARM64_TOOLCHAINS_RELEASE ARM64_ELECTRUM_VERSION ARM64_AGAVE_VERSION ARM64_ELECTRUM_SHA256 ARM64_AGAVE_SHA256; do
+            test -n "${!name}"
+            printf '%s=%s\n' "$name" "${!name}" >> "$GITHUB_OUTPUT"
+          done
       - name: Build and publish
         uses: docker/build-push-action@v6
         with:
@@ -140,6 +158,11 @@ jobs:
             ${{ inputs.publish_latest && 'ghcr.io/safrano9999/fedora45-ai-base-arm64:latest' || '' }}
           build-args: |
             AI_CORE_IMAGE=ghcr.io/safrano9999/fedora45-ai-arm64-core:${{ env.CASCADE_TAG }}
+            ARM64_TOOLCHAINS_RELEASE=${{ steps.toolchains.outputs.ARM64_TOOLCHAINS_RELEASE }}
+            ARM64_ELECTRUM_VERSION=${{ steps.toolchains.outputs.ARM64_ELECTRUM_VERSION }}
+            ARM64_AGAVE_VERSION=${{ steps.toolchains.outputs.ARM64_AGAVE_VERSION }}
+            ARM64_ELECTRUM_SHA256=${{ steps.toolchains.outputs.ARM64_ELECTRUM_SHA256 }}
+            ARM64_AGAVE_SHA256=${{ steps.toolchains.outputs.ARM64_AGAVE_SHA256 }}
       - name: Reclaim build cache
         run: .github/scripts/prune-container-build-space.sh
       - name: Verify installed runtime on native ARM64
@@ -152,6 +175,7 @@ jobs:
           '
   kachelmann:
     name: Build ARM64 kachelmann
+    if: ${{ !cancelled() && needs.resolve.result == 'success' && (needs.base.result == 'success' || inputs.start_layer == 'kachelmann') }}
     needs: [resolve, base]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
@@ -213,6 +237,7 @@ jobs:
           '
   safrano9999:
     name: Build ARM64 safrano9999
+    if: ${{ !cancelled() && needs.resolve.result == 'success' && (needs.kachelmann.result == 'success' || inputs.start_layer == 'safrano9999') }}
     needs: [resolve, kachelmann]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
@@ -268,6 +293,7 @@ jobs:
           '
   full:
     name: Build ARM64 full
+    if: ${{ !cancelled() && needs.resolve.result == 'success' && (needs.safrano9999.result == 'success' || inputs.start_layer == 'full') }}
     needs: [resolve, safrano9999]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
