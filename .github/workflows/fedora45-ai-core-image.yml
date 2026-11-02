@@ -13,10 +13,10 @@ on:
       build_series:
         description: 'Containerfile series, e.g. 2026.9.17; empty uses Containerfile'
         required: false
-        default: ''
+        default: '2026.9.17'
         type: string
       image_tag:
-        description: "Fixed YYYY.M.N or YYYY.M.N.P version. Empty selects the next monthly number."
+        description: "Fixed version; empty selects N+1 in the selected build series across both architectures."
         required: false
         default: ""
       deterministic_release:
@@ -104,8 +104,11 @@ jobs:
         env:
           BUILD_SERIES: ${{ inputs.build_series }}
           REQUESTED_TAG: ${{ inputs.image_tag }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          REQUESTED_TAG="$(.github/scripts/resolve-fedora-image-tag.sh ghcr.io/safrano9999/fedora45-ai-core "$REQUESTED_TAG" "${{ inputs.replace_existing }}")"
+          echo "RESOLVED_IMAGE_TAG=$REQUESTED_TAG" >> "$GITHUB_ENV"
           file="fedora45-ai-core/Containerfile"
           if [ -n "$BUILD_SERIES" ]; then
             [[ "$BUILD_SERIES" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+$ ]]
@@ -155,7 +158,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REQUESTED_TAG: ${{ inputs.image_tag }}
           REPLACE_EXISTING: ${{ inputs.replace_existing }}
-          CORE_PRE_TAG: ${{ inputs.core_pre_tag || (inputs.build_series != '' && inputs.image_tag) || '' }}
+          CORE_PRE_TAG: ${{ inputs.core_pre_tag }}
           PUSH_STABLE: ${{ inputs.push_stable }}
           PUSH_LATEST: ${{ inputs.push_latest }}
         run: |
@@ -166,7 +169,7 @@ jobs:
           pre_ref="$AI_CORE_PRE_IMAGE"
           [ -z "$CORE_PRE_TAG" ] || pre_ref="${AI_CORE_PRE_IMAGE%:*}:$CORE_PRE_TAG"
           image="${FEDORA45_AI_CORE_IMAGE%:*}"
-          version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG" "$REPLACE_EXISTING")"
+          version="$RESOLVED_IMAGE_TAG"
           arch_image="${image}-amd64"
           {
             echo "version=$version"

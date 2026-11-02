@@ -1,212 +1,73 @@
 # Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
 name: fedora45-ai ARM64 cascade
-
 on:
   workflow_dispatch:
     inputs:
+      image_tag:
+        description: "Fixed 2026.9.17.N; empty selects the next revision across both architectures"
+        type: string
+        default: ""
+      core_pre_tag:
+        description: "Existing ARM64 Core-pre foundation; this workflow starts at Core"
+        type: string
+        default: "2026.9.17.6"
       publish_latest:
-        description: "Advance the ARM64 :latest tags"
-        required: true
-        default: true
+        description: "Advance the ARM64 latest tags"
         type: boolean
-
+        default: true
 concurrency:
   group: fedora45-ai-arm64-cascade
   cancel-in-progress: false
-
 env:
-  REGISTRY: ghcr.io/safrano9999
-  CASCADE_TAG: 2026.9.17.6
-  OPENCLAW_VERSION: 2026.9.4
-  OPENCLAW_DETERMINISTIC_TAG: 2026.9.4-deterministic.4
-  OPENCLAW_DETERMINISTIC_SHA256: 4a6e0423c7fc93993155df004c0b6d091eb573ae0e7f7f6a431fe416a407a49a
-
+  BUILD_SERIES: 2026.9.17
 jobs:
-  verify-deterministic:
-    name: Verify deterministic OpenClaw on ARM64
+  resolve:
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
       packages: read
-    env:
-      GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-
-      - name: Set up the pinned Node.js runtime
-        uses: actions/setup-node@v4
-        with:
-          node-version: 26.12.1
-          check-latest: false
-
-      - name: Download and verify the pinned deterministic bundle
-        id: bundle
-        shell: bash
+      - uses: actions/checkout@v4
+      - name: Resolve unused shared series revision
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_TAG: ${{ inputs.image_tag }}
         run: |
           set -euo pipefail
-          test -n "$GH_TOKEN"
-          work_dir="$RUNNER_TEMP/openclaw-deterministic"
-          mkdir -p "$work_dir"
-          gh release download "$OPENCLAW_DETERMINISTIC_TAG" \
-            --repo safrano9999/openclaw-deterministic-latest \
-            --pattern "openclaw-${OPENCLAW_VERSION}-deterministic.tar.gz" \
-            --dir "$work_dir"
-          archive="$work_dir/openclaw-${OPENCLAW_VERSION}-deterministic.tar.gz"
-          printf '%s  %s\n' "$OPENCLAW_DETERMINISTIC_SHA256" "$archive" | sha256sum --check --strict -
-          tar -xzf "$archive" -C "$work_dir"
-          python3 - "$work_dir/manifest.json" "$OPENCLAW_VERSION" "$OPENCLAW_DETERMINISTIC_TAG" <<'PY'
-          import json, pathlib, sys
-          manifest = json.loads(pathlib.Path(sys.argv[1]).read_text())
-          assert manifest["version"] == sys.argv[2]
-          assert manifest["releaseTag"] == sys.argv[3]
-          assert manifest["displayVersion"] == sys.argv[2] + "-patched"
-          assert set(manifest["artifacts"]) == {"openclaw.tgz", "brave.tgz", "mai-transcribe.tgz"}
-          PY
-          echo "archive=$archive" >> "$GITHUB_OUTPUT"
-
-      - name: Install the same package on the ARM64 runner
-        shell: bash
-        run: |
-          set -euo pipefail
-          prefix="$RUNNER_TEMP/openclaw-prefix"
-          npm install --global --prefix "$prefix" --include=optional \
-            --allow-scripts=openclaw,@google/genai,koffi,tree-sitter-bash,protobufjs \
-            "$RUNNER_TEMP/openclaw-deterministic/openclaw.tgz"
-          PATH="$prefix/bin:$PATH" openclaw --version
-          test "$(PATH="$prefix/bin:$PATH" node -p 'require(process.argv[1]+"/package.json").version' "$prefix/lib/node_modules/openclaw")" = "$OPENCLAW_VERSION"
-
-  core-pre:
-    name: Build ARM64 Core-pre
-    needs: verify-deterministic
-    runs-on: ubuntu-24.04-arm
-    permissions:
-      contents: read
-      packages: write
-    env:
-      DOCKER_BUILD_RECORD_UPLOAD: "false"
-      GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-
-      - name: Resolve pinned ARM64 inputs
-        id: pins
-        shell: bash
-        run: |
-          set -euo pipefail
-          set -a
-          . fedora45-ai-core-pre/build.conf
-          . fedora45-ai-core-pre/CONTAINER/fedora45-ai_arm64/build.conf
-          set +a
-          for name in HERMES_VERSION OPENCLAW_VERSION ELECTRUM_VERSION LND_VERSION \
-            GETH_VERSION GETH_COMMIT WEBHOOK_VERSION VDITOR_VERSION \
-            SOLANA_VERSION SOLANA_SHA256 ELECTRUM_SHA256 ELECTRUM_KEYS_COMMIT \
-            LND_SHA256 GETH_SHA256 BIP39_VERSION BIP39_SHA256 UV_VERSION \
-            UV_INSTALLER_SHA256 CLOUDFLARED_VERSION CLOUDFLARED_SHA256 \
-            WEBHOOK_SHA256 FUGU_VERSION FUGU_COMMIT CODEX_VERSION CODEX_SHA256 \
-            CLAUDE_CODE_VERSION CLAUDE_CODE_SHA256 VDITOR_SHA256 NPM_VERSION \
-            NPM_SHA256 OPENCODE_VERSION OPENCODE_TELEGRAM_VERSION \
-            FEDORA_BASE_IMAGE FEDORA_REPOMD_KEY ARM64_TOOLCHAINS_RELEASE \
-            ARM64_ELECTRUM_VERSION ARM64_AGAVE_VERSION ARM64_ELECTRUM_SHA256 \
-            ARM64_AGAVE_SHA256 CLOUDFLARED_ARM64_SHA256 LND_ARM64_SHA256 \
-            GETH_ARM64_SHA256 WEBHOOK_ARM64_SHA256; do
-            test -n "${!name:-}" || { echo "Missing $name" >&2; exit 1; }
-          done
-          test "$OPENCLAW_VERSION" = "2026.9.4"
-          {
-            echo 'build_args<<EOF'
-            for name in HERMES_VERSION OPENCLAW_VERSION ELECTRUM_VERSION LND_VERSION \
-              GETH_VERSION GETH_COMMIT WEBHOOK_VERSION VDITOR_VERSION \
-              SOLANA_VERSION SOLANA_SHA256 ELECTRUM_SHA256 ELECTRUM_KEYS_COMMIT \
-              LND_SHA256 GETH_SHA256 BIP39_VERSION BIP39_SHA256 UV_VERSION \
-              UV_INSTALLER_SHA256 CLOUDFLARED_VERSION CLOUDFLARED_SHA256 \
-              WEBHOOK_SHA256 FUGU_VERSION FUGU_COMMIT CODEX_VERSION CODEX_SHA256 \
-              CLAUDE_CODE_VERSION CLAUDE_CODE_SHA256 VDITOR_SHA256 NPM_VERSION \
-              NPM_SHA256 OPENCODE_VERSION OPENCODE_TELEGRAM_VERSION \
-              FEDORA_BASE_IMAGE FEDORA_REPOMD_KEY ARM64_TOOLCHAINS_RELEASE \
-              ARM64_ELECTRUM_VERSION ARM64_AGAVE_VERSION ARM64_ELECTRUM_SHA256 \
-              ARM64_AGAVE_SHA256 CLOUDFLARED_ARM64_SHA256 LND_ARM64_SHA256 \
-              GETH_ARM64_SHA256 WEBHOOK_ARM64_SHA256; do
-              printf '%s=%s\n' "$name" "${!name}"
-            done
-            echo 'EOF'
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          cache-binary: false
-          keep-state: false
-          cleanup: true
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and publish Core-pre ARM64
-        uses: docker/build-push-action@v6
-        with:
-          context: ./fedora45-ai-core-pre
-          file: ./fedora45-ai-core-pre/CONTAINER/fedora45-ai_arm64/Containerfile
-          target: ai-core-pre
-          platforms: linux/arm64
-          pull: true
-          no-cache: true
-          push: true
-          secrets: |
-            GIT_AUTH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
-            GH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
-          tags: |
-            ghcr.io/safrano9999/fedora45-ai-core-pre-arm64:${{ env.CASCADE_TAG }}
-            ghcr.io/safrano9999/fedora45-ai-core-pre-arm64:latest
-            ghcr.io/safrano9999/fedora45-ai-arm64-core-pre:${{ env.CASCADE_TAG }}
-            ghcr.io/safrano9999/fedora45-ai-arm64-core-pre:latest
-          build-args: ${{ steps.pins.outputs.build_args }}
-
-      - name: Smoke-test Core-pre ARM64
-        shell: bash
-        run: |
-          set -euo pipefail
-          image="ghcr.io/safrano9999/fedora45-ai-core-pre-arm64:${CASCADE_TAG}"
-          docker run --rm --entrypoint bash "$image" -lc '
-            set -euo pipefail
-            test "$(uname -m)" = aarch64
-            test "$(node --version)" = v26.12.1
-            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = 2026.9.4
-            for command in electrum solana lnd lncli geth cloudflared webhook; do command -v "$command" >/dev/null; done
-            test -f /README/fedora45-ai-arm64-toolchains.json
-          '
-
+          version="$(.github/scripts/resolve-fedora-image-tag.sh ghcr.io/safrano9999/fedora45-ai-arm64-core "$REQUESTED_TAG")"
+          [[ "$version" =~ ^2026[.]9[.]17[.][1-9][0-9]*$ ]]
+          echo "version=$version" >> "$GITHUB_OUTPUT"
   core:
-    name: Build ARM64 Core
-    needs: core-pre
+    name: Build ARM64 core
+    needs: resolve
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
     permissions:
       contents: read
       packages: write
     env:
+      CASCADE_TAG: ${{ needs.resolve.outputs.version }}
       DOCKER_BUILD_RECORD_UPLOAD: "false"
     steps:
       - uses: actions/checkout@v4
+      - name: Free runner disk space
+        run: .github/scripts/free-runner-disk-space.sh
       - uses: docker/setup-buildx-action@v3
         with:
           cache-binary: false
-          keep-state: false
-          cleanup: true
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and publish Core ARM64
+          password: ${{ github.token }}
+      - name: Build and publish
         uses: docker/build-push-action@v6
         with:
           context: ./fedora45-ai-core
-          file: ./fedora45-ai-core/Containerfile
+          file: ./fedora45-ai-core/Containerfile2026.9.17
           target: ai-core
           platforms: linux/arm64
           pull: true
@@ -215,52 +76,53 @@ jobs:
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
             GH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
           tags: |
-            ghcr.io/safrano9999/fedora45-ai-core-arm64:${{ env.CASCADE_TAG }}
-            ghcr.io/safrano9999/fedora45-ai-core-arm64:latest
             ghcr.io/safrano9999/fedora45-ai-arm64-core:${{ env.CASCADE_TAG }}
-            ghcr.io/safrano9999/fedora45-ai-arm64-core:latest
+            ghcr.io/safrano9999/fedora45-ai-core-arm64:${{ env.CASCADE_TAG }}
+            ${{ inputs.publish_latest && 'ghcr.io/safrano9999/fedora45-ai-arm64-core:latest' || '' }}
+            ${{ inputs.publish_latest && 'ghcr.io/safrano9999/fedora45-ai-core-arm64:latest' || '' }}
           build-args: |
-            AI_CORE_PRE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core-pre-arm64:${{ env.CASCADE_TAG }}
-
-      - name: Smoke-test Core ARM64
-        shell: bash
+            AI_CORE_PRE_IMAGE=ghcr.io/safrano9999/fedora45-ai-arm64-core-pre:${{ inputs.core_pre_tag }}
+      - name: Reclaim build cache
+        run: .github/scripts/prune-container-build-space.sh
+      - name: Verify installed runtime on native ARM64
         run: |
-          set -euo pipefail
-          image="ghcr.io/safrano9999/fedora45-ai-core-arm64:${CASCADE_TAG}"
-          docker run --rm --entrypoint bash "$image" -lc '
+          docker run --rm --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-core:"$CASCADE_TAG" -lc '
             set -euo pipefail
             test "$(uname -m)" = aarch64
             test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = 2026.9.4
-            test "$(jq -r .releaseTag "$(npm root -g)/openclaw/deterministic-build.json")" = 2026.9.4-deterministic.4
+            test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/litellm-free.py
           '
-
   base:
-    name: Build ARM64 Base
-    needs: core
+    name: Build ARM64 base
+    needs: [resolve, core]
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
     permissions:
       contents: read
       packages: write
     env:
+      CASCADE_TAG: ${{ needs.resolve.outputs.version }}
       DOCKER_BUILD_RECORD_UPLOAD: "false"
     steps:
       - uses: actions/checkout@v4
+      - name: Free runner disk space
+        run: .github/scripts/free-runner-disk-space.sh
       - uses: docker/setup-buildx-action@v3
         with:
           cache-binary: false
-          keep-state: false
-          cleanup: true
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and publish Base ARM64
+          password: ${{ github.token }}
+      - name: Build and publish
         uses: docker/build-push-action@v6
         with:
           context: ./fedora45-ai-base
-          file: ./fedora45-ai-base/Containerfile
+          file: ./fedora45-ai-base/Containerfile2026.9.17
           target: ai-base
           platforms: linux/arm64
           pull: true
@@ -269,51 +131,59 @@ jobs:
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
             GH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
           tags: |
-            ghcr.io/safrano9999/fedora45-ai-base-arm64:${{ env.CASCADE_TAG }}
-            ghcr.io/safrano9999/fedora45-ai-base-arm64:latest
             ghcr.io/safrano9999/fedora45-ai-arm64-base:${{ env.CASCADE_TAG }}
-            ghcr.io/safrano9999/fedora45-ai-arm64-base:latest
+            ghcr.io/safrano9999/fedora45-ai-base-arm64:${{ env.CASCADE_TAG }}
+            ${{ inputs.publish_latest && 'ghcr.io/safrano9999/fedora45-ai-arm64-base:latest' || '' }}
+            ${{ inputs.publish_latest && 'ghcr.io/safrano9999/fedora45-ai-base-arm64:latest' || '' }}
           build-args: |
-            AI_CORE_IMAGE=ghcr.io/safrano9999/fedora45-ai-core-arm64:${{ env.CASCADE_TAG }}
-            ARM64_TOOLCHAINS_RELEASE=arm64-electrum-4.8.2-agave-4.3.2
-            ARM64_ELECTRUM_VERSION=4.8.2
-            ARM64_AGAVE_VERSION=v4.3.2
-            ARM64_ELECTRUM_SHA256=479296f1ccee0c264b56d0b252faddb74ee64fd6c0e1d6ecd18323ea978660e2
-            ARM64_AGAVE_SHA256=e0bbf2bb22e5ded81bbadf15ab796b07020c75eb3733f28ace3936b5b76e4894
-
+            AI_CORE_IMAGE=ghcr.io/safrano9999/fedora45-ai-arm64-core:${{ env.CASCADE_TAG }}
+      - name: Reclaim build cache
+        run: .github/scripts/prune-container-build-space.sh
+      - name: Verify installed runtime on native ARM64
+        run: |
+          docker run --rm --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-base:"$CASCADE_TAG" -lc '
+            set -euo pipefail
+            test "$(uname -m)" = aarch64
+            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = 2026.9.4
+            test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/litellm-free.py
+          '
   kachelmann:
-    name: Build ARM64 Kachelmann
-    needs: base
+    name: Build ARM64 kachelmann
+    needs: [resolve, base]
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
     permissions:
       contents: read
       packages: write
     env:
+      CASCADE_TAG: ${{ needs.resolve.outputs.version }}
       DOCKER_BUILD_RECORD_UPLOAD: "false"
     steps:
       - uses: actions/checkout@v4
+      - name: Free runner disk space
+        run: .github/scripts/free-runner-disk-space.sh
       - uses: docker/setup-buildx-action@v3
         with:
           cache-binary: false
-          keep-state: false
-          cleanup: true
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ github.token }}
       - name: Stage Kachelmann APK
         env:
           GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
         run: |
           mkdir -p fedora45-ai-kachelmann/safrano9999/KACHELMANN
           python3 .github/scripts/stage-kachelmann-apk.py --destination fedora45-ai-kachelmann/safrano9999/KACHELMANN
-      - name: Build and publish Kachelmann ARM64
+      - name: Build and publish
         uses: docker/build-push-action@v6
         with:
           context: ./fedora45-ai-kachelmann
-          file: ./fedora45-ai-kachelmann/Containerfile
+          file: ./fedora45-ai-kachelmann/Containerfile2026.9.17
           target: ai-kachelmann
           platforms: linux/arm64
           pull: true
@@ -322,40 +192,53 @@ jobs:
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
             GH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
           tags: |
-            ghcr.io/safrano9999/fedora45-ai-kachelmann-arm64:${{ env.CASCADE_TAG }}
-            ghcr.io/safrano9999/fedora45-ai-kachelmann-arm64:latest
             ghcr.io/safrano9999/fedora45-ai-arm64-kachelmann:${{ env.CASCADE_TAG }}
-            ghcr.io/safrano9999/fedora45-ai-arm64-kachelmann:latest
+            ghcr.io/safrano9999/fedora45-ai-kachelmann-arm64:${{ env.CASCADE_TAG }}
+            ${{ inputs.publish_latest && 'ghcr.io/safrano9999/fedora45-ai-arm64-kachelmann:latest' || '' }}
+            ${{ inputs.publish_latest && 'ghcr.io/safrano9999/fedora45-ai-kachelmann-arm64:latest' || '' }}
           build-args: |
-            AI_BASE_IMAGE=ghcr.io/safrano9999/fedora45-ai-base-arm64:${{ env.CASCADE_TAG }}
-
-  safrano:
-    name: Build ARM64 Safrano
-    needs: kachelmann
+            AI_BASE_IMAGE=ghcr.io/safrano9999/fedora45-ai-arm64-base:${{ env.CASCADE_TAG }}
+      - name: Reclaim build cache
+        run: .github/scripts/prune-container-build-space.sh
+      - name: Verify installed runtime on native ARM64
+        run: |
+          docker run --rm --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-kachelmann:"$CASCADE_TAG" -lc '
+            set -euo pipefail
+            test "$(uname -m)" = aarch64
+            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = 2026.9.4
+            test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/litellm-free.py
+          '
+  safrano9999:
+    name: Build ARM64 safrano9999
+    needs: [resolve, kachelmann]
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
     permissions:
       contents: read
       packages: write
     env:
+      CASCADE_TAG: ${{ needs.resolve.outputs.version }}
       DOCKER_BUILD_RECORD_UPLOAD: "false"
     steps:
       - uses: actions/checkout@v4
+      - name: Free runner disk space
+        run: .github/scripts/free-runner-disk-space.sh
       - uses: docker/setup-buildx-action@v3
         with:
           cache-binary: false
-          keep-state: false
-          cleanup: true
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and publish Safrano ARM64
+          password: ${{ github.token }}
+      - name: Build and publish
         uses: docker/build-push-action@v6
         with:
           context: ./fedora45-ai-safrano9999
-          file: ./fedora45-ai-safrano9999/Containerfile
+          file: ./fedora45-ai-safrano9999/Containerfile2026.9.17
           target: ai-safrano9999
           platforms: linux/arm64
           pull: true
@@ -364,40 +247,53 @@ jobs:
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
             GH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
           tags: |
-            ghcr.io/safrano9999/fedora45-ai-safrano9999-arm64:${{ env.CASCADE_TAG }}
-            ghcr.io/safrano9999/fedora45-ai-safrano9999-arm64:latest
             ghcr.io/safrano9999/fedora45-ai-arm64-safrano9999:${{ env.CASCADE_TAG }}
-            ghcr.io/safrano9999/fedora45-ai-arm64-safrano9999:latest
+            ghcr.io/safrano9999/fedora45-ai-safrano9999-arm64:${{ env.CASCADE_TAG }}
+            ${{ inputs.publish_latest && 'ghcr.io/safrano9999/fedora45-ai-arm64-safrano9999:latest' || '' }}
+            ${{ inputs.publish_latest && 'ghcr.io/safrano9999/fedora45-ai-safrano9999-arm64:latest' || '' }}
           build-args: |
-            AI_KACHELMANN_IMAGE=ghcr.io/safrano9999/fedora45-ai-kachelmann-arm64:${{ env.CASCADE_TAG }}
-
+            AI_KACHELMANN_IMAGE=ghcr.io/safrano9999/fedora45-ai-arm64-kachelmann:${{ env.CASCADE_TAG }}
+      - name: Reclaim build cache
+        run: .github/scripts/prune-container-build-space.sh
+      - name: Verify installed runtime on native ARM64
+        run: |
+          docker run --rm --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-safrano9999:"$CASCADE_TAG" -lc '
+            set -euo pipefail
+            test "$(uname -m)" = aarch64
+            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = 2026.9.4
+            test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/litellm-free.py
+          '
   full:
-    name: Build ARM64 Full
-    needs: safrano
+    name: Build ARM64 full
+    needs: [resolve, safrano9999]
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
     permissions:
       contents: read
       packages: write
     env:
+      CASCADE_TAG: ${{ needs.resolve.outputs.version }}
       DOCKER_BUILD_RECORD_UPLOAD: "false"
     steps:
       - uses: actions/checkout@v4
+      - name: Free runner disk space
+        run: .github/scripts/free-runner-disk-space.sh
       - uses: docker/setup-buildx-action@v3
         with:
           cache-binary: false
-          keep-state: false
-          cleanup: true
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and publish Full ARM64
+          password: ${{ github.token }}
+      - name: Build and publish
         uses: docker/build-push-action@v6
         with:
           context: ./fedora45-ai-safrano9999-full
-          file: ./fedora45-ai-safrano9999-full/Containerfile
+          file: ./fedora45-ai-safrano9999-full/Containerfile2026.9.17
           target: ai-safrano9999-full
           platforms: linux/arm64
           pull: true
@@ -406,21 +302,22 @@ jobs:
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
             GH_TOKEN=${{ secrets.GH_RELEASE_TOKEN || github.token }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
           tags: |
-            ghcr.io/safrano9999/fedora45-ai-safrano9999-full-arm64:${{ env.CASCADE_TAG }}
-            ghcr.io/safrano9999/fedora45-ai-safrano9999-full-arm64:latest
             ghcr.io/safrano9999/fedora45-ai-arm64-full:${{ env.CASCADE_TAG }}
-            ghcr.io/safrano9999/fedora45-ai-arm64-full:latest
+            ghcr.io/safrano9999/fedora45-ai-safrano9999-full-arm64:${{ env.CASCADE_TAG }}
+            ${{ inputs.publish_latest && 'ghcr.io/safrano9999/fedora45-ai-arm64-full:latest' || '' }}
+            ${{ inputs.publish_latest && 'ghcr.io/safrano9999/fedora45-ai-safrano9999-full-arm64:latest' || '' }}
           build-args: |
-            AI_SAFRANO9999_IMAGE=ghcr.io/safrano9999/fedora45-ai-safrano9999-arm64:${{ env.CASCADE_TAG }}
-
-      - name: Publish summary
+            AI_SAFRANO9999_IMAGE=ghcr.io/safrano9999/fedora45-ai-arm64-safrano9999:${{ env.CASCADE_TAG }}
+      - name: Reclaim build cache
+        run: .github/scripts/prune-container-build-space.sh
+      - name: Verify installed runtime on native ARM64
         run: |
-          {
-            echo '## Fedora 45 AI ARM64 cascade'
-            echo
-            echo '- OpenClaw: `2026.9.4`'
-            echo '- Deterministic release: `2026.9.4-deterministic.4`'
-            echo '- Platform: `linux/arm64`'
-            echo '- Image tag: `2026.9.17.6` and `latest`'
-          } >> "$GITHUB_STEP_SUMMARY"
+          docker run --rm --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-full:"$CASCADE_TAG" -lc '
+            set -euo pipefail
+            test "$(uname -m)" = aarch64
+            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = 2026.9.4
+            test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/litellm-free.py
+          '

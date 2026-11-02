@@ -5,7 +5,7 @@ FROM ${AI_CORE_PRE_IMAGE} AS core-sources
 ADD https://github.com/safrano9999/openclaw-ephemeral.git /sources/openclaw-ephemeral/
 ADD https://github.com/safrano9999/hermes-ephemeral.git /sources/hermes-ephemeral/
 ADD https://github.com/safrano9999/opencode-ephemeral.git /sources/opencode-ephemeral/
-ADD https://github.com/safrano9999/litellm-free.git /sources/litellm-free/
+ADD https://github.com/f24sales/litellm-free.git /sources/litellm-free/
 RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
     gh release download latest --repo safrano9999/NOTE \
       --pattern note-latest.zip --pattern note-latest.zip.sha256 --dir /sources/note \

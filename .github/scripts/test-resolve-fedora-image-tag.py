@@ -53,7 +53,10 @@ class TagReplacementTests(unittest.TestCase):
                 workflow = (ROOT / "workflows" / f"fedora45-ai-{stage}-image.yml").read_text()
                 definition = workflow.split("      replace_existing:\n", 1)[1].split("      push_latest:", 1)[0]
                 self.assertIn("        type: boolean\n        default: false\n", definition)
-                self.assertIn('"$REQUESTED_TAG" "$REPLACE_EXISTING")', workflow)
+                if stage == "core":
+                    self.assertIn('version="$RESOLVED_IMAGE_TAG"', workflow)
+                else:
+                    self.assertIn('"$REQUESTED_TAG" "$REPLACE_EXISTING")', workflow)
                 self.assertIn("REPLACE_EXISTING: ${{ inputs.replace_existing }}", workflow)
                 if stage != "safrano9999-full":
                     self.assertIn('-f "replace_existing=$REPLACE_EXISTING"', workflow)

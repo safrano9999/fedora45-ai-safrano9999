@@ -11,19 +11,20 @@ replace_existing="${3:-false}"
 [[ "$replace_existing" != true || -n "$version" ]] || {
     echo "Replacing an existing tag requires an explicit fixed version" >&2; exit 1;
 }
-[[ "$image" =~ ^ghcr.io/([^/]+)/(fedora45-ai-(core-pre|core|base|kachelmann|safrano9999(-full)?))$ ]] || {
+[[ "$image" =~ ^ghcr.io/([^/]+)/(fedora45-ai-((arm64-)?(core-pre|core|base|kachelmann|safrano9999)|safrano9999-full|arm64-full))$ ]] || {
     echo "Unsupported Fedora image: $image" >&2; exit 1;
 }
 owner="${BASH_REMATCH[1]}"
 package="${BASH_REMATCH[2]}"
-month="$(date -u +%Y.%-m)"
+series="${BUILD_SERIES:-$(date -u +%Y.%-m)}"
+[[ "$series" =~ ^[0-9]{4}\.([1-9]|1[0-2])(\.[1-9][0-9]*)?$ ]] || { echo "Invalid build series" >&2; exit 1; }
 temporary="$(mktemp -d)"
 trap 'rm -rf -- "$temporary"' EXIT
 touch "$temporary/all" "$temporary/current"
 
-# A shared monthly sequence leaves the chosen version available to every
+# A shared series sequence across both architectures leaves the chosen version available to every
 # downstream layer. Workflow concurrency serializes publications per image.
-for layer in core-pre core base kachelmann safrano9999 safrano9999-full; do
+for layer in core-pre core base kachelmann safrano9999 safrano9999-full arm64-core-pre arm64-core arm64-base arm64-kachelmann arm64-safrano9999 arm64-full; do
     candidate="fedora45-ai-$layer"
     if ! gh api --paginate "users/$owner/packages/container/$candidate/versions?per_page=100" \
         --jq '.[].metadata.container.tags[]' > "$temporary/tags" 2> "$temporary/error"; then
@@ -38,10 +39,10 @@ for layer in core-pre core base kachelmann safrano9999 safrano9999-full; do
 done
 
 if [[ -z "$version" ]]; then
-    next="$(jq -Rsr --arg prefix "$month." \
+    next="$(jq -Rsr --arg prefix "$series." \
         '[split("\n")[] | select(startswith($prefix)) | ltrimstr($prefix) | select(test("^[1-9][0-9]*$")) | tonumber] | ((max // 0) + 1)' \
         "$temporary/all")"
-    version="$month.$next"
+    version="$series.$next"
 fi
 [[ "$version" =~ ^[0-9]{4}\.([1-9]|1[0-2])\.[1-9][0-9]*(\.[1-9][0-9]*)?$ ]] || {
     echo "Image version must use YYYY.M.N or YYYY.M.N.P: $version" >&2; exit 1;
