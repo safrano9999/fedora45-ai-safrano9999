@@ -71,22 +71,15 @@ jobs:
             [[ "$amd_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
             [[ "$arm_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
 
-            docker buildx imagetools create \
-              --tag "$generic:$SOURCE_TAG" \
-              "$amd64@$amd_digest" \
-              "$arm64@$arm_digest"
-
+            tags=(--tag "$generic:$SOURCE_TAG")
             if [[ "$PUBLISH_LATEST" == true ]]; then
-              amd_latest="$(docker buildx imagetools inspect "$amd64:latest" --format '{{json .Manifest}}' | jq -er .digest)"
-              arm_latest="$(docker buildx imagetools inspect "$arm64:latest" --format '{{json .Manifest}}' | jq -er .digest)"
-              [[ "$amd_latest" =~ ^sha256:[0-9a-f]{64}$ ]]
-              [[ "$arm_latest" =~ ^sha256:[0-9a-f]{64}$ ]]
-              docker buildx imagetools create \
-                --tag "$generic:latest" \
-                "$amd64@$amd_latest" \
-                "$arm64@$arm_latest"
+              tags+=(--tag "$generic:latest")
             fi
+            # Version and latest must refer to the same two verified builds.
+            docker buildx imagetools create "${tags[@]}" \
+              "$amd64@$amd_digest" "$arm64@$arm_digest"
 
-            docker buildx imagetools inspect "$generic:$SOURCE_TAG" >/dev/null
+            docker buildx imagetools inspect "$generic:$SOURCE_TAG" --raw \
+              | jq -e '[.manifests[].platform | select(.os == "linux") | .architecture] | unique | sort == ["amd64", "arm64"]' >/dev/null
             printf '%s: amd64 + arm64 → %s:%s\n' "$stage" "$generic" "$SOURCE_TAG" >> "$GITHUB_STEP_SUMMARY"
           done
