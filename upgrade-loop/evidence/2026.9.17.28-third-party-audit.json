@@ -1530,5 +1530,50 @@
     "mcp_bridge": "Bundled MCP SDK 1.32.2, esbuild 0.28.2 and Zod 4.6.7; OpenClaw host remains 2026.9.4.",
     "dotenv_mtg": "Keep 16.6.1 within declared Node dotenv 16.x; latest upstream major 18.x excluded."
   },
-  "decision_checked_at": "2026-11-03T08:02:35.086957+00:00"
+  "decision_checked_at": "2026-11-03T08:02:35.086957+00:00",
+  "completed_builds": {
+    "mtg": {
+      "run": "https://github.com/safrano9999/safrano9999-mtg/actions/runs/41598092109",
+      "tag": "2026.11.3",
+      "digest": "sha256:f08683612f89646744610a38ff8572717e4972c4109e625c705948fe4a4b3b92",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
+    },
+    "hibiscus": {
+      "run": "https://github.com/safrano9999/safrano9999-hibiscus/actions/runs/41599716943",
+      "tag": "2026.11.3",
+      "digest": "sha256:4c5717a7b48af7f24b12ef4beb7d4999e3d8b32950a4d3abd8003ef30ffcb0c1",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
+    },
+    "webui": {
+      "run": "https://github.com/f24sales/litellm-free-webui/actions/runs/41599220124",
+      "tag": "2026.11.4",
+      "digest": "sha256:ee8c54ba0b9217528a73a26a938af82b4085895cffcd16019b2310c1439ba391",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
+    },
+    "nextcloud": {
+      "run": "https://github.com/safrano9999/NEXTCLOUD/actions/runs/41599867599",
+      "version": "35.0.2",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
+    },
+    "mcp_bridge": {
+      "run": "https://github.com/safrano9999/openclaw-mcp-server-bridge/actions/runs/41600377037",
+      "tag": "2026.11.3"
+    },
+    "kachelmann": {
+      "run": "https://github.com/safrano9999/KACHELMANN/actions/runs/41600941244",
+      "mcp": "2.3.0"
+    }
+  }
 }
