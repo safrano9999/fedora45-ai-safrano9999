@@ -59,15 +59,18 @@ class FedoraBetaTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'Unsafe'):
                     beta.extract_archive(source, root / 'output')
 
-    def test_production_source_is_certified_beta_not_a_daily_registry_tag(self):
+    def test_production_source_is_digest_pinned_fedora_45_stable(self):
         policy = json.loads((ROOT / 'upgrade-loop/build-dependencies-whitelist.json').read_text())
         pin, = policy['base_images']
-        self.assertEqual(pin['release_line'], '45_Beta-1.3')
-        self.assertEqual(pin['source_archive']['sha256'], 'c9bacf3e467932a035233b123836ddee11bdcede60a9f8bb8d9d6560fae1e5b8')
-        self.assertEqual(pin['digest'], 'sha256:5f6c3c965a3af6b0faa21efc46ab46b9acfb1e1a8f69cec63fd6e44bdcf270cb')
+        self.assertEqual(pin['release_line'], '45')
+        self.assertEqual(pin['image'], 'registry.fedoraproject.org/fedora')
+        self.assertNotIn('source_archive', pin)
+        self.assertRegex(pin['digest'], r'^sha256:[0-9a-f]{64}$')
+        reference = f"FROM {pin['image']}:45@{pin['digest']} AS ai-core-pre"
         for name in ('Containerfile', 'Containerfile2026.9.17'):
-            self.assertIn('FROM fedora45-approved-beta AS ai-core-pre',
+            self.assertIn(reference,
                           (ROOT / 'fedora45-ai-core-pre' / name).read_text().splitlines())
+
 
 
 if __name__ == '__main__':

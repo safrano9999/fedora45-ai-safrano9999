@@ -49,7 +49,7 @@ test('derive the full cascade and direct latest sources with pinned Deterministi
   assert.equal(full.repositories.length, 25);
   assert.ok(regular.repositories.some(r => r.repository === 'safrano9999/litellm-free'));
   assert.ok(regular.repositories.some(r => r.repository === 'safrano9999/opencode-ephemeral'));
-  assert.equal(regular.external_base, 'fedora45-approved-beta');
+  assert.equal(regular.external_base, 'registry.fedoraproject.org/fedora:45@sha256:c15d8d6067038f1d6b10d8e1b8440f787a474fe6dc641ef77a5c74b1bf01a05d');
   assert.equal(regular.chain.length, 5);
   assert.equal(full.chain.length, 6);
   assert.ok(!regular.repositories.some(r => r.repository.endsWith('/VikAI')));
