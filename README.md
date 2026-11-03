@@ -173,7 +173,10 @@ GitHub runners open the real dashboard chat WebSocket with networking disabled.
 
 Core-pre installs native Electrum, Agave/Solana, LND and Geth on both
 architectures. Base selects the matching native Nextcloud 35.0.2 runtime.
-Application requirements are upgraded within their declared version limits.
+Application requirements are upgraded within their declared version limits
+under `/usr/local`. The build installer hides RPM-managed site-packages only
+from pip, so Fedora packages remain intact and subsequent application upgrades
+replace their own previous pip installations normally.
 The dependency audit, channel decisions and SHA256 values are recorded under
 [`upgrade-loop/evidence`](upgrade-loop/evidence/).
 
