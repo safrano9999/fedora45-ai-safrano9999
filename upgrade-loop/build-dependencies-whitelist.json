@@ -24,9 +24,9 @@
       "repository": "spesmilo/electrum",
       "release_line": "stable",
       "pins": {
-        "ELECTRUM_VERSION": "4.8.2",
-        "ELECTRUM_SHA256": "6310ebd0b7965196ecc3eb7e1bfead260cdc9033a8847204561b9762e62a87c0",
-        "ELECTRUM_KEYS_COMMIT": "39cab571526b8304864c18e0e7d7fe034054a0ab"
+        "ELECTRUM_VERSION": "4.8.3",
+        "ELECTRUM_SHA256": "aabe3bb2c99ffca172a004b0fd6f4afdf1b204079f7691b65f23bc5b63a9de0c",
+        "ELECTRUM_KEYS_COMMIT": "b774e151de7ec1150cf5df3b846d8441e75adc50"
       }
     },
     {
@@ -34,8 +34,8 @@
       "repository": "lightningnetwork/lnd",
       "release_line": "stable",
       "pins": {
-        "LND_VERSION": "v0.21.4-beta",
-        "LND_SHA256": "beffe4949a5e46410d90c0e6d020a1b685468440b0004fc4d59740a6291178fb"
+        "LND_VERSION": "v0.21.6-beta",
+        "LND_SHA256": "47db47290df2d183393259a7b313ddcfc7376e9cd941bd691858250246fc763e"
       }
     },
     {
@@ -43,9 +43,9 @@
       "repository": "ethereum/go-ethereum",
       "release_line": "stable",
       "pins": {
-        "GETH_VERSION": "1.17.8",
-        "GETH_COMMIT": "a5790770",
-        "GETH_SHA256": "eb864b9ce79afac5e6f57ca10866eb65477b41be62cc8843b219c2ff11d49557"
+        "GETH_VERSION": "1.17.10",
+        "GETH_COMMIT": "1df30b18",
+        "GETH_SHA256": "e016aca8cc391c8d5d14dc17c9af589488d99c37ed71d892213c80757935ba64"
       }
     },
     {
@@ -62,8 +62,8 @@
       "repository": "astral-sh/uv",
       "release_line": "stable",
       "pins": {
-        "UV_VERSION": "0.13.4",
-        "UV_INSTALLER_SHA256": "1f5390d273b0158bd5eaa3527ae049f3667baa881abb1e7c883dd637d84432f9"
+        "UV_VERSION": "0.13.7",
+        "UV_INSTALLER_SHA256": "d263ee68314cf5bea36b08e6bd9e2c4563240d7adb73756cf33af5c199b92db4"
       }
     },
     {
@@ -71,8 +71,8 @@
       "repository": "cloudflare/cloudflared",
       "release_line": "stable",
       "pins": {
-        "CLOUDFLARED_VERSION": "2026.10.2",
-        "CLOUDFLARED_SHA256": "35fbdd2beb378436c7da377d7358cea8e33f9c94a6705d1d8036bf9b0d6d8005"
+        "CLOUDFLARED_VERSION": "2026.10.7",
+        "CLOUDFLARED_SHA256": "1f99fb518b83dec2ba8d870a7cc991d82a77e6196295a3d2754ba17ab9f91872"
       }
     },
     {
@@ -98,8 +98,8 @@
       "repository": "@openai/codex",
       "release_line": "stable",
       "pins": {
-        "CODEX_VERSION": "0.163.0",
-        "CODEX_SHA256": "1a71db36560bb446d2c2e63ae675c4a3018c38ace38ca533f8d1b25d3e6555b4"
+        "CODEX_VERSION": "0.166.0",
+        "CODEX_SHA256": "67ee6f4069d9328956401f54ac202c20369233159058af9f4ec1af731b87f5b7"
       }
     },
     {
@@ -107,8 +107,8 @@
       "repository": "@anthropic-ai/claude-code",
       "release_line": "stable",
       "pins": {
-        "CLAUDE_CODE_VERSION": "2.1.304",
-        "CLAUDE_CODE_SHA256": "94dcc84341b99d0b5f76d6c6ca24feb4109250a2bdba728fa2163aeb7fba00ac"
+        "CLAUDE_CODE_VERSION": "2.1.317",
+        "CLAUDE_CODE_SHA256": "bf8543506740f8ba36bbec24a5e02937dd8b514237fc951db69d9de394965c74"
       }
     },
     {
@@ -125,8 +125,8 @@
       "repository": "npm",
       "release_line": "stable",
       "pins": {
-        "NPM_VERSION": "12.2.0",
-        "NPM_SHA256": "6666b48816b39b86c3febac7b51a4ee4de6c5ca589c382ad8004b6b113f86677"
+        "NPM_VERSION": "12.2.1",
+        "NPM_SHA256": "228bd64aaef23270dbdbd2cf3d5ef5c467602ef38c4066246cef1984adab9a67"
       }
     }
   ],

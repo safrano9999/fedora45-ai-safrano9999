@@ -23,10 +23,16 @@ CURL_RETRY=(
     --connect-timeout 30 --max-time 300
 )
 
+case "${TARGETARCH:-amd64}" in
+    amd64) fedora_arch=x86_64 ;;
+    arm64) fedora_arch=aarch64 ;;
+    *) echo "Unsupported target architecture: $TARGETARCH" >&2; exit 1 ;;
+esac
+
 fedora_repomd_hash() {
     local repo="$1"
     curl "${CURL_RETRY[@]}" \
-        "https://mirrors.fedoraproject.org/metalink?repo=${repo}&arch=x86_64" \
+        "https://mirrors.fedoraproject.org/metalink?repo=${repo}&arch=${fedora_arch}" \
         | sed -n 's#.*<hash type="sha256">\([^<]*\)</hash>.*#\1#p' \
         | head -n 1
 }
@@ -62,6 +68,11 @@ temporary="${OUTPUT}.tmp"
 {
     printf 'FEDORA_REPOMD_KEY=%s\n' "$FEDORA_REPOMD_KEY"
     python3 "$(dirname -- "${BASH_SOURCE[0]}")/../../upgrade-loop/build_dependencies.py" --emit
+    python3 - "$(dirname -- "${BASH_SOURCE[0]}")/architecture-inputs.json" "${TARGETARCH:-amd64}" <<'ARCH'
+import json, sys
+for name, value in json.load(open(sys.argv[1]))['architectures'][sys.argv[2]].items():
+    print(f'{name}={value}')
+ARCH
     printf 'OPENCLAW_VERSION=%s\n' "$OPENCLAW_VERSION"
 } > "$temporary"
 mv -f "$temporary" "$OUTPUT"

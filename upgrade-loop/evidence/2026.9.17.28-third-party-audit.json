@@ -1,0 +1,1517 @@
+{
+  "checked_at": "2026-11-03T07:26:05.679332+00:00",
+  "openclaw": "2026.9.4 (explicitly frozen)",
+  "fedora_registry_index": "sha256:c15d8d6067038f1d6b10d8e1b8440f787a474fe6dc641ef77a5c74b1bf01a05d",
+  "components": [
+    {
+      "id": "solana",
+      "kind": "github",
+      "package": "anza-xyz/agave",
+      "current": {
+        "SOLANA_VERSION": "v4.3.2",
+        "SOLANA_SHA256": "5c9599d7fa397375df69d58e8d4f550ee45463dd6d1ecad9e5a1f053ce8e0933"
+      },
+      "latest": "v4.4.0",
+      "published_at": "2026-10-28T20:35:10Z",
+      "url": "https://github.com/anza-xyz/agave/releases/tag/v4.4.0",
+      "assets": [
+        {
+          "name": "agave-install-init-aarch64-apple-darwin",
+          "digest": "sha256:332b97988ec857de2ce45e9cb07c5244120ff75bdff2a5d37aa5a360b87cd7a3",
+          "url": "https://github.com/anza-xyz/agave/releases/download/v4.4.0/agave-install-init-aarch64-apple-darwin"
+        },
+        {
+          "name": "agave-install-init-x86_64-apple-darwin",
+          "digest": "sha256:debfe11f6f7e0e395269718b57d0dab2fa99cb949ca215e22239ac13ed76df67",
+          "url": "https://github.com/anza-xyz/agave/releases/download/v4.4.0/agave-install-init-x86_64-apple-darwin"
+        },
+        {
+          "name": "agave-install-init-x86_64-unknown-linux-gnu",
+          "digest": "sha256:37a8ba344c688cfb3c903d24214ed8c56edc58f20c97cb671c6e213a6c9cecda",
+          "url": "https://github.com/anza-xyz/agave/releases/download/v4.4.0/agave-install-init-x86_64-unknown-linux-gnu"
+        },
+        {
+          "name": "solana-release-aarch64-apple-darwin.tar.bz2",
+          "digest": "sha256:7f54760a17ccc51b9aee2e019ef1f841a06edfaa8104ba30f94a877ceec0e8e0",
+          "url": "https://github.com/anza-xyz/agave/releases/download/v4.4.0/solana-release-aarch64-apple-darwin.tar.bz2"
+        },
+        {
+          "name": "solana-release-aarch64-apple-darwin.yml",
+          "digest": "sha256:962d3976bad03ea7ab823d7298d4e1f1706ed769183f493692d8ac2e39ddee84",
+          "url": "https://github.com/anza-xyz/agave/releases/download/v4.4.0/solana-release-aarch64-apple-darwin.yml"
+        },
+        {
+          "name": "solana-release-x86_64-apple-darwin.tar.bz2",
+          "digest": "sha256:d072e2cfcebda282041e7878ea1c2029eb5cff9c777ea1b1953e5c98148bc85f",
+          "url": "https://github.com/anza-xyz/agave/releases/download/v4.4.0/solana-release-x86_64-apple-darwin.tar.bz2"
+        },
+        {
+          "name": "solana-release-x86_64-apple-darwin.yml",
+          "digest": "sha256:f1b00aac4ade61448205cc693b30b761f6dc8769b4f9405bebc5cee283e0ac5c",
+          "url": "https://github.com/anza-xyz/agave/releases/download/v4.4.0/solana-release-x86_64-apple-darwin.yml"
+        },
+        {
+          "name": "solana-release-x86_64-unknown-linux-gnu.tar.bz2",
+          "digest": "sha256:3363f4728fe786ac7036e342a20df928aa2e3e43f807fbdce67814840538c574",
+          "url": "https://github.com/anza-xyz/agave/releases/download/v4.4.0/solana-release-x86_64-unknown-linux-gnu.tar.bz2"
+        },
+        {
+          "name": "solana-release-x86_64-unknown-linux-gnu.yml",
+          "digest": "sha256:28b9d5c7e3cf094f2f619f88e03e6229abf9ea343281ce2ec3435b2820aad02d",
+          "url": "https://github.com/anza-xyz/agave/releases/download/v4.4.0/solana-release-x86_64-unknown-linux-gnu.yml"
+        }
+      ]
+    },
+    {
+      "id": "lnd",
+      "kind": "github",
+      "package": "lightningnetwork/lnd",
+      "current": {
+        "LND_VERSION": "v0.21.4-beta",
+        "LND_SHA256": "beffe4949a5e46410d90c0e6d020a1b685468440b0004fc4d59740a6291178fb"
+      },
+      "latest": "v0.21.6-beta",
+      "published_at": "2026-10-30T23:21:55Z",
+      "url": "https://github.com/lightningnetwork/lnd/releases/tag/v0.21.6-beta",
+      "assets": [
+        {
+          "name": "lnd-darwin-amd64-v0.21.6-beta.tar.gz",
+          "digest": "sha256:9d0cccdd7db3fab3ddb13322f4f333ea9bbd200fbf82e50f53bfd688408b4053",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-darwin-amd64-v0.21.6-beta.tar.gz"
+        },
+        {
+          "name": "lnd-darwin-arm64-v0.21.6-beta.tar.gz",
+          "digest": "sha256:cb0add9453681c3ed86fa6c3ea53a3e7e6262c88fdb42d9ef2a14db40a048993",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-darwin-arm64-v0.21.6-beta.tar.gz"
+        },
+        {
+          "name": "lnd-freebsd-386-v0.21.6-beta.tar.gz",
+          "digest": "sha256:9d1ee443f9c2370ae6fe0e42cf9aa12f56dfad1aad3a97061f6c969fe7c1f8a6",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-freebsd-386-v0.21.6-beta.tar.gz"
+        },
+        {
+          "name": "lnd-freebsd-amd64-v0.21.6-beta.tar.gz",
+          "digest": "sha256:c169fc779cefaa2c5ef808ae95b11fb8fb668ccf97b7690a8941d14dfb3761ae",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-freebsd-amd64-v0.21.6-beta.tar.gz"
+        },
+        {
+          "name": "lnd-freebsd-arm-v0.21.6-beta.tar.gz",
+          "digest": "sha256:a39c99874f3b494b23e40563abb51fafe3c5c2a9d097975ffa099d64ddadc0f6",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-freebsd-arm-v0.21.6-beta.tar.gz"
+        },
+        {
+          "name": "lnd-linux-386-v0.21.6-beta.tar.gz",
+          "digest": "sha256:81a7e8a279e5065a47516715a4089b49dc66bea2ff8aaa1ac6b6a6b6f9df894c",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-linux-386-v0.21.6-beta.tar.gz"
+        },
+        {
+          "name": "lnd-linux-amd64-v0.21.6-beta.tar.gz",
+          "digest": "sha256:47db47290df2d183393259a7b313ddcfc7376e9cd941bd691858250246fc763e",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-linux-amd64-v0.21.6-beta.tar.gz"
+        },
+        {
+          "name": "lnd-linux-arm64-v0.21.6-beta.tar.gz",
+          "digest": "sha256:13195cef749fe8055e8c7fe83fa26242802a020e946eafcaed2f2b236f3b5c9a",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-linux-arm64-v0.21.6-beta.tar.gz"
+        },
+        {
+          "name": "lnd-linux-armv6-v0.21.6-beta.tar.gz",
+          "digest": "sha256:1bcd07e68501c968019f2a51ffd459b44bc68b8026f2f01d3db81a0a77f37852",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-linux-armv6-v0.21.6-beta.tar.gz"
+        },
+        {
+          "name": "lnd-linux-armv7-v0.21.6-beta.tar.gz",
+          "digest": "sha256:4d501bb98340847ad17284c47cab2729b9e14cab623d1511fe0dcb376774c996",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-linux-armv7-v0.21.6-beta.tar.gz"
+        },
+        {
+          "name": "lnd-netbsd-amd64-v0.21.6-beta.tar.gz",
+          "digest": "sha256:be34e26f8c65c21cc9fae3f44b2cf6cfa5505d9e14f6f929e3229676e8f3572a",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-netbsd-amd64-v0.21.6-beta.tar.gz"
+        },
+        {
+          "name": "lnd-openbsd-amd64-v0.21.6-beta.tar.gz",
+          "digest": "sha256:5d438caedb4f0df5893a28379fb3308aacfe71ad361282eb39089c4a7e366995",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-openbsd-amd64-v0.21.6-beta.tar.gz"
+        },
+        {
+          "name": "lnd-source-v0.21.6-beta.tar.gz",
+          "digest": "sha256:bd8fde82c0896caef49c2aadda4e47414549f8ad154cc480f98bd119b36713de",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-source-v0.21.6-beta.tar.gz"
+        },
+        {
+          "name": "lnd-windows-386-v0.21.6-beta.zip",
+          "digest": "sha256:f5c51c489b966eb55b02885e424bb320ab4acf281b706f5409909321ed3cfd0d",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-windows-386-v0.21.6-beta.zip"
+        },
+        {
+          "name": "lnd-windows-amd64-v0.21.6-beta.zip",
+          "digest": "sha256:70f58287867c164ff100496800d1d2133650ff14c5a6d9fbb26d4e303b451a34",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-windows-amd64-v0.21.6-beta.zip"
+        },
+        {
+          "name": "lnd-windows-arm64-v0.21.6-beta.zip",
+          "digest": "sha256:2cff5ac7d26afd8f98b7ba4b87d28091ace9ec5d41f9313061c22c1bcfda515e",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/lnd-windows-arm64-v0.21.6-beta.zip"
+        },
+        {
+          "name": "manifest-boris-v0.21.6-beta.sig",
+          "digest": "sha256:865e59a85bba109a534cbf114326c00a21c9931dbceb9bb9579b3dc7d48a457b",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/manifest-boris-v0.21.6-beta.sig"
+        },
+        {
+          "name": "manifest-boris-v0.21.6-beta.sig.ots",
+          "digest": "sha256:533309ef3d174d3922644acc13256a5c1e8145055cc503b8617401eb3e0a9f4d",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/manifest-boris-v0.21.6-beta.sig.ots"
+        },
+        {
+          "name": "manifest-gijswijs-v0.21.6-beta.sig",
+          "digest": "sha256:73078e919c74952e5a1a35c60afdaa25afd91f64bbed3defa548ce2df791a009",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/manifest-gijswijs-v0.21.6-beta.sig"
+        },
+        {
+          "name": "manifest-roasbeef-v0.21.6-beta.sig",
+          "digest": "sha256:47f6363ab04a557b9e1c91482df0b62d047d0c7a03c8180530e1838a785314ce",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/manifest-roasbeef-v0.21.6-beta.sig"
+        },
+        {
+          "name": "manifest-roasbeef-v0.21.6-beta.sig.ots",
+          "digest": "sha256:0755a21969c4471fc3873198e2d87b6ba949e381e27a4b5288ba95aba77d6a64",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/manifest-roasbeef-v0.21.6-beta.sig.ots"
+        },
+        {
+          "name": "manifest-suheb-v0.21.6-beta.sig",
+          "digest": "sha256:20812e9ca92a080f92f4687c8a86b671953aab3d416b739075c79b4cae50dc71",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/manifest-suheb-v0.21.6-beta.sig"
+        },
+        {
+          "name": "manifest-v0.21.6-beta.txt",
+          "digest": "sha256:ca377ec6b26db2090bb227e95418e1c7cd803a59ed7956dea9ca711c66f39367",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/manifest-v0.21.6-beta.txt"
+        },
+        {
+          "name": "manifest-ViktorT-11-v0.21.6-beta.sig",
+          "digest": "sha256:11bd55d6d369c32f283668d1188c247e9679f37af244287170bc88e53a247721",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/manifest-ViktorT-11-v0.21.6-beta.sig"
+        },
+        {
+          "name": "manifest-ziggie1984-v0.21.6-beta.sig",
+          "digest": "sha256:da4f61aeba7235da270620360d278d905ec8c4da6bd845f13b85bc04a38e79f9",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/manifest-ziggie1984-v0.21.6-beta.sig"
+        },
+        {
+          "name": "vendor.tar.gz",
+          "digest": "sha256:2699ca89456bb45016fc552386487e51341bb2bf25acf378a07df50bd161fd30",
+          "url": "https://github.com/lightningnetwork/lnd/releases/download/v0.21.6-beta/vendor.tar.gz"
+        }
+      ]
+    },
+    {
+      "id": "geth",
+      "kind": "github",
+      "package": "ethereum/go-ethereum",
+      "current": {
+        "GETH_VERSION": "1.17.8",
+        "GETH_COMMIT": "a5790770",
+        "GETH_SHA256": "eb864b9ce79afac5e6f57ca10866eb65477b41be62cc8843b219c2ff11d49557"
+      },
+      "latest": "v1.17.10",
+      "published_at": "2026-10-23T12:07:39Z",
+      "url": "https://github.com/ethereum/go-ethereum/releases/tag/v1.17.10",
+      "assets": []
+    },
+    {
+      "id": "bip39",
+      "kind": "github",
+      "package": "iancoleman/bip39",
+      "current": {
+        "BIP39_VERSION": "0.5.6",
+        "BIP39_SHA256": "129b03505824879b8a4429576e3de6951c8599644c1afcaae80840f79237695a"
+      },
+      "latest": "0.5.6",
+      "published_at": "2023-08-01T04:00:06Z",
+      "url": "https://github.com/iancoleman/bip39/releases/tag/0.5.6",
+      "assets": [
+        {
+          "name": "bip39-standalone.html",
+          "digest": null,
+          "url": "https://github.com/iancoleman/bip39/releases/download/0.5.6/bip39-standalone.html"
+        },
+        {
+          "name": "signature.txt.asc",
+          "digest": null,
+          "url": "https://github.com/iancoleman/bip39/releases/download/0.5.6/signature.txt.asc"
+        }
+      ]
+    },
+    {
+      "id": "uv",
+      "kind": "github",
+      "package": "astral-sh/uv",
+      "current": {
+        "UV_VERSION": "0.13.4",
+        "UV_INSTALLER_SHA256": "1f5390d273b0158bd5eaa3527ae049f3667baa881abb1e7c883dd637d84432f9"
+      },
+      "latest": "0.13.7",
+      "published_at": "2026-11-03T02:45:04Z",
+      "url": "https://github.com/astral-sh/uv/releases/tag/0.13.7",
+      "assets": [
+        {
+          "name": "dist-manifest.json",
+          "digest": "sha256:690db6afbe5cfb6bfd3fa8a0c89ae31a1a2c50c56332ec3a21948d7ed9fde3f6",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/dist-manifest.json"
+        },
+        {
+          "name": "sha256.sum",
+          "digest": "sha256:3372371e521a7e179fe52a0d9a2736da40eea758d3d0bc017f7ddd96f80fab30",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/sha256.sum"
+        },
+        {
+          "name": "source.tar.gz",
+          "digest": "sha256:6e44f545ee8e9037bcc7c375018bc2c38d84327a6d08f3eb51525444ab50d21a",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/source.tar.gz"
+        },
+        {
+          "name": "source.tar.gz.sha256",
+          "digest": "sha256:aad8dd62eca40502ebc7d9efd09cb3b557510fe14e3646ab9cbba27156ba373d",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/source.tar.gz.sha256"
+        },
+        {
+          "name": "uv-aarch64-apple-darwin.tar.gz",
+          "digest": "sha256:81b811b57e4624df7ed3aac148e0359100d9962f3d9dce00aec533dc2e086731",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-apple-darwin.tar.gz"
+        },
+        {
+          "name": "uv-aarch64-apple-darwin.tar.gz.sha256",
+          "digest": "sha256:e91d03800128e4dacab72d8502653eb95d549153b1327e3aab8ddfbb357d2ae1",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-apple-darwin.tar.gz.sha256"
+        },
+        {
+          "name": "uv-aarch64-pc-windows-msvc.zip",
+          "digest": "sha256:505d9e65e7692bac3ddf98c66754aa26c5050c409c184af30a881a0a72cc85e3",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-pc-windows-msvc.zip"
+        },
+        {
+          "name": "uv-aarch64-pc-windows-msvc.zip.sha256",
+          "digest": "sha256:14ddc17918fd647eebcbdb9a9253abe8b74e6805a66ec75c8c1b1feda43680ec",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-pc-windows-msvc.zip.sha256"
+        },
+        {
+          "name": "uv-aarch64-unknown-linux-gnu.tar.gz",
+          "digest": "sha256:71279f8d3c67241e807b9d8db872d1bf541579fb9f08b7d1eb1682196d1e57dc",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-unknown-linux-gnu.tar.gz"
+        },
+        {
+          "name": "uv-aarch64-unknown-linux-gnu.tar.gz.sha256",
+          "digest": "sha256:d09de50797f6dc0e4facee4fb8377f4e10ad763835abc55bef983eba010307a7",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-unknown-linux-gnu.tar.gz.sha256"
+        },
+        {
+          "name": "uv-aarch64-unknown-linux-musl.tar.gz",
+          "digest": "sha256:2d3ec076a0c4c0e8250bb6418c44080828b544f1a3be0b6e46adf9fb6923de45",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-unknown-linux-musl.tar.gz"
+        },
+        {
+          "name": "uv-aarch64-unknown-linux-musl.tar.gz.sha256",
+          "digest": "sha256:f7b877b576fc0b097fea31528c941331bd0b7d7260b29cb9e7416da71d538972",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-unknown-linux-musl.tar.gz.sha256"
+        },
+        {
+          "name": "uv-arm-unknown-linux-musleabihf.tar.gz",
+          "digest": "sha256:2c029d1eda470c667e46a36fc5e2479c9a3e4af91e0cabcde07711bf40d587a9",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-arm-unknown-linux-musleabihf.tar.gz"
+        },
+        {
+          "name": "uv-arm-unknown-linux-musleabihf.tar.gz.sha256",
+          "digest": "sha256:e6ae7959dbb24e97ac7131cf048ca9f44b3046568b3242d753a5326c0ce3f42c",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-arm-unknown-linux-musleabihf.tar.gz.sha256"
+        },
+        {
+          "name": "uv-armv7-unknown-linux-gnueabihf.tar.gz",
+          "digest": "sha256:5e2a1315a1b8b4a25250d536f62fa5c1ab5ed17233e7bf486c3c7849cb663284",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-armv7-unknown-linux-gnueabihf.tar.gz"
+        },
+        {
+          "name": "uv-armv7-unknown-linux-gnueabihf.tar.gz.sha256",
+          "digest": "sha256:4e2f09e93cf7483fb71a1bed7eaa3d557586a006d71975a8e651441c1f1e7e6c",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-armv7-unknown-linux-gnueabihf.tar.gz.sha256"
+        },
+        {
+          "name": "uv-armv7-unknown-linux-musleabihf.tar.gz",
+          "digest": "sha256:4a1a7dc0b1713bbeac665a2f95e680eea3bb7ecebea226ae3b2de552bc72e88b",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-armv7-unknown-linux-musleabihf.tar.gz"
+        },
+        {
+          "name": "uv-armv7-unknown-linux-musleabihf.tar.gz.sha256",
+          "digest": "sha256:e31a7eb1422e46f66dc09d8d85e9c0341b6d1ed3f834fe5f10fcc65fa04be718",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-armv7-unknown-linux-musleabihf.tar.gz.sha256"
+        },
+        {
+          "name": "uv-i686-pc-windows-msvc.zip",
+          "digest": "sha256:fa2abbf16f7d12cb01c9b7f313d843218fbd91a9d3fab487cc06a1d6765b27bf",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-i686-pc-windows-msvc.zip"
+        },
+        {
+          "name": "uv-i686-pc-windows-msvc.zip.sha256",
+          "digest": "sha256:c0bd4a21381dd8cf365133692211efcbe19af3ec9ca02d76d9ff99f2c5b50192",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-i686-pc-windows-msvc.zip.sha256"
+        },
+        {
+          "name": "uv-i686-unknown-linux-gnu.tar.gz",
+          "digest": "sha256:cc4f86390f9c99e8f53530e5e7f2cdc6ae7c011c9e805764332a3e3c01a378e4",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-i686-unknown-linux-gnu.tar.gz"
+        },
+        {
+          "name": "uv-i686-unknown-linux-gnu.tar.gz.sha256",
+          "digest": "sha256:8fd52ac60d088b788bd79c7f0b35e973707d3f01e9789a5134c8250214c5c8ab",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-i686-unknown-linux-gnu.tar.gz.sha256"
+        },
+        {
+          "name": "uv-i686-unknown-linux-musl.tar.gz",
+          "digest": "sha256:c2d50f5c64eb81fd1fd1ec5870403c0533fe4b6bf76f940cc5e97824e49ab782",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-i686-unknown-linux-musl.tar.gz"
+        },
+        {
+          "name": "uv-i686-unknown-linux-musl.tar.gz.sha256",
+          "digest": "sha256:cec6f03ee07cadff97cf247b87ba6c6aa945ab7e14b776fcde1afd27fbb76c9f",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-i686-unknown-linux-musl.tar.gz.sha256"
+        },
+        {
+          "name": "uv-installer.ps1",
+          "digest": "sha256:d9e70de578ea2653b631a5933c0296368fca4c91f412b46680661b81bbc399e0",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-installer.ps1"
+        },
+        {
+          "name": "uv-installer.sh",
+          "digest": "sha256:d263ee68314cf5bea36b08e6bd9e2c4563240d7adb73756cf33af5c199b92db4",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-installer.sh"
+        },
+        {
+          "name": "uv-powerpc64le-unknown-linux-gnu.tar.gz",
+          "digest": "sha256:e8b65412482f848743e73566808f5bb480e826c9ce25361997891fcf71299080",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-powerpc64le-unknown-linux-gnu.tar.gz"
+        },
+        {
+          "name": "uv-powerpc64le-unknown-linux-gnu.tar.gz.sha256",
+          "digest": "sha256:903b9c8e0049e3c9a0cbe5926e62ab57c9dec36684e2fad1bcadbee3144c8d7c",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-powerpc64le-unknown-linux-gnu.tar.gz.sha256"
+        },
+        {
+          "name": "uv-riscv64gc-unknown-linux-gnu.tar.gz",
+          "digest": "sha256:48aff38af87c7c8255beb9b51b3676598045786ac5197de15fea54ebfe6c72e1",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-riscv64gc-unknown-linux-gnu.tar.gz"
+        },
+        {
+          "name": "uv-riscv64gc-unknown-linux-gnu.tar.gz.sha256",
+          "digest": "sha256:d629f351ea4cad0f2f7fdcf564db1e7a03678ac4a4408fd8752f3a2277456eb3",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-riscv64gc-unknown-linux-gnu.tar.gz.sha256"
+        },
+        {
+          "name": "uv-riscv64gc-unknown-linux-musl.tar.gz",
+          "digest": "sha256:6c2e67417dda9661e67c2591a6226805ef2ed8ebc203baeed411f67d459207b2",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-riscv64gc-unknown-linux-musl.tar.gz"
+        },
+        {
+          "name": "uv-riscv64gc-unknown-linux-musl.tar.gz.sha256",
+          "digest": "sha256:edd6e9e5fb414a50c75a5af948972708dd2f3ce5930f8d0d89cc917a35cc426d",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-riscv64gc-unknown-linux-musl.tar.gz.sha256"
+        },
+        {
+          "name": "uv-s390x-unknown-linux-gnu.tar.gz",
+          "digest": "sha256:2b64a479b905b9cdab99c71105e523a0d7aa79581cbd716d40bce26d7b595428",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-s390x-unknown-linux-gnu.tar.gz"
+        },
+        {
+          "name": "uv-s390x-unknown-linux-gnu.tar.gz.sha256",
+          "digest": "sha256:1892d903d5ddf2481a84f00f3585d7bbd2da4bfe22e7969f6272c84f333ee1c9",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-s390x-unknown-linux-gnu.tar.gz.sha256"
+        },
+        {
+          "name": "uv-x86_64-apple-darwin.tar.gz",
+          "digest": "sha256:20c47e4c1f630b8abaff8c291fa9b9aa300fef92c4fbff95adf198b55287cda7",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-apple-darwin.tar.gz"
+        },
+        {
+          "name": "uv-x86_64-apple-darwin.tar.gz.sha256",
+          "digest": "sha256:cb44fff4031a3e31726f80311d075ee969ef0687bc4f2843b32c5f6351badcd1",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-apple-darwin.tar.gz.sha256"
+        },
+        {
+          "name": "uv-x86_64-pc-windows-msvc.zip",
+          "digest": "sha256:0cdc5b38fe5a8168ed6a25814f5ba43c21d313dd3187314fccb37b7cec46e021",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-pc-windows-msvc.zip"
+        },
+        {
+          "name": "uv-x86_64-pc-windows-msvc.zip.sha256",
+          "digest": "sha256:b706970932643830577957ab4a282419341f6b1263877991ba8741960bcfad3b",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-pc-windows-msvc.zip.sha256"
+        },
+        {
+          "name": "uv-x86_64-unknown-linux-gnu.tar.gz",
+          "digest": "sha256:c5221ff41b7892bfc223543883600125f6a47fe845093e0f5bdff4f359196d83",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-unknown-linux-gnu.tar.gz"
+        },
+        {
+          "name": "uv-x86_64-unknown-linux-gnu.tar.gz.sha256",
+          "digest": "sha256:0d2de511ca3b8ef4da8cc7dbf3df4ce9ddaea0a354a75b4ce5682a5cf596d141",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-unknown-linux-gnu.tar.gz.sha256"
+        },
+        {
+          "name": "uv-x86_64-unknown-linux-musl.tar.gz",
+          "digest": "sha256:287491da03f2a785c70fa75b13e1f849918c2f2b5415fe84876b8214eeb792f9",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-unknown-linux-musl.tar.gz"
+        },
+        {
+          "name": "uv-x86_64-unknown-linux-musl.tar.gz.sha256",
+          "digest": "sha256:751487dcc5ef05cf46ea730a0c79b8c722a4b3d3d0e3934a9a524aeb2b940176",
+          "url": "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-unknown-linux-musl.tar.gz.sha256"
+        }
+      ]
+    },
+    {
+      "id": "cloudflared",
+      "kind": "github",
+      "package": "cloudflare/cloudflared",
+      "current": {
+        "CLOUDFLARED_VERSION": "2026.10.2",
+        "CLOUDFLARED_SHA256": "35fbdd2beb378436c7da377d7358cea8e33f9c94a6705d1d8036bf9b0d6d8005"
+      },
+      "latest": "2026.10.7",
+      "published_at": "2026-10-30T17:11:03Z",
+      "url": "https://github.com/cloudflare/cloudflared/releases/tag/2026.10.7",
+      "assets": [
+        {
+          "name": "cloudflared-amd64.pkg",
+          "digest": "sha256:917e804561007221f83d9ba2ebd3dc9f7f2f328653d52af33e91e4a7a942d1fb",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-amd64.pkg"
+        },
+        {
+          "name": "cloudflared-arm64.pkg",
+          "digest": "sha256:1ec2fdf94235f0b1422296383cb3eb028b75f4d9c2f2d51255651a3da2e357e6",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-arm64.pkg"
+        },
+        {
+          "name": "cloudflared-darwin-amd64.tgz",
+          "digest": "sha256:02f3edfd87684dd5b705607688e4eb4b323f6e777b81e7b3a85af556aa356848",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-darwin-amd64.tgz"
+        },
+        {
+          "name": "cloudflared-darwin-arm64.tgz",
+          "digest": "sha256:3586ccf397e98e5f437e60e7c307ca6ac463e110580503af8bb8e6f9ebf831bd",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-darwin-arm64.tgz"
+        },
+        {
+          "name": "cloudflared-fips-linux-amd64",
+          "digest": "sha256:426c7c0e3bdb1b62f43b88ede364c7e41bee9b5a5397546d1dd301420c75f9c7",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-fips-linux-amd64"
+        },
+        {
+          "name": "cloudflared-fips-linux-amd64.deb",
+          "digest": "sha256:5ecda786849ef40b73407fcf946e922224a587f53ca4394745f521b567bb0c8c",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-fips-linux-amd64.deb"
+        },
+        {
+          "name": "cloudflared-fips-linux-x86_64.rpm",
+          "digest": "sha256:796608193f67341a37d86fec6097da8d439149593de8150df923495878dff0b7",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-fips-linux-x86_64.rpm"
+        },
+        {
+          "name": "cloudflared-linux-386",
+          "digest": "sha256:4823d2f038395617e04e4070601ab45c0c43f31f15ee7586be299e19ef49d46e",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-386"
+        },
+        {
+          "name": "cloudflared-linux-386.deb",
+          "digest": "sha256:3b8c98b929855469a1bed892b4a2c5a88b25b071bb3307e670cf55cff10c0880",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-386.deb"
+        },
+        {
+          "name": "cloudflared-linux-386.rpm",
+          "digest": "sha256:155f7152eb85700569ae09c638b7088532ea9e66031ec10d272feb052509ffe3",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-386.rpm"
+        },
+        {
+          "name": "cloudflared-linux-aarch64.rpm",
+          "digest": "sha256:6e58e8e388a4b4454b0f6c80f00eecbc98ac40a9bed76c4afc261b6ca7300c04",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-aarch64.rpm"
+        },
+        {
+          "name": "cloudflared-linux-amd64",
+          "digest": "sha256:1f99fb518b83dec2ba8d870a7cc991d82a77e6196295a3d2754ba17ab9f91872",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-amd64"
+        },
+        {
+          "name": "cloudflared-linux-amd64.deb",
+          "digest": "sha256:70b1a1e0f46033ffc8d90b406e554044ba6cbf2e4360295ef1163aed31e09393",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-amd64.deb"
+        },
+        {
+          "name": "cloudflared-linux-arm",
+          "digest": "sha256:74f690f6707182839b63e0465726c7776dd63f0a174390b911d5d71f35cab94e",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-arm"
+        },
+        {
+          "name": "cloudflared-linux-arm.deb",
+          "digest": "sha256:d8ad068223c19b9221319e7985c6ed0423f11e472493228a344ed347b0f1c93f",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-arm.deb"
+        },
+        {
+          "name": "cloudflared-linux-arm.rpm",
+          "digest": "sha256:f6f20852c7269a2c83635bad6a93ea8f4015356c4711318b1709a330f95409dc",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-arm.rpm"
+        },
+        {
+          "name": "cloudflared-linux-arm64",
+          "digest": "sha256:3df43aedc9ff291d1735b5cb576cb97e0b157488796db2e32b28aecabb445775",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-arm64"
+        },
+        {
+          "name": "cloudflared-linux-arm64.deb",
+          "digest": "sha256:d9407eb6e70ac31f54978a6b408a0320b51b664a6d0b498248692d7ac56bf836",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-arm64.deb"
+        },
+        {
+          "name": "cloudflared-linux-armhf",
+          "digest": "sha256:04548d1d5e6a45eaec43916078538192e447256bcc3551bc8265c4ece06a655b",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-armhf"
+        },
+        {
+          "name": "cloudflared-linux-armhf.deb",
+          "digest": "sha256:a89914a3db4faeaf935d673ccc5ca549655ebb2bb9b5db1ef23389ff51358216",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-armhf.deb"
+        },
+        {
+          "name": "cloudflared-linux-armhf.rpm",
+          "digest": "sha256:5622d077583cb93f86b45a0182c144b36615464f60ad6191ebbb39f77d5ce5cc",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-armhf.rpm"
+        },
+        {
+          "name": "cloudflared-linux-x86_64.rpm",
+          "digest": "sha256:26c47d9d361459a818b519bc6b207dafe941bc50da921294752c6b0f094c32f0",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-x86_64.rpm"
+        },
+        {
+          "name": "cloudflared-windows-386.exe",
+          "digest": "sha256:88c6b972b410db0e26745f593510d772c825a13c5a2374819e3f13a05b333082",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-windows-386.exe"
+        },
+        {
+          "name": "cloudflared-windows-386.msi",
+          "digest": "sha256:d083222b52b52d73b477a922fe7bfb0043d7fca77228edd5ac155bab1c9dbe6f",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-windows-386.msi"
+        },
+        {
+          "name": "cloudflared-windows-amd64.exe",
+          "digest": "sha256:2493dbc168923bb3e59e5e7716f71deced92992eea9acd6e9d74f84ac7751343",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-windows-amd64.exe"
+        },
+        {
+          "name": "cloudflared-windows-amd64.msi",
+          "digest": "sha256:057a1370fe26b1a4d45d8673c219fa3ddb3c3b4bcbf0cde25ee938c932645387",
+          "url": "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-windows-amd64.msi"
+        }
+      ]
+    },
+    {
+      "id": "webhook",
+      "kind": "github",
+      "package": "adnanh/webhook",
+      "current": {
+        "WEBHOOK_VERSION": "2.8.3",
+        "WEBHOOK_SHA256": "3cdf93f0615f11bfc575c158d0d613666394228f6e830ff6f792178933773f7b"
+      },
+      "latest": "2.8.3",
+      "published_at": "2026-02-12T22:46:54Z",
+      "url": "https://github.com/adnanh/webhook/releases/tag/2.8.3",
+      "assets": [
+        {
+          "name": "webhook-darwin-amd64.tar.gz",
+          "digest": "sha256:28d061d35b34923ebab2fd8c7d7096bcecb5788e25b1c55a7bb318a5c1436e89",
+          "url": "https://github.com/adnanh/webhook/releases/download/2.8.3/webhook-darwin-amd64.tar.gz"
+        },
+        {
+          "name": "webhook-freebsd-386.tar.gz",
+          "digest": "sha256:dab774a070a7596dd6d9e2b977b4100b53519849e4140bbc58fcbb3f3651790a",
+          "url": "https://github.com/adnanh/webhook/releases/download/2.8.3/webhook-freebsd-386.tar.gz"
+        },
+        {
+          "name": "webhook-freebsd-amd64.tar.gz",
+          "digest": "sha256:9bd9d99da81c02207bea62209e92373b8b54f521ffb7dc81a2ecd72761a5364c",
+          "url": "https://github.com/adnanh/webhook/releases/download/2.8.3/webhook-freebsd-amd64.tar.gz"
+        },
+        {
+          "name": "webhook-freebsd-arm.tar.gz",
+          "digest": "sha256:af6c7971da00089b7c682efd9bee259ee326954e6d895a6b02930e095af03e1e",
+          "url": "https://github.com/adnanh/webhook/releases/download/2.8.3/webhook-freebsd-arm.tar.gz"
+        },
+        {
+          "name": "webhook-freebsd-arm64.tar.gz",
+          "digest": "sha256:47df5aed93030cea1673a8ced034b6fa321cf6d2cae8e62fa52d9baedc237385",
+          "url": "https://github.com/adnanh/webhook/releases/download/2.8.3/webhook-freebsd-arm64.tar.gz"
+        },
+        {
+          "name": "webhook-linux-386.tar.gz",
+          "digest": "sha256:c85230a1f4399e06355cbc83b1c6f27d118df7c1cc9b05c8b934eecc74894265",
+          "url": "https://github.com/adnanh/webhook/releases/download/2.8.3/webhook-linux-386.tar.gz"
+        },
+        {
+          "name": "webhook-linux-amd64.tar.gz",
+          "digest": "sha256:3cdf93f0615f11bfc575c158d0d613666394228f6e830ff6f792178933773f7b",
+          "url": "https://github.com/adnanh/webhook/releases/download/2.8.3/webhook-linux-amd64.tar.gz"
+        },
+        {
+          "name": "webhook-linux-arm.tar.gz",
+          "digest": "sha256:7e2548a77e9721a4e3f69ec2d2aa291b1cd64aaebc3510c389339e65986cab98",
+          "url": "https://github.com/adnanh/webhook/releases/download/2.8.3/webhook-linux-arm.tar.gz"
+        },
+        {
+          "name": "webhook-linux-arm64.tar.gz",
+          "digest": "sha256:960187f361ca49403e0d3fce546c0a1999095a4ee6934a57ab8fef3170f2ddc8",
+          "url": "https://github.com/adnanh/webhook/releases/download/2.8.3/webhook-linux-arm64.tar.gz"
+        },
+        {
+          "name": "webhook-openbsd-386.tar.gz",
+          "digest": "sha256:d20ff33f82287dea8e3454cef73e209e116fdc5a24cea747c676b7b4f1066e61",
+          "url": "https://github.com/adnanh/webhook/releases/download/2.8.3/webhook-openbsd-386.tar.gz"
+        },
+        {
+          "name": "webhook-openbsd-amd64.tar.gz",
+          "digest": "sha256:64b2fc898e55edb6fab1024aa0decf801662681132bad67f60129a67537f36db",
+          "url": "https://github.com/adnanh/webhook/releases/download/2.8.3/webhook-openbsd-amd64.tar.gz"
+        },
+        {
+          "name": "webhook-openbsd-arm.tar.gz",
+          "digest": "sha256:09d09655efa31bc2f2c1f01c84ff91c6afe9e3b98fb527a8dfa4a3a3b96ab128",
+          "url": "https://github.com/adnanh/webhook/releases/download/2.8.3/webhook-openbsd-arm.tar.gz"
+        },
+        {
+          "name": "webhook-openbsd-arm64.tar.gz",
+          "digest": "sha256:d59eb320af977077416a02b9d891c9792265d542bfce906ea448a633e1eef411",
+          "url": "https://github.com/adnanh/webhook/releases/download/2.8.3/webhook-openbsd-arm64.tar.gz"
+        }
+      ]
+    },
+    {
+      "id": "fugu",
+      "kind": "github",
+      "package": "SakanaAI/fugu",
+      "current": {
+        "FUGU_VERSION": "user-demo-v1",
+        "FUGU_COMMIT": "12fda08ca9dd7f4e070c4438b016835a8c9a3e23"
+      },
+      "latest": "user-demo-v1",
+      "published_at": "2026-06-26T12:43:55Z",
+      "url": "https://github.com/SakanaAI/fugu/releases/tag/user-demo-v1",
+      "assets": []
+    },
+    {
+      "id": "codex",
+      "kind": "npm",
+      "package": "@openai/codex",
+      "current": {
+        "CODEX_VERSION": "0.163.0",
+        "CODEX_SHA256": "1a71db36560bb446d2c2e63ae675c4a3018c38ace38ca533f8d1b25d3e6555b4"
+      },
+      "latest": "0.166.0",
+      "url": "https://registry.npmjs.org/%40openai%2Fcodex/latest",
+      "dist": {
+        "shasum": "c53889fd3903c4781cc83a22691e8502a7ef515f",
+        "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.166.0.tgz",
+        "fileCount": 3,
+        "integrity": "sha512-2Szlp1l1cz5TX1ccpX4Zok3DZrot9xeZe0km+6/1v8JmqxADwyJxKBJah4dBymkwtS25j/u6dipJusTOI97Z8Q==",
+        "signatures": [
+          {
+            "sig": "MEUCIQDa28xIt3MVLAadAQCzVDgwvtD5v/kcL1XeAj7zA/euzwIgMNtEbrCnDLbVOL86Yzfk9x+Rb+KYWBrxsEsMQEAS0OA=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEUCIHjOr9f6BuHpMZsryBUCmjcDfOPRY0bGWVQoiZoA9g6SAiEA5DOyunCyzJFK1tNNDlaWOEVi8HItd7bg2hCB+b6ZJeU=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@openai%2fcodex@0.166.0",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "unpackedSize": 13570
+      },
+      "engines": {
+        "node": ">=16"
+      }
+    },
+    {
+      "id": "claude-code",
+      "kind": "npm",
+      "package": "@anthropic-ai/claude-code",
+      "current": {
+        "CLAUDE_CODE_VERSION": "2.1.304",
+        "CLAUDE_CODE_SHA256": "94dcc84341b99d0b5f76d6c6ca24feb4109250a2bdba728fa2163aeb7fba00ac"
+      },
+      "latest": "2.1.317",
+      "url": "https://registry.npmjs.org/%40anthropic-ai%2Fclaude-code/latest",
+      "dist": {
+        "shasum": "e0940e4de0a4ea860e41af8af01248a11e85a1db",
+        "tarball": "https://registry.npmjs.org/@anthropic-ai/claude-code/-/claude-code-2.1.317.tgz",
+        "fileCount": 7,
+        "integrity": "sha512-k467+KT/LcqJXr3Ye/C4lXnfRNmxOa/TZcIiWKoiyc/XbZGzAR0fxiI/IEOkpic+BFhYRP6BiXa7cvTx4fsOSg==",
+        "signatures": [
+          {
+            "sig": "MEUCIGMLUe8oLGZypixFf6CrPUHFzlxbUcV4gn3Rj2tYmy/dAiEA5VLcb4pYrkaUBAvpMA0LzWozBQz6anIeeY97+WPdrkg=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEUCIQD/9T169QBiGHkdK2FAltt8NIzm4Zy4xuyLeo+Q+j0CXAIgJ1aBCvvkWpbhynS82ufunzGQ2Wsu7W/ZQSM68HuLnWg=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "unpackedSize": 190569
+      },
+      "engines": {
+        "node": ">=22.0.0"
+      }
+    },
+    {
+      "id": "vditor",
+      "kind": "npm",
+      "package": "vditor",
+      "current": {
+        "VDITOR_VERSION": "4.0.1",
+        "VDITOR_SHA256": "b72767473a6220c0363abda5845a21762574190a247d07f27281caa07f66745b"
+      },
+      "latest": "4.0.1",
+      "url": "https://registry.npmjs.org/vditor/latest",
+      "dist": {
+        "shasum": "0ba2959c70391ad21e18f1f3d65f108bee92f2cb",
+        "tarball": "https://registry.npmjs.org/vditor/-/vditor-4.0.1.tgz",
+        "fileCount": 653,
+        "integrity": "sha512-CyajvPNE8fjCgEAzAaSxVEEWwQMJ5FTIVkNn3k+5IRaldqGwPRr8Dx2QLALHGCby8L/AJ6pQXjXiSPUGhHGmDw==",
+        "signatures": [
+          {
+            "sig": "MEYCIQCr+m5C398OEixIBi+J1KiBzHBedS9ja95iDRx2M4TaqQIhAJbeYkELYSJuv3C/P0q3um3kf3Pznf1v8hvv6sfd+eYk",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEQCIEV3ZaPpNCCWJezPPcGtHDGeu5+feLr71EYCDrnhT3wSAiAeDhkN1+UK7NIhnvcvsau+La95+PMNkC6yLE9DEAdlNw==",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "unpackedSize": 23638046
+      },
+      "engines": null
+    },
+    {
+      "id": "npm",
+      "kind": "npm",
+      "package": "npm",
+      "current": {
+        "NPM_VERSION": "12.2.0",
+        "NPM_SHA256": "6666b48816b39b86c3febac7b51a4ee4de6c5ca589c382ad8004b6b113f86677"
+      },
+      "latest": "12.2.1",
+      "url": "https://registry.npmjs.org/npm/latest",
+      "dist": {
+        "shasum": "2a2765aa5b36f68006ea7132bd3f20b095a85c6e",
+        "tarball": "https://registry.npmjs.org/npm/-/npm-12.2.1.tgz",
+        "fileCount": 1942,
+        "integrity": "sha512-bKCmFRVT/BB+YPEYbZwQ1XUI3N5t4xKSpU1MxOjo7z3iWzKBJ0ZXRC1xFdEN+TC7N5TdywaBzf2dMXGJq/e2PQ==",
+        "signatures": [
+          {
+            "sig": "MEQCIAsXcHTrdTysebaa+LWvu1F6tjSlwyXRr3eG/smzppVnAiApJq1ELms3QE7/aTlQmEt/Yf24Tz5G7sygrUXYS8khng==",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEUCIB++SZIIe5GkkDK2W7U+6Nvp9MXNjpqHUviecw480OMCAiEAnJUNjH2EnEyZgrFQz0nM8A81An7XUuu08GR5KXWHgmo=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "unpackedSize": 12430582
+      },
+      "engines": {
+        "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+      }
+    },
+    {
+      "id": "hermes-main",
+      "kind": "branch",
+      "package": "NousResearch/hermes-agent",
+      "current": "c73cbcc4cbbdbfc7371a86287db1ff729f23837b",
+      "latest": "5b526a53189072c34349eb357803f4cc039505a7",
+      "date": "2026-11-03T06:58:51Z",
+      "subject": "fix(desktop): an inline update report belongs to the failure it was opened for",
+      "url": "https://github.com/NousResearch/hermes-agent/commit/5b526a53189072c34349eb357803f4cc039505a7"
+    },
+    {
+      "id": "mtg-commander",
+      "kind": "github",
+      "package": "nathanmartins/mtg-mcp",
+      "current": "3.2.1",
+      "latest": "v3.2.1",
+      "published_at": "2026-10-21T01:29:03Z",
+      "url": "https://github.com/nathanmartins/mtg-mcp/releases/tag/v3.2.1",
+      "assets": [
+        {
+          "name": "mtg-mcp_3.2.1_checksums.txt",
+          "digest": "sha256:ba265bf30c2090391e0b380bef3fe007e94c4a8a907d923cd0d1dc10f8a4e9ef",
+          "url": "https://github.com/nathanmartins/mtg-mcp/releases/download/v3.2.1/mtg-mcp_3.2.1_checksums.txt"
+        },
+        {
+          "name": "mtg-mcp_Darwin_arm64.tar.gz",
+          "digest": "sha256:d22e3f0dc4dac279cd77c894fa87527d290cdf58cbd422ef0ea0d660599c93c1",
+          "url": "https://github.com/nathanmartins/mtg-mcp/releases/download/v3.2.1/mtg-mcp_Darwin_arm64.tar.gz"
+        },
+        {
+          "name": "mtg-mcp_Darwin_x86_64.tar.gz",
+          "digest": "sha256:d9a3d0a3a1a8f3d4f249b562b2a83f1fd23ec55464d3f948331c8c72721b9168",
+          "url": "https://github.com/nathanmartins/mtg-mcp/releases/download/v3.2.1/mtg-mcp_Darwin_x86_64.tar.gz"
+        },
+        {
+          "name": "mtg-mcp_Linux_arm64.tar.gz",
+          "digest": "sha256:ac359c5f6e840e2bba0f83cf44996dd60892e429adce145abc933631b6396286",
+          "url": "https://github.com/nathanmartins/mtg-mcp/releases/download/v3.2.1/mtg-mcp_Linux_arm64.tar.gz"
+        },
+        {
+          "name": "mtg-mcp_Linux_i386.tar.gz",
+          "digest": "sha256:a800f4a469f9350a5f2699eb887d9839c2dc74c2b937a0e505478764198b1d9e",
+          "url": "https://github.com/nathanmartins/mtg-mcp/releases/download/v3.2.1/mtg-mcp_Linux_i386.tar.gz"
+        },
+        {
+          "name": "mtg-mcp_Linux_x86_64.tar.gz",
+          "digest": "sha256:17fc0cf3a166a0f32b49c7e16b9d0f346694a76b2430e99865250717809b36e0",
+          "url": "https://github.com/nathanmartins/mtg-mcp/releases/download/v3.2.1/mtg-mcp_Linux_x86_64.tar.gz"
+        }
+      ]
+    },
+    {
+      "id": "opencode",
+      "kind": "npm",
+      "package": "opencode-ai",
+      "current": "1.19.3",
+      "latest": "1.19.5",
+      "url": "https://registry.npmjs.org/opencode-ai/latest",
+      "dist": {
+        "shasum": "4fb49717dfc8ca5fa97ab9823dadf4be3e244e82",
+        "tarball": "https://registry.npmjs.org/opencode-ai/-/opencode-ai-1.19.5.tgz",
+        "fileCount": 4,
+        "integrity": "sha512-tEqMvQahfhdDj8vceYpXtoIrvjPXm5XRfetWnPN5YISueU7adNx9JcUA3zZ+2GKuDVgDpGdQe1ZLtCZDjqodvA==",
+        "signatures": [
+          {
+            "sig": "MEUCIFJsJ2U3SokznHptpK7dUozls4Nb4of2X0Vk1pnYhKjNAiEA0otH4fQFdet+wxExX7KmJF0VjPkOOwfG+7JuGdoPT/0=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEUCIQDG50n33hFvBdgR4Rl2OuiUvGqkjvi/ke7ujNM+KvO5MwIgKilP3eWRtRA2K7OkfNZyUhC6tP7/55aggL3IjhxhGUY=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "unpackedSize": 7852
+      },
+      "engines": null
+    },
+    {
+      "id": "opencode-telegram",
+      "kind": "npm",
+      "package": "@grinev/opencode-telegram-bot",
+      "current": "0.26.5",
+      "latest": "0.26.6",
+      "url": "https://registry.npmjs.org/%40grinev%2Fopencode-telegram-bot/latest",
+      "dist": {
+        "shasum": "0a223615935c058130283d8c31424167a87ddbfb",
+        "tarball": "https://registry.npmjs.org/@grinev/opencode-telegram-bot/-/opencode-telegram-bot-0.26.6.tgz",
+        "fileCount": 276,
+        "integrity": "sha512-0hwIxqhMOdllZxl8EomzQLIXjbo5gY7ITTU5K8yJ4W1Fr0f8ac+5Fh5p5MWbi1qkuiOJi/qAblpUUwpsZNjc/w==",
+        "signatures": [
+          {
+            "sig": "MEUCIQDdtPLO5KvBk8DgDFU1p9Y7xWiItXU98I6Rzv/MeqemcQIgA/70af/6j9IPQH9CB701Mv1v/1CoA4Eob6Ss991rE7A=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEUCIQDpQfOFYDDMfFlwTh+4po1opJeyY287CGbMFxY1B8/X5wIgW0iQ8L1PfWBFekQKMoXfd+/0pzde6O+LC2vEhxaR2Rg=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@grinev%2fopencode-telegram-bot@0.26.6",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "unpackedSize": 2153380
+      },
+      "engines": {
+        "node": "^22.14.0 || ^23.6.0 || >=24"
+      }
+    },
+    {
+      "id": "safrano9999-mtg/package.json:@modelcontextprotocol/sdk",
+      "kind": "npm",
+      "package": "@modelcontextprotocol/sdk",
+      "current": "1.25.3",
+      "latest": "1.32.2",
+      "url": "https://registry.npmjs.org/%40modelcontextprotocol%2Fsdk/latest",
+      "dist": {
+        "shasum": "6ede940e436998cc20a70092f0af875735bc78f8",
+        "tarball": "https://registry.npmjs.org/@modelcontextprotocol/sdk/-/sdk-1.32.2.tgz",
+        "fileCount": 701,
+        "integrity": "sha512-SWsVtH/0vULSQStoZ6xxH2K09Li8fXYTMC64ZeogCdpZ3XSi1eCPOByV1OpuJxuI3OcmHhosDWYyii07tpPsLw==",
+        "signatures": [
+          {
+            "sig": "MEUCIHLCNkKqhk+vWeY+gcWYLMO0j2NDW4ZnA+/e/SbwSgMiAiEA2eQi+6xIVV6gnbtqKuKkR4W5yTFiO0g/DZrDSWztp40=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEQCIAUhcyd75oZxWhTGXJndL0Htl5OXUlbRBzTb0Ku4yPPuAiBdRhCa8FD7Xm4YSHAE1ZkW3pcF8vKkhDpn5QssBL+MHg==",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@modelcontextprotocol%2fsdk@1.32.2",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "unpackedSize": 4492221
+      },
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    {
+      "id": "safrano9999-mtg/package.json:dotenv",
+      "kind": "npm",
+      "package": "dotenv",
+      "current": "16.6.1",
+      "latest": "18.0.9",
+      "url": "https://registry.npmjs.org/dotenv/latest",
+      "dist": {
+        "shasum": "5c565760ce7e6fb69f9477ebcd1a3b64c766f9c8",
+        "tarball": "https://registry.npmjs.org/dotenv/-/dotenv-18.0.9.tgz",
+        "fileCount": 7,
+        "integrity": "sha512-3fVOW4cB02R066PUSwn8O4TJyz9NckQl7F81blIbaq9jKBm2tSmOKky7ZHIXzGvkVPXCSn6jkpziBPZdGFs8Tw==",
+        "signatures": [
+          {
+            "sig": "MEUCIQDkQY+PdfSlc6WTnxmKUP7/WK7xxDh5fQfyoaMGPuv3AgIgAXnuzAAiqK8Qca6NxNJ2AYio46po7qTzqc3eg6VwlmM=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEYCIQCTPE0hCBVp4mVdXNE953pTNWavnpi67u76hyHhsHj86wIhAJUG43qiHu+ExsfJmPmKcDDAtNbj/0pq3RpXhtOiNbxY",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "unpackedSize": 46091
+      },
+      "engines": {
+        "node": ">=12"
+      }
+    },
+    {
+      "id": "HIBISCUS_MCP/package.json:@modelcontextprotocol/sdk",
+      "kind": "npm",
+      "package": "@modelcontextprotocol/sdk",
+      "current": "1.30.0",
+      "latest": "1.32.2",
+      "url": "https://registry.npmjs.org/%40modelcontextprotocol%2Fsdk/latest",
+      "dist": {
+        "shasum": "6ede940e436998cc20a70092f0af875735bc78f8",
+        "tarball": "https://registry.npmjs.org/@modelcontextprotocol/sdk/-/sdk-1.32.2.tgz",
+        "fileCount": 701,
+        "integrity": "sha512-SWsVtH/0vULSQStoZ6xxH2K09Li8fXYTMC64ZeogCdpZ3XSi1eCPOByV1OpuJxuI3OcmHhosDWYyii07tpPsLw==",
+        "signatures": [
+          {
+            "sig": "MEUCIHLCNkKqhk+vWeY+gcWYLMO0j2NDW4ZnA+/e/SbwSgMiAiEA2eQi+6xIVV6gnbtqKuKkR4W5yTFiO0g/DZrDSWztp40=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEQCIAUhcyd75oZxWhTGXJndL0Htl5OXUlbRBzTb0Ku4yPPuAiBdRhCa8FD7Xm4YSHAE1ZkW3pcF8vKkhDpn5QssBL+MHg==",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@modelcontextprotocol%2fsdk@1.32.2",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "unpackedSize": 4492221
+      },
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    {
+      "id": "HIBISCUS_MCP/package.json:xmlrpc",
+      "kind": "npm",
+      "package": "xmlrpc",
+      "current": "1.3.2",
+      "latest": "1.3.2",
+      "url": "https://registry.npmjs.org/xmlrpc/latest",
+      "dist": {
+        "shasum": "26b2ea347848d028aac7e7514b5351976de3e83d",
+        "tarball": "https://registry.npmjs.org/xmlrpc/-/xmlrpc-1.3.2.tgz",
+        "integrity": "sha512-jQf5gbrP6wvzN71fgkcPPkF4bF/Wyovd7Xdff8d6/ihxYmgETQYSuTc+Hl+tsh/jmgPLro/Aro48LMFlIyEKKQ==",
+        "signatures": [
+          {
+            "sig": "MEQCIEGd/ERwV/kPUG1Ttz6PpBxk9rLgM3VqoEMGrION8wguAiAFupIccmR/LJ1Ze3rgE/eJsCKorX/azljLfm9StYny8g==",
+            "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA"
+          }
+        ]
+      },
+      "engines": {
+        "npm": ">=1.0.0",
+        "node": ">=0.8"
+      }
+    },
+    {
+      "id": "HIBISCUS_MCP/package.json:zod",
+      "kind": "npm",
+      "package": "zod",
+      "current": "3.24.4",
+      "latest": "4.6.7",
+      "url": "https://registry.npmjs.org/zod/latest",
+      "dist": {
+        "shasum": "e806cf64a7f4e37635ce9f2f52c04c3766f75e5b",
+        "tarball": "https://registry.npmjs.org/zod/-/zod-4.6.7.tgz",
+        "fileCount": 840,
+        "integrity": "sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==",
+        "signatures": [
+          {
+            "sig": "MEUCIQCwQ7Os025hoW1C24cDvgD4t5gynQpYlWHx1ok/Bke33AIgPP2J7w4z9B/fqA62pHpEBvjlB5ScCMm3c0adt03XQlY=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/zod@4.6.7",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "unpackedSize": 6148944
+      },
+      "engines": null
+    },
+    {
+      "id": "litellm-free-webui/plattform/frontend/package.json:@supabase/supabase-js",
+      "kind": "npm",
+      "package": "@supabase/supabase-js",
+      "current": "2.118.0",
+      "latest": "2.118.0",
+      "url": "https://registry.npmjs.org/%40supabase%2Fsupabase-js/latest",
+      "dist": {
+        "shasum": "a590a3a0b301cb336c771a81c8d37a4bbc2647cf",
+        "tarball": "https://registry.npmjs.org/@supabase/supabase-js/-/supabase-js-2.118.0.tgz",
+        "fileCount": 45,
+        "integrity": "sha512-FxI8UXMVC2UG7IkeiI8fuQZqq2oI3JeSuN8MPIC2RLVaoEAxKS0nqE6kii9Ewpq8f9gNPM6git1Y8f0vN/QLFw==",
+        "signatures": [
+          {
+            "sig": "MEQCIG4S1xmTqQ7f9HM2PmkdGAtVVB668IukDFKOWcYdjVhnAiAwmVH7r/68x6FsPuWV8InbFBBsEvwltBW5abtVkMu1Ow==",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEQCIE8bCfARJ3x7xbucbhx0nJhDxmPVf3bn/tcJZFuTdOH4AiBRkiOnZ/chCFIHAM/7QXBno4hlLYQyOHSu6i7qWaZR7g==",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@supabase%2fsupabase-js@2.118.0",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "unpackedSize": 652315
+      },
+      "engines": {
+        "node": ">=22.0.0"
+      }
+    },
+    {
+      "id": "litellm-free-webui/plattform/frontend/package.json:@playwright/test",
+      "kind": "npm",
+      "package": "@playwright/test",
+      "current": "1.64.1",
+      "latest": "1.64.1",
+      "url": "https://registry.npmjs.org/%40playwright%2Ftest/latest",
+      "dist": {
+        "shasum": "03d48b0cd135db5a70a6fbca54b2b91a597eed01",
+        "tarball": "https://registry.npmjs.org/@playwright/test/-/test-1.64.1.tgz",
+        "fileCount": 11,
+        "integrity": "sha512-IaYGml/nSOiZWROfPtuIL7neuu9qDOZ3TNvNljUIrhDMxiGTgPjzj/g9p9RxpS2tSepPDRY+UwAaEeiKtUvIAg==",
+        "signatures": [
+          {
+            "sig": "MEQCIBTVqvK4UiyJ5CglJHnbSW85qB8cNoqbhAThIX1peUFIAiB4hJM1a9NVhdU6G8+UJeNZVN9rgbxqmLviU1wbPXpT6Q==",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEUCIFZ/EP/h9yD11u7KZbhZWNH/lTVqDh7/9sWFIuXVYipbAiEAlVzSqPwCP7m7jg5t7q+m4n5AgE/M9kydfpma0U6pajE=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/@playwright%2ftest@1.64.1",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "unpackedSize": 28542
+      },
+      "engines": {
+        "node": ">=20"
+      }
+    },
+    {
+      "id": "litellm-free-webui/plattform/frontend/package.json:esbuild",
+      "kind": "npm",
+      "package": "esbuild",
+      "current": "0.28.2",
+      "latest": "0.28.2",
+      "url": "https://registry.npmjs.org/esbuild/latest",
+      "dist": {
+        "shasum": "0f43bd1bad955b72d24e2261e3abe5957ccf0816",
+        "tarball": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+        "fileCount": 7,
+        "integrity": "sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA==",
+        "signatures": [
+          {
+            "sig": "MEYCIQCUNxdzUXI/rpHaMMcf/skpuDBkNL7aLEXFFc0dex0NCAIhAMDKoRFFyK2uR0qEIAoCe4pdRrJ3ld2ZCoHNyNuX6ju7",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEUCIQC8VkNobVdJrr03U9huHI7n2VhWQ2shvrTvNYB1Mx8gigIgFkrOTUauuovxR8qg94n81hYvSw6PI2qEQkNiqHkmjcg=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "attestations": {
+          "url": "https://registry.npmjs.org/-/npm/v1/attestations/esbuild@0.28.2",
+          "provenance": {
+            "predicateType": "https://slsa.dev/provenance/v1"
+          }
+        },
+        "unpackedSize": 147361
+      },
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    {
+      "id": "litellm-free-webui/plattform/frontend/package.json:typescript",
+      "kind": "npm",
+      "package": "typescript",
+      "current": "7.0.2",
+      "latest": "7.0.2",
+      "url": "https://registry.npmjs.org/typescript/latest",
+      "dist": {
+        "shasum": "9ec773d7954a8c182c17cc5bbd575aa28bc51582",
+        "tarball": "https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz",
+        "fileCount": 416,
+        "integrity": "sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==",
+        "signatures": [
+          {
+            "sig": "MEUCIHn8lVrLBbTJToaOcV3IJ0oVPREmFT5BhqmO2niVNCaSAiEAjbubGExGAYMSJN39iEgX/eDYhwBGnh/iyyGTRigXGjY=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "unpackedSize": 2497498
+      },
+      "engines": {
+        "node": ">=16.20.0"
+      }
+    },
+    {
+      "id": "safrano9999-mtg/requirements.txt:fastmcp",
+      "kind": "pypi",
+      "package": "fastmcp",
+      "current": "==4.0.3",
+      "latest": "4.1.6",
+      "url": "https://pypi.org/pypi/fastmcp/json",
+      "requires_python": ">=3.10"
+    },
+    {
+      "id": "safrano9999-mtg/requirements.txt:mcp",
+      "kind": "pypi",
+      "package": "mcp",
+      "current": "==2.2.0",
+      "latest": "2.3.0",
+      "url": "https://pypi.org/pypi/mcp/json",
+      "requires_python": ">=3.10"
+    },
+    {
+      "id": "safrano9999-mtg/requirements.txt:httpx",
+      "kind": "pypi",
+      "package": "httpx",
+      "current": "==0.28.1",
+      "latest": "0.28.1",
+      "url": "https://pypi.org/pypi/httpx/json",
+      "requires_python": ">=3.8"
+    },
+    {
+      "id": "safrano9999-mtg/requirements.txt:certifi",
+      "kind": "pypi",
+      "package": "certifi",
+      "current": "==2026.10.19",
+      "latest": "2026.10.23",
+      "url": "https://pypi.org/pypi/certifi/json",
+      "requires_python": ">=3.7"
+    },
+    {
+      "id": "litellm-free-webui/requirements.txt:fastapi",
+      "kind": "pypi",
+      "package": "fastapi",
+      "current": "==0.141.1",
+      "latest": "0.162.0",
+      "url": "https://pypi.org/pypi/fastapi/json",
+      "requires_python": ">=3.10"
+    },
+    {
+      "id": "litellm-free-webui/requirements.txt:uvicorn",
+      "kind": "pypi",
+      "package": "uvicorn",
+      "current": "==0.54.0",
+      "latest": "0.54.0",
+      "url": "https://pypi.org/pypi/uvicorn/json",
+      "requires_python": ">=3.10"
+    },
+    {
+      "id": "litellm-free-webui/requirements.txt:jinja2",
+      "kind": "pypi",
+      "package": "jinja2",
+      "current": "==3.1.6",
+      "latest": "3.1.6",
+      "url": "https://pypi.org/pypi/jinja2/json",
+      "requires_python": ">=3.7"
+    },
+    {
+      "id": "litellm-free-webui/requirements.txt:httpx",
+      "kind": "pypi",
+      "package": "httpx",
+      "current": "==0.28.1",
+      "latest": "0.28.1",
+      "url": "https://pypi.org/pypi/httpx/json",
+      "requires_python": ">=3.8"
+    },
+    {
+      "id": "litellm-free-webui/requirements.txt:python-dotenv",
+      "kind": "pypi",
+      "package": "python-dotenv",
+      "current": "==1.2.3",
+      "latest": "1.2.4",
+      "url": "https://pypi.org/pypi/python-dotenv/json",
+      "requires_python": ">=3.10"
+    },
+    {
+      "id": "litellm-free-webui/requirements.txt:python-multipart",
+      "kind": "pypi",
+      "package": "python-multipart",
+      "current": ">=0.0.20,<1",
+      "latest": "0.0.33",
+      "url": "https://pypi.org/pypi/python-multipart/json",
+      "requires_python": ">=3.11"
+    },
+    {
+      "id": "litellm-free-webui/requirements.txt:mcp",
+      "kind": "pypi",
+      "package": "mcp",
+      "current": "==2.0.0",
+      "latest": "2.3.0",
+      "url": "https://pypi.org/pypi/mcp/json",
+      "requires_python": ">=3.10"
+    },
+    {
+      "id": "litellm-free-webui/requirements.txt:pydantic-settings",
+      "kind": "pypi",
+      "package": "pydantic-settings",
+      "current": "==2.15.0",
+      "latest": "2.16.2",
+      "url": "https://pypi.org/pypi/pydantic-settings/json",
+      "requires_python": ">=3.11"
+    },
+    {
+      "id": "litellm-free-webui/requirements.txt:APScheduler",
+      "kind": "pypi",
+      "package": "APScheduler",
+      "current": "==3.11.3",
+      "latest": "3.11.3",
+      "url": "https://pypi.org/pypi/APScheduler/json",
+      "requires_python": ">=3.8"
+    },
+    {
+      "id": "litellm-free-webui/requirements.txt:SQLAlchemy",
+      "kind": "pypi",
+      "package": "SQLAlchemy",
+      "current": ">=2.0,<3",
+      "latest": "2.1.6",
+      "url": "https://pypi.org/pypi/SQLAlchemy/json",
+      "requires_python": ">=3.11"
+    },
+    {
+      "id": "litellm-free-webui/requirements.txt:PyYAML",
+      "kind": "pypi",
+      "package": "PyYAML",
+      "current": ">=6,<7",
+      "latest": "6.0.3",
+      "url": "https://pypi.org/pypi/PyYAML/json",
+      "requires_python": ">=3.8"
+    },
+    {
+      "id": "litellm-free-webui/requirements.txt:reportlab",
+      "kind": "pypi",
+      "package": "reportlab",
+      "current": ">=4.2,<5",
+      "latest": "5.1.0",
+      "url": "https://pypi.org/pypi/reportlab/json",
+      "requires_python": "<4,>=3.9"
+    },
+    {
+      "id": "litellm-free-webui/requirements.txt:svglib",
+      "kind": "pypi",
+      "package": "svglib",
+      "current": ">=1.5,<1.6",
+      "latest": "2.3.2",
+      "url": "https://pypi.org/pypi/svglib/json",
+      "requires_python": ">=3.9"
+    },
+    {
+      "id": "fedora45-ai-safrano9999/fedora45-ai-core-pre/requirements.base.txt:python-dotenv",
+      "kind": "pypi",
+      "package": "python-dotenv",
+      "current": "",
+      "latest": "1.2.4",
+      "url": "https://pypi.org/pypi/python-dotenv/json",
+      "requires_python": ">=3.10"
+    },
+    {
+      "id": "fedora45-ai-safrano9999/fedora45-ai-core-pre/requirements.base.txt:PyYAML",
+      "kind": "pypi",
+      "package": "PyYAML",
+      "current": ">=6.0",
+      "latest": "6.0.3",
+      "url": "https://pypi.org/pypi/PyYAML/json",
+      "requires_python": ">=3.8"
+    },
+    {
+      "id": "fedora45-ai-safrano9999/fedora45-ai-core-pre/requirements.base.txt:reportlab",
+      "kind": "pypi",
+      "package": "reportlab",
+      "current": "",
+      "latest": "5.1.0",
+      "url": "https://pypi.org/pypi/reportlab/json",
+      "requires_python": "<4,>=3.9"
+    },
+    {
+      "id": "fedora45-ai-safrano9999/fedora45-ai-core-pre/requirements.base.txt:tldr",
+      "kind": "pypi",
+      "package": "tldr",
+      "current": ">=3.4",
+      "latest": "3.4.4",
+      "url": "https://pypi.org/pypi/tldr/json",
+      "requires_python": ">=3.10"
+    },
+    {
+      "id": "fedora45-ai-safrano9999/fedora45-ai-core-pre/requirements.base.txt:fastapi",
+      "kind": "pypi",
+      "package": "fastapi",
+      "current": ">=0.110.0",
+      "latest": "0.162.0",
+      "url": "https://pypi.org/pypi/fastapi/json",
+      "requires_python": ">=3.10"
+    },
+    {
+      "id": "fedora45-ai-safrano9999/fedora45-ai-core-pre/requirements.base.txt:uvicorn",
+      "kind": "pypi",
+      "package": "uvicorn",
+      "current": ">=0.29.0",
+      "latest": "0.54.0",
+      "url": "https://pypi.org/pypi/uvicorn/json",
+      "requires_python": ">=3.10"
+    },
+    {
+      "id": "fedora45-ai-safrano9999/fedora45-ai-core-pre/requirements.base.txt:jinja2",
+      "kind": "pypi",
+      "package": "jinja2",
+      "current": ">=3.1.0",
+      "latest": "3.1.6",
+      "url": "https://pypi.org/pypi/jinja2/json",
+      "requires_python": ">=3.7"
+    },
+    {
+      "id": "fedora45-ai-safrano9999/fedora45-ai-core-pre/requirements.base.txt:icalendar",
+      "kind": "pypi",
+      "package": "icalendar",
+      "current": "",
+      "latest": "7.3.0",
+      "url": "https://pypi.org/pypi/icalendar/json",
+      "requires_python": ">=3.10"
+    },
+    {
+      "id": "fedora45-ai-safrano9999/fedora45-ai-core-pre/requirements.base.txt:requests",
+      "kind": "pypi",
+      "package": "requests",
+      "current": "",
+      "latest": "2.34.2",
+      "url": "https://pypi.org/pypi/requests/json",
+      "requires_python": ">=3.10"
+    },
+    {
+      "id": "fedora45-ai-safrano9999/fedora45-ai-core-pre/requirements.base.txt:recurring_ical_events",
+      "kind": "pypi",
+      "package": "recurring_ical_events",
+      "current": "",
+      "latest": "3.8.2",
+      "url": "https://pypi.org/pypi/recurring_ical_events/json",
+      "requires_python": ">=3.8"
+    },
+    {
+      "id": "fedora45-ai-safrano9999/fedora45-ai-core-pre/requirements.base.txt:SQLAlchemy",
+      "kind": "pypi",
+      "package": "SQLAlchemy",
+      "current": ">=2.0",
+      "latest": "2.1.6",
+      "url": "https://pypi.org/pypi/SQLAlchemy/json",
+      "requires_python": ">=3.11"
+    },
+    {
+      "id": "fedora45-ai-safrano9999/fedora45-ai-core-pre/requirements.base.txt:psycopg",
+      "kind": "pypi",
+      "package": "psycopg",
+      "current": ">=3.1",
+      "latest": "3.3.7",
+      "url": "https://pypi.org/pypi/psycopg/json",
+      "requires_python": ">=3.10"
+    },
+    {
+      "id": "fedora45-ai-safrano9999/fedora45-ai-core-pre/requirements.base.txt:pymysql",
+      "kind": "pypi",
+      "package": "pymysql",
+      "current": ">=1.1",
+      "latest": "1.2.3",
+      "url": "https://pypi.org/pypi/pymysql/json",
+      "requires_python": ">=3.9"
+    },
+    {
+      "id": "pip",
+      "kind": "pypi",
+      "package": "pip",
+      "current": "26.2.2",
+      "latest": "26.3",
+      "url": "https://pypi.org/pypi/pip/json",
+      "requires_python": ">=3.10"
+    },
+    {
+      "id": "certifi",
+      "kind": "pypi",
+      "package": "certifi",
+      "current": "2026.10.19",
+      "latest": "2026.10.23",
+      "url": "https://pypi.org/pypi/certifi/json",
+      "requires_python": ">=3.7"
+    },
+    {
+      "id": "pypdfium2",
+      "kind": "pypi",
+      "package": "pypdfium2",
+      "current": "unpinned",
+      "latest": "5.14.0",
+      "url": "https://pypi.org/pypi/pypdfium2/json",
+      "requires_python": ">=3.6"
+    }
+  ]
+}

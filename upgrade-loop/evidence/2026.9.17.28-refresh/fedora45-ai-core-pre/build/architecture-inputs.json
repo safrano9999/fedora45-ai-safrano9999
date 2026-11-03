@@ -1,0 +1,50 @@
+{
+  "checked_at": "2026-11-03T07:29:19.864964+00:00",
+  "openclaw_version": "2026.9.4",
+  "node_version": "26.13.0",
+  "architectures": {
+    "amd64": {
+      "NODE_ARCH": "x64",
+      "NODE_SHA256": "d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997",
+      "CLOUDFLARED_SHA256": "1f99fb518b83dec2ba8d870a7cc991d82a77e6196295a3d2754ba17ab9f91872",
+      "WEBHOOK_SHA256": "3cdf93f0615f11bfc575c158d0d613666394228f6e830ff6f792178933773f7b",
+      "LND_SHA256": "47db47290df2d183393259a7b313ddcfc7376e9cd941bd691858250246fc763e",
+      "GETH_SHA256": "e016aca8cc391c8d5d14dc17c9af589488d99c37ed71d892213c80757935ba64"
+    },
+    "arm64": {
+      "NODE_ARCH": "arm64",
+      "NODE_SHA256": "406fe3fbde1c054adff8b297c16fdb5af6659db327c1ac8acd46b56ef1af9a92",
+      "CLOUDFLARED_SHA256": "3df43aedc9ff291d1735b5cb576cb97e0b157488796db2e32b28aecabb445775",
+      "WEBHOOK_SHA256": "960187f361ca49403e0d3fce546c0a1999095a4ee6934a57ab8fef3170f2ddc8",
+      "LND_SHA256": "13195cef749fe8055e8c7fe83fa26242802a020e946eafcaed2f2b236f3b5c9a",
+      "GETH_SHA256": "79380151f998248e48e22773d7afb032ac07503e055d81e44f4f0125008e78b8"
+    }
+  },
+  "python_bootstrap": {
+    "pip": {
+      "version": "26.3",
+      "url": "https://files.pythonhosted.org/packages/07/25/ee8c38ae72d66b844ce8eb9711ba905dba21ca1a8a0c960057c41cd23337/pip-26.3-py3-none-any.whl",
+      "sha256": "f3b60b20ffaadd4415ed7957212a38ac63fa4c5fa375bd0f4a797777940fad13"
+    },
+    "certifi": {
+      "version": "2026.10.23",
+      "url": "https://files.pythonhosted.org/packages/32/d1/a3652fe2c19134d0d15922177821d863cbd7e842d53a21bbe7e8e3a1b5ac/certifi-2026.10.23-py3-none-any.whl",
+      "sha256": "e9b54de76e530bb6cf0ccd036787103acb58fd42ba930ea8bf948ddbaa2f61d1"
+    }
+  },
+  "npm": {
+    "opencode-ai": {
+      "version": "1.19.5",
+      "integrity": "sha512-tEqMvQahfhdDj8vceYpXtoIrvjPXm5XRfetWnPN5YISueU7adNx9JcUA3zZ+2GKuDVgDpGdQe1ZLtCZDjqodvA=="
+    },
+    "@grinev/opencode-telegram-bot": {
+      "version": "0.26.6",
+      "integrity": "sha512-0hwIxqhMOdllZxl8EomzQLIXjbo5gY7ITTU5K8yJ4W1Fr0f8ac+5Fh5p5MWbi1qkuiOJi/qAblpUUwpsZNjc/w=="
+    }
+  },
+  "hermes": {
+    "branch": "main",
+    "commit": "5b526a53189072c34349eb357803f4cc039505a7",
+    "date": "2026-11-03T06:58:51Z"
+  }
+}

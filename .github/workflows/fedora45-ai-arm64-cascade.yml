@@ -15,7 +15,7 @@ on:
       core_pre_tag:
         description: "Existing ARM64 Core-pre foundation; this workflow starts at Core"
         type: string
-        default: "2026.9.17.6"
+        default: "2026.9.17.28"
       publish_latest:
         description: "Advance the ARM64 latest tags"
         type: boolean
@@ -127,15 +127,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      - name: Read pinned ARM64 toolchain inputs
-        id: toolchains
-        run: |
-          set -euo pipefail
-          . fedora45-ai-base/build.conf
-          for name in ARM64_TOOLCHAINS_RELEASE ARM64_ELECTRUM_VERSION ARM64_AGAVE_VERSION ARM64_ELECTRUM_SHA256 ARM64_AGAVE_SHA256; do
-            test -n "${!name}"
-            printf '%s=%s\n' "$name" "${!name}" >> "$GITHUB_OUTPUT"
-          done
       - name: Build and publish
         uses: docker/build-push-action@v6
         with:
@@ -158,11 +149,6 @@ jobs:
             ${{ inputs.publish_latest && 'ghcr.io/safrano9999/fedora45-ai-base-arm64:latest' || '' }}
           build-args: |
             AI_CORE_IMAGE=ghcr.io/safrano9999/fedora45-ai-arm64-core:${{ env.CASCADE_TAG }}
-            ARM64_TOOLCHAINS_RELEASE=${{ steps.toolchains.outputs.ARM64_TOOLCHAINS_RELEASE }}
-            ARM64_ELECTRUM_VERSION=${{ steps.toolchains.outputs.ARM64_ELECTRUM_VERSION }}
-            ARM64_AGAVE_VERSION=${{ steps.toolchains.outputs.ARM64_AGAVE_VERSION }}
-            ARM64_ELECTRUM_SHA256=${{ steps.toolchains.outputs.ARM64_ELECTRUM_SHA256 }}
-            ARM64_AGAVE_SHA256=${{ steps.toolchains.outputs.ARM64_AGAVE_SHA256 }}
       - name: Reclaim build cache
         run: .github/scripts/prune-container-build-space.sh
       - name: Verify installed runtime on native ARM64

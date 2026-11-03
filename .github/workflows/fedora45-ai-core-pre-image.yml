@@ -61,13 +61,22 @@ concurrency:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
       actions: write
     env:
       DOCKER_BUILD_RECORD_UPLOAD: "false"
+      TARGETARCH: ${{ matrix.arch }}
 
     steps:
       - name: Select exact source commit
@@ -154,8 +163,11 @@ jobs:
             exit 1
           }
           image="${FEDORA45_AI_CORE_PRE_IMAGE%:*}"
+          arch_image="${image}-${TARGETARCH}"
+          if [ "$TARGETARCH" = arm64 ]; then
+            image="${image%/fedora45-ai-core-pre}/fedora45-ai-arm64-core-pre"
+          fi
           version="$(.github/scripts/resolve-fedora-image-tag.sh "$image" "$REQUESTED_TAG" "$REPLACE_EXISTING")"
-          arch_image="${image}-amd64"
           {
             echo "version=$version"
             echo "image=$image"
@@ -204,7 +216,9 @@ jobs:
             WEBHOOK_VERSION WEBHOOK_SHA256 FUGU_VERSION FUGU_COMMIT \
             CODEX_VERSION CODEX_SHA256 CLAUDE_CODE_VERSION CLAUDE_CODE_SHA256 \
             VDITOR_VERSION VDITOR_SHA256 NPM_VERSION NPM_SHA256 \
-            OPENCODE_VERSION OPENCODE_TELEGRAM_VERSION; do
+            OPENCODE_VERSION OPENCODE_TELEGRAM_VERSION NODE_ARCH NODE_SHA256 \
+            ARM64_TOOLCHAINS_RELEASE ARM64_ELECTRUM_VERSION ARM64_AGAVE_VERSION \
+            ARM64_ELECTRUM_SHA256 ARM64_AGAVE_SHA256; do
             [ -n "${!name:-}" ] || {
               echo "Missing required Core-pre input: $name" >&2
               exit 1
@@ -222,6 +236,10 @@ jobs:
             echo "GETH_COMMIT=$GETH_COMMIT"
             echo "WEBHOOK_VERSION=$WEBHOOK_VERSION"
             echo "VDITOR_VERSION=$VDITOR_VERSION"
+            for name in ARM64_TOOLCHAINS_RELEASE ARM64_ELECTRUM_VERSION ARM64_AGAVE_VERSION \
+              ARM64_ELECTRUM_SHA256 ARM64_AGAVE_SHA256; do
+              printf '%s=%s\n' "$name" "${!name}"
+            done
             cat .resolved-build.env
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
@@ -233,10 +251,6 @@ jobs:
           cache-binary: false
           keep-state: false
           cleanup: true
-
-      - name: Verify approved Fedora Beta OCI context
-        id: fedora
-        run: python3 .github/scripts/prepare-fedora-beta.py
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -253,8 +267,7 @@ jobs:
           context: ./fedora45-ai-core-pre
           file: ${{ steps.recipe.outputs.file }}
           target: ai-core-pre
-          platforms: linux/amd64
-          build-contexts: ${{ steps.fedora.outputs.context }}
+          platforms: linux/${{ matrix.arch }}
           pull: true
           no-cache: true
           secrets: |
@@ -282,8 +295,8 @@ jobs:
             "$image" -lc '
             set -euxo pipefail
             grep -q "Fedora release 45" /etc/fedora-release
-            test "$(node --version)" = "v26.12.1"
-            test "$(/usr/bin/node --version)" = "v26.12.1"
+            test "$(node --version)" = "v26.13.0"
+            test "$(/usr/bin/node --version)" = "v26.13.0"
             test "$(readlink -f /usr/bin/node)" = /usr/local/bin/node
             npm --version
             npx --version
@@ -300,6 +313,10 @@ jobs:
             test -x /usr/local/lib/hermes-agent/.hermes/bin/hermes
             timeout 90 hermes --version
             HERMES_HOME=/tmp/hermes-smoke-home timeout 90 hermes --version
+            timeout 90 electrum --offline --version
+            timeout 90 solana --version
+            timeout 90 geth version
+            timeout 90 lnd --version
             test -x /usr/local/libexec/fedora45-wait-ready
             /usr/local/libexec/fedora45-wait-ready --help >/dev/null
             env -i PATH=/usr/local/bin:/usr/bin:/bin persistainer
@@ -334,13 +351,26 @@ jobs:
             = '["/sbin/init"]'
           docker buildx imagetools inspect "$image" >/dev/null
 
+      - name: Verify Hermes profile persistence regression
+        if: inputs.build_series == '2026.9.17'
+        run: |
+          docker run --rm --entrypoint bash \
+            "${{ steps.tags.outputs.image }}:${{ steps.tags.outputs.version }}" -lc '
+            set -euo pipefail
+            uv pip install --python /usr/local/lib/hermes-runtime/venv/bin/python pytest pytest-asyncio
+            cd /usr/local/lib/hermes-agent
+            /usr/local/lib/hermes-runtime/venv/bin/python -m pytest -q tests/gateway/test_profile_authority_symlinked_store.py
+          '
+
       - name: Verify private GHCR package
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          package_url="https://api.github.com/user/packages/container/fedora45-ai-core-pre"
+          package="${{ steps.tags.outputs.image }}"
+          package="${package##*/}"
+          package_url="https://api.github.com/user/packages/container/${package}"
           verified=false
           for _ in {1..20}; do
             if curl -fsSL \
@@ -348,7 +378,7 @@ jobs:
               -H "Accept: application/vnd.github+json" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               "$package_url" \
-              | jq -e '.name == "fedora45-ai-core-pre" and .visibility == "private"' \
+              | jq -e --arg package "$package" '.name == $package and .visibility == "private"' \
                 >/dev/null; then
               verified=true
               break
@@ -366,7 +396,7 @@ jobs:
             - < .github/scripts/check-fedora45-image.py
 
       - name: Trigger Core cascade
-        if: inputs.cascade && inputs.cascade_target != 'fedora45-ai-core-pre'
+        if: matrix.arch == 'amd64' && inputs.cascade && inputs.cascade_target != 'fedora45-ai-core-pre'
         env:
           CASCADE_TARGET: ${{ inputs.cascade_target }}
           BUILD_COMMIT: ${{ steps.source.outputs.commit }}

@@ -2,29 +2,31 @@
 FROM scratch AS persistainer-source
 ADD https://github.com/safrano9999/persistainer.git /persistainer/
 
-# Official Linux x64 runtime; mounted into the Fedora build without retaining the archive.
+# Official native Linux runtime; mounted into the Fedora build without retaining the archive.
 FROM scratch AS node-release
-ADD --checksum=sha256:6170b2d474e1c626f43cff3adc118df9fe3b573258a4fc3d850c8dbc6b079bbd \
-    https://nodejs.org/dist/v26.12.1/node-v26.12.1-linux-x64.tar.xz /node.tar.xz
+ARG NODE_ARCH=x64
+ARG NODE_SHA256=d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997
+ADD --checksum=sha256:${NODE_SHA256} \
+    https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-${NODE_ARCH}.tar.xz /node.tar.xz
 
 # Official pip wheel, verified before the container's Python trust store is used.
 FROM scratch AS pip-release
-ADD --checksum=sha256:fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70 \
-    https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl /pip-26.2.2-py3-none-any.whl
+ADD --checksum=sha256:f3b60b20ffaadd4415ed7957212a38ac63fa4c5fa375bd0f4a797777940fad13 \
+    https://files.pythonhosted.org/packages/07/25/ee8c38ae72d66b844ce8eb9711ba905dba21ca1a8a0c960057c41cd23337/pip-26.3-py3-none-any.whl /pip-26.3-py3-none-any.whl
 
 # Upstream PR #143063: accept the profile's state.db through a persistent-volume symlink.
 FROM scratch AS hermes-profile-store-fix
-ADD --checksum=sha256:b0429fc10a6f91ba53b6527bdf8b95ee55e85868057381831fe9667401ef9a1a \
-    https://github.com/NousResearch/hermes-agent/commit/e678842b5d10e528721a3e389e5821efe74f2f10.patch /profile-store.patch
+COPY build/hermes-profile-store.patch /profile-store.patch
 
 FROM registry.fedoraproject.org/fedora:45@sha256:c15d8d6067038f1d6b10d8e1b8440f787a474fe6dc641ef77a5c74b1bf01a05d AS ai-core-pre
 # Official Fedora 45 Stable index, with native amd64 and arm64 manifests.
 
+ARG TARGETARCH
 ARG WEBHOOK_VERSION
-# Pinned snapshot of upstream main (2026-10-22T18:29:13Z).
-ARG HERMES_VERSION=0.22.4
-ARG HERMES_COMMIT=c73cbcc4cbbdbfc7371a86287db1ff729f23837b
-ARG HERMES_DISTANCE=135
+# Pinned snapshot of upstream main (2026-11-03T06:58:51Z).
+ARG HERMES_VERSION=0.22.6
+ARG HERMES_COMMIT=5b526a53189072c34349eb357803f4cc039505a7
+ARG HERMES_DISTANCE=474
 ARG VDITOR_VERSION
 ARG FEDORA_REPOMD_KEY
 ARG UV_VERSION
@@ -56,13 +58,13 @@ ARG CLAUDE_CODE_SHA256
 ARG VDITOR_SHA256
 ARG NPM_VERSION
 ARG NPM_SHA256
-ARG OPENCODE_VERSION=1.19.3
-ARG OPENCODE_TELEGRAM_VERSION=0.26.5
+ARG OPENCODE_VERSION=1.19.5
+ARG OPENCODE_TELEGRAM_VERSION=0.26.6
 
 LABEL org.opencontainers.image.title="fedora45-ai-core-pre" \
       org.opencontainers.image.description="Heavy generic Fedora 45 AI toolchain foundation without Safrano project content or ephemeral runtime configuration." \
       org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
-      io.safrano9999.nodejs.version="26.12.1" \
+      io.safrano9999.nodejs.version="26.13.0" \
       io.safrano9999.openclaw.version="${OPENCLAW_VERSION}"
 
 ENV NODE_EXTRA_CA_CERTS=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
@@ -83,7 +85,7 @@ RUN --mount=type=bind,from=node-release,source=/node.tar.xz,target=/tmp/node.tar
     nano vim-minimal less \
     curl wget ca-certificates openssl gnupg2 fuse-libs \
     libatomic libstdc++ \
-    python3 python3-libs python3-devel libpq \
+    python3 python3-libs python3-devel python3.14 python3.14-devel libpq \
     python3-dotenv python3-pyyaml python3-reportlab tldr \
     python3-fastapi python3-uvicorn+standard python3-jinja2 \
     python3-icalendar python3-requests python3-sqlalchemy \
@@ -104,25 +106,25 @@ RUN --mount=type=bind,from=node-release,source=/node.tar.xz,target=/tmp/node.tar
  && ln -s /usr/local/bin/node /usr/bin/node \
  && ln -s /usr/local/bin/npm /usr/bin/npm \
  && ln -s /usr/local/bin/npx /usr/bin/npx \
- && test "$(/usr/bin/node --version)" = "v26.12.1"
+ && test "$(/usr/bin/node --version)" = "v26.13.0"
 
 # Fedora's Python requires the python-pip-wheel data package. Replace its seed
-# wheel too, then install pip directly; no RPM pip executable or application venv.
-RUN --mount=type=bind,from=pip-release,source=/pip-26.2.2-py3-none-any.whl,target=/tmp/pip-26.2.2-py3-none-any.whl \
+# wheel too, then install pip directly; no RPM pip executable.
+RUN --mount=type=bind,from=pip-release,source=/pip-26.3-py3-none-any.whl,target=/tmp/pip-26.3-py3-none-any.whl \
     /usr/bin/python3 -c "import sysconfig; assert sysconfig.get_config_var('WHEEL_PKG_DIR') == '/usr/share/python-wheels/' or sysconfig.get_config_var('WHEEL_PKG_DIR') == '/usr/share/python-wheels'" \
  && find /usr/share/python-wheels -maxdepth 1 -type f -name 'pip-*.whl' -delete \
- && install -m 0644 /tmp/pip-26.2.2-py3-none-any.whl /usr/share/python-wheels/ \
- && /usr/bin/python3 -c "import ensurepip; assert ensurepip.version() == '26.2.2'" \
- && PYTHONPATH=/tmp/pip-26.2.2-py3-none-any.whl /usr/bin/python3 -m pip install \
-      --break-system-packages --no-index /tmp/pip-26.2.2-py3-none-any.whl \
- && /usr/bin/python3 -c "import sys, pip, pip._vendor.certifi as certifi; assert sys.prefix == sys.base_prefix; assert pip.__version__ == '26.2.2'; assert certifi.__version__ == '2026.10.19'" \
+ && install -m 0644 /tmp/pip-26.3-py3-none-any.whl /usr/share/python-wheels/ \
+ && /usr/bin/python3 -c "import ensurepip; assert ensurepip.version() == '26.3'" \
+ && PYTHONPATH=/tmp/pip-26.3-py3-none-any.whl /usr/bin/python3 -m pip install \
+      --break-system-packages --no-index /tmp/pip-26.3-py3-none-any.whl \
+ && /usr/bin/python3 -c "import sys, pip, pip._vendor.certifi as certifi; assert sys.prefix == sys.base_prefix; assert pip.__version__ == '26.3'; assert certifi.__version__ == '2026.10.23'" \
  && ! rpm -q python3-pip
 
 RUN curl -fsSL --retry 3 "https://registry.npmjs.org/npm/-/npm-${NPM_VERSION}.tgz" -o /tmp/npm.tgz \
  && echo "${NPM_SHA256}  /tmp/npm.tgz" | sha256sum -c - \
  && npm install -g /tmp/npm.tgz && rm /tmp/npm.tgz \
  && node --version && npm --version \
- && test "$(node --version)" = "v26.12.1" \
+ && test "$(node --version)" = "v26.13.0" \
  && test "$(readlink -f /usr/bin/node)" = /usr/local/bin/node
 
 # OpenCode is a generic core tool. The Telegram bridge is installed here, but
@@ -154,8 +156,8 @@ RUN test -n "${UV_VERSION}" \
  && rm -f /tmp/uv-install.sh \
  && uv --version
 
-# Install Hermes and its dependencies into Fedora's system Python. Keep the
-# source and built UI outside persistent user data; image builds own updates.
+# Upstream Hermes supports Python 3.14, while Fedora 45 defaults to 3.15.
+# Keep its supported interpreter and pinned dependencies in the immutable image.
 RUN --mount=type=bind,from=hermes-profile-store-fix,source=/profile-store.patch,target=/tmp/hermes-profile-store.patch \
     set -euo pipefail; \
     [[ "$HERMES_COMMIT" =~ ^[0-9a-f]{40}$ ]]; \
@@ -173,9 +175,11 @@ RUN --mount=type=bind,from=hermes-profile-store-fix,source=/profile-store.patch,
       --commit "${HERMES_COMMIT}" --branch main --base-version "${HERMES_VERSION}" --distance "${HERMES_DISTANCE}" \
       --source ci --distribution docker --update-mechanism external \
  && cd /usr/local/lib/hermes-runtime/hermes-agent \
- && uv pip install --system --python /usr/bin/python3 \
+ && uv venv --python /usr/bin/python3.14 /usr/local/lib/hermes-runtime/venv \
+ && uv pip install --python /usr/local/lib/hermes-runtime/venv/bin/python \
       --editable '/usr/local/lib/hermes-runtime/hermes-agent[all,messaging]' \
  && test "$(jq -er .baseVersion /usr/local/lib/hermes-agent/install-stamp.json)" = "${HERMES_VERSION}" \
+ && ln -sfn /usr/local/lib/hermes-runtime/venv/bin/hermes /usr/local/bin/hermes \
  && test -x /usr/local/bin/hermes \
  && mkdir -p /usr/local/lib/hermes-agent/.hermes/bin \
  && ln -s /usr/local/bin/hermes /usr/local/lib/hermes-agent/.hermes/bin/hermes \
@@ -183,7 +187,7 @@ RUN --mount=type=bind,from=hermes-profile-store-fix,source=/profile-store.patch,
  && npm run build:ink --workspace ui-tui \
  && npm run build --workspace ui-tui \
  && npm run build --workspace web \
- && /usr/bin/python3 -c "import sys, certifi, hermes_cli, telegram, mcp; assert sys.prefix == sys.base_prefix; assert certifi.__version__ == '2026.10.19'" \
+ && /usr/local/lib/hermes-runtime/venv/bin/python -c "import sys, certifi, hermes_cli, telegram, mcp; assert sys.version_info[:2] == (3, 14); assert certifi.__version__ == '2026.10.19'" \
  && timeout 90 hermes --version \
  && HERMES_HOME=/tmp/hermes-smoke-home timeout 90 hermes --version \
  && rm -rf /tmp/hermes-smoke-home
@@ -285,7 +289,7 @@ RUN test -n "${FUGU_COMMIT}" \
 RUN test -n "${CLOUDFLARED_VERSION}" \
  && test -n "${CLOUDFLARED_SHA256}" \
  && curl -fsSL --retry 3 \
-      "https://github.com/cloudflare/cloudflared/releases/download/${CLOUDFLARED_VERSION}/cloudflared-linux-amd64" \
+      "https://github.com/cloudflare/cloudflared/releases/download/${CLOUDFLARED_VERSION}/cloudflared-linux-${TARGETARCH}" \
       -o /usr/local/bin/cloudflared \
  && echo "${CLOUDFLARED_SHA256}  /usr/local/bin/cloudflared" | sha256sum -c - \
  && chmod +x /usr/local/bin/cloudflared \
@@ -293,7 +297,7 @@ RUN test -n "${CLOUDFLARED_VERSION}" \
 
 # Fedora supplies the base Python libraries above, including prebuilt PyYAML.
 # Only these two libraries are absent from the Fedora repositories. Use the
-# same system interpreter as Hermes; no application virtualenv is created.
+# Fedora system interpreter used by the generic runtime services.
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --system --python /usr/bin/python3 recurring-ical-events pypdfium2 \
  && /usr/bin/python3 -c 'import sys, json, traceback, dotenv, fastapi, jinja2, multipart, pymysql, psycopg, reportlab, sqlalchemy, uvicorn, yaml, icalendar, recurring_ical_events, weasyprint, pypdfium2; assert sys.prefix == sys.base_prefix' \
@@ -312,7 +316,8 @@ RUN mkdir -p /usr/local/share/bip39 \
  && echo "${BIP39_SHA256}  /usr/local/share/bip39/index.html" \
     | sha256sum -c -
 
-RUN mkdir -p /opt/electrum \
+RUN if [ "$TARGETARCH" = amd64 ]; then \
+    mkdir -p /opt/electrum \
  && cd /opt/electrum \
  && curl -fsSLO "https://download.electrum.org/${ELECTRUM_VERSION}/electrum-${ELECTRUM_VERSION}-x86_64.AppImage" \
  && echo "${ELECTRUM_SHA256}  electrum-${ELECTRUM_VERSION}-x86_64.AppImage" | sha256sum -c - \
@@ -328,17 +333,17 @@ RUN mkdir -p /opt/electrum \
  && "./electrum-${ELECTRUM_VERSION}-x86_64.AppImage" --appimage-extract >/dev/null \
  && rm -f "electrum-${ELECTRUM_VERSION}-x86_64.AppImage" "electrum-${ELECTRUM_VERSION}-x86_64.AppImage.asc" \
  && printf '%s\n' '#!/usr/bin/env bash' 'cd /opt/electrum/squashfs-root' 'exec ./AppRun "$@"' > /usr/local/bin/electrum \
- && chmod +x /usr/local/bin/electrum
+ && chmod +x /usr/local/bin/electrum; fi
 
 RUN mkdir -p /tmp/lnd \
  && curl -fsSL \
-    "https://github.com/lightningnetwork/lnd/releases/download/${LND_VERSION}/lnd-linux-amd64-${LND_VERSION}.tar.gz" \
-    -o "/tmp/lnd/lnd-linux-amd64-${LND_VERSION}.tar.gz" \
- && echo "${LND_SHA256}  /tmp/lnd/lnd-linux-amd64-${LND_VERSION}.tar.gz" \
+    "https://github.com/lightningnetwork/lnd/releases/download/${LND_VERSION}/lnd-linux-${TARGETARCH}-${LND_VERSION}.tar.gz" \
+    -o "/tmp/lnd/lnd-linux-${TARGETARCH}-${LND_VERSION}.tar.gz" \
+ && echo "${LND_SHA256}  /tmp/lnd/lnd-linux-${TARGETARCH}-${LND_VERSION}.tar.gz" \
     | sha256sum -c - \
- && tar -xzf "/tmp/lnd/lnd-linux-amd64-${LND_VERSION}.tar.gz" -C /tmp/lnd \
- && install -m 0755 "/tmp/lnd/lnd-linux-amd64-${LND_VERSION}/lnd" /usr/local/bin/lnd \
- && install -m 0755 "/tmp/lnd/lnd-linux-amd64-${LND_VERSION}/lncli" /usr/local/bin/lncli \
+ && tar -xzf "/tmp/lnd/lnd-linux-${TARGETARCH}-${LND_VERSION}.tar.gz" -C /tmp/lnd \
+ && install -m 0755 "/tmp/lnd/lnd-linux-${TARGETARCH}-${LND_VERSION}/lnd" /usr/local/bin/lnd \
+ && install -m 0755 "/tmp/lnd/lnd-linux-${TARGETARCH}-${LND_VERSION}/lncli" /usr/local/bin/lncli \
  && rm -rf /tmp/lnd \
  && lnd --version \
  && lncli --version
@@ -346,18 +351,19 @@ RUN mkdir -p /tmp/lnd \
 RUN gpgconf --kill all && rm -rf /root/.gnupg \
  && mkdir -p /tmp/geth \
  && cd /tmp/geth \
- && curl -fsSLO "https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
- && curl -fsSLO "https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz.asc" \
- && echo "${GETH_SHA256}  geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" | sha256sum -c - \
+ && curl -fsSLO "https://gethstore.blob.core.windows.net/builds/geth-linux-${TARGETARCH}-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
+ && curl -fsSLO "https://gethstore.blob.core.windows.net/builds/geth-linux-${TARGETARCH}-${GETH_VERSION}-${GETH_COMMIT}.tar.gz.asc" \
+ && echo "${GETH_SHA256}  geth-linux-${TARGETARCH}-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" | sha256sum -c - \
  && gpg --batch --keyserver hkps://keyserver.ubuntu.com --recv-keys A61A13569BA28146 \
- && gpg --batch --verify "geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz.asc" "geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
- && tar -xzf "geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
- && install -m 0755 "geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}/geth" /usr/local/bin/geth \
+ && gpg --batch --verify "geth-linux-${TARGETARCH}-${GETH_VERSION}-${GETH_COMMIT}.tar.gz.asc" "geth-linux-${TARGETARCH}-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
+ && tar -xzf "geth-linux-${TARGETARCH}-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
+ && install -m 0755 "geth-linux-${TARGETARCH}-${GETH_VERSION}-${GETH_COMMIT}/geth" /usr/local/bin/geth \
  && rm -rf /tmp/geth \
  && geth version
 
 # Resolve the stable channel during preparation; use only its exact archive here.
-RUN mkdir -p "/root/.local/share/solana/install/releases/${SOLANA_VERSION}" \
+RUN if [ "$TARGETARCH" = amd64 ]; then \
+    mkdir -p "/root/.local/share/solana/install/releases/${SOLANA_VERSION}" \
  && curl -fsSL --retry 3 \
       "https://github.com/anza-xyz/agave/releases/download/${SOLANA_VERSION}/solana-release-x86_64-unknown-linux-gnu.tar.bz2" \
       -o /tmp/solana.tar.bz2 \
@@ -367,9 +373,19 @@ RUN mkdir -p "/root/.local/share/solana/install/releases/${SOLANA_VERSION}" \
  && rm /tmp/solana.tar.bz2 \
  && find /root/.local/share/solana/install/active_release/bin -maxdepth 1 -type f -executable \
       -exec ln -sf {} /usr/local/bin/ \; \
- && solana --version
+ && solana --version; fi
 
-RUN test "$(node --version)" = "v26.12.1" \
+# Native ARM64 bundles are compiled and verified by DIESDAS GitHub runners.
+ARG ARM64_TOOLCHAINS_RELEASE
+ARG ARM64_ELECTRUM_VERSION
+ARG ARM64_AGAVE_VERSION
+ARG ARM64_ELECTRUM_SHA256
+ARG ARM64_AGAVE_SHA256
+COPY --chmod=0755 build/install-arm64-toolchains.sh /usr/local/libexec/install-arm64-toolchains
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+    /usr/local/libexec/install-arm64-toolchains
+
+RUN test "$(node --version)" = "v26.13.0" \
  && test ! -x /root/.hermes/node/bin/node \
  && mkdir -p /README \
  && node -p 'JSON.stringify({node:process.versions.node,sqlite:process.versions.sqlite,nodeSource:"Official Node.js binary"})' > /README/node-runtime.json

@@ -2,17 +2,19 @@
 FROM scratch AS persistainer-source
 ADD https://github.com/safrano9999/persistainer.git /persistainer/
 
-# Official Linux x64 runtime; mounted into the Fedora build without retaining the archive.
+# Official native Linux runtime; mounted into the Fedora build without retaining the archive.
 FROM scratch AS node-release
-ADD --checksum=sha256:6170b2d474e1c626f43cff3adc118df9fe3b573258a4fc3d850c8dbc6b079bbd \
-    https://nodejs.org/dist/v26.12.1/node-v26.12.1-linux-x64.tar.xz /node.tar.xz
+ARG NODE_ARCH=x64
+ARG NODE_SHA256=d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997
+ADD --checksum=sha256:${NODE_SHA256} \
+    https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-${NODE_ARCH}.tar.xz /node.tar.xz
 
 FROM registry.fedoraproject.org/fedora:45@sha256:c15d8d6067038f1d6b10d8e1b8440f787a474fe6dc641ef77a5c74b1bf01a05d AS ai-core-pre
-# The Action supplies this named OCI context from the approved Fedora 45 Beta
-# archive, pinned by SHA256 and manifest digest in build-dependencies-whitelist.json.
+# Official Fedora 45 Stable index, with native amd64 and arm64 manifests.
 
+ARG TARGETARCH
 ARG WEBHOOK_VERSION
-ARG HERMES_VERSION=0.22.2
+ARG HERMES_VERSION=0.22.6
 ARG VDITOR_VERSION
 ARG FEDORA_REPOMD_KEY
 ARG UV_VERSION
@@ -44,13 +46,13 @@ ARG CLAUDE_CODE_SHA256
 ARG VDITOR_SHA256
 ARG NPM_VERSION
 ARG NPM_SHA256
-ARG OPENCODE_VERSION=1.19.3
-ARG OPENCODE_TELEGRAM_VERSION=0.26.5
+ARG OPENCODE_VERSION=1.19.5
+ARG OPENCODE_TELEGRAM_VERSION=0.26.6
 
 LABEL org.opencontainers.image.title="fedora45-ai-core-pre" \
       org.opencontainers.image.description="Heavy generic Fedora 45 AI toolchain foundation without Safrano project content or ephemeral runtime configuration." \
       org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
-      io.safrano9999.nodejs.version="26.12.1" \
+      io.safrano9999.nodejs.version="26.13.0" \
       io.safrano9999.openclaw.version="${OPENCLAW_VERSION}"
 
 ENV NODE_EXTRA_CA_CERTS=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
@@ -87,13 +89,13 @@ RUN --mount=type=bind,from=node-release,source=/node.tar.xz,target=/tmp/node.tar
  && ln -s /usr/local/bin/node /usr/bin/node \
  && ln -s /usr/local/bin/npm /usr/bin/npm \
  && ln -s /usr/local/bin/npx /usr/bin/npx \
- && test "$(/usr/bin/node --version)" = "v26.12.1"
+ && test "$(/usr/bin/node --version)" = "v26.13.0"
 
 RUN curl -fsSL --retry 3 "https://registry.npmjs.org/npm/-/npm-${NPM_VERSION}.tgz" -o /tmp/npm.tgz \
  && echo "${NPM_SHA256}  /tmp/npm.tgz" | sha256sum -c - \
  && npm install -g /tmp/npm.tgz && rm /tmp/npm.tgz \
  && node --version && npm --version \
- && test "$(node --version)" = "v26.12.1" \
+ && test "$(node --version)" = "v26.13.0" \
  && test "$(readlink -f /usr/bin/node)" = /usr/local/bin/node
 
 # OpenCode is a generic core tool. The Telegram bridge is installed here, but
@@ -237,7 +239,7 @@ RUN test -n "${FUGU_COMMIT}" \
 RUN test -n "${CLOUDFLARED_VERSION}" \
  && test -n "${CLOUDFLARED_SHA256}" \
  && curl -fsSL --retry 3 \
-      "https://github.com/cloudflare/cloudflared/releases/download/${CLOUDFLARED_VERSION}/cloudflared-linux-amd64" \
+      "https://github.com/cloudflare/cloudflared/releases/download/${CLOUDFLARED_VERSION}/cloudflared-linux-${TARGETARCH}" \
       -o /usr/local/bin/cloudflared \
  && echo "${CLOUDFLARED_SHA256}  /usr/local/bin/cloudflared" | sha256sum -c - \
  && chmod +x /usr/local/bin/cloudflared \
@@ -259,7 +261,8 @@ RUN mkdir -p /usr/local/share/bip39 \
  && echo "${BIP39_SHA256}  /usr/local/share/bip39/index.html" \
     | sha256sum -c -
 
-RUN mkdir -p /opt/electrum \
+RUN if [ "$TARGETARCH" = amd64 ]; then \
+    mkdir -p /opt/electrum \
  && cd /opt/electrum \
  && curl -fsSLO "https://download.electrum.org/${ELECTRUM_VERSION}/electrum-${ELECTRUM_VERSION}-x86_64.AppImage" \
  && echo "${ELECTRUM_SHA256}  electrum-${ELECTRUM_VERSION}-x86_64.AppImage" | sha256sum -c - \
@@ -275,17 +278,17 @@ RUN mkdir -p /opt/electrum \
  && "./electrum-${ELECTRUM_VERSION}-x86_64.AppImage" --appimage-extract >/dev/null \
  && rm -f "electrum-${ELECTRUM_VERSION}-x86_64.AppImage" "electrum-${ELECTRUM_VERSION}-x86_64.AppImage.asc" \
  && printf '%s\n' '#!/usr/bin/env bash' 'cd /opt/electrum/squashfs-root' 'exec ./AppRun "$@"' > /usr/local/bin/electrum \
- && chmod +x /usr/local/bin/electrum
+ && chmod +x /usr/local/bin/electrum; fi
 
 RUN mkdir -p /tmp/lnd \
  && curl -fsSL \
-    "https://github.com/lightningnetwork/lnd/releases/download/${LND_VERSION}/lnd-linux-amd64-${LND_VERSION}.tar.gz" \
-    -o "/tmp/lnd/lnd-linux-amd64-${LND_VERSION}.tar.gz" \
- && echo "${LND_SHA256}  /tmp/lnd/lnd-linux-amd64-${LND_VERSION}.tar.gz" \
+    "https://github.com/lightningnetwork/lnd/releases/download/${LND_VERSION}/lnd-linux-${TARGETARCH}-${LND_VERSION}.tar.gz" \
+    -o "/tmp/lnd/lnd-linux-${TARGETARCH}-${LND_VERSION}.tar.gz" \
+ && echo "${LND_SHA256}  /tmp/lnd/lnd-linux-${TARGETARCH}-${LND_VERSION}.tar.gz" \
     | sha256sum -c - \
- && tar -xzf "/tmp/lnd/lnd-linux-amd64-${LND_VERSION}.tar.gz" -C /tmp/lnd \
- && install -m 0755 "/tmp/lnd/lnd-linux-amd64-${LND_VERSION}/lnd" /usr/local/bin/lnd \
- && install -m 0755 "/tmp/lnd/lnd-linux-amd64-${LND_VERSION}/lncli" /usr/local/bin/lncli \
+ && tar -xzf "/tmp/lnd/lnd-linux-${TARGETARCH}-${LND_VERSION}.tar.gz" -C /tmp/lnd \
+ && install -m 0755 "/tmp/lnd/lnd-linux-${TARGETARCH}-${LND_VERSION}/lnd" /usr/local/bin/lnd \
+ && install -m 0755 "/tmp/lnd/lnd-linux-${TARGETARCH}-${LND_VERSION}/lncli" /usr/local/bin/lncli \
  && rm -rf /tmp/lnd \
  && lnd --version \
  && lncli --version
@@ -293,18 +296,19 @@ RUN mkdir -p /tmp/lnd \
 RUN gpgconf --kill all && rm -rf /root/.gnupg \
  && mkdir -p /tmp/geth \
  && cd /tmp/geth \
- && curl -fsSLO "https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
- && curl -fsSLO "https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz.asc" \
- && echo "${GETH_SHA256}  geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" | sha256sum -c - \
+ && curl -fsSLO "https://gethstore.blob.core.windows.net/builds/geth-linux-${TARGETARCH}-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
+ && curl -fsSLO "https://gethstore.blob.core.windows.net/builds/geth-linux-${TARGETARCH}-${GETH_VERSION}-${GETH_COMMIT}.tar.gz.asc" \
+ && echo "${GETH_SHA256}  geth-linux-${TARGETARCH}-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" | sha256sum -c - \
  && gpg --batch --keyserver hkps://keyserver.ubuntu.com --recv-keys A61A13569BA28146 \
- && gpg --batch --verify "geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz.asc" "geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
- && tar -xzf "geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
- && install -m 0755 "geth-linux-amd64-${GETH_VERSION}-${GETH_COMMIT}/geth" /usr/local/bin/geth \
+ && gpg --batch --verify "geth-linux-${TARGETARCH}-${GETH_VERSION}-${GETH_COMMIT}.tar.gz.asc" "geth-linux-${TARGETARCH}-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
+ && tar -xzf "geth-linux-${TARGETARCH}-${GETH_VERSION}-${GETH_COMMIT}.tar.gz" \
+ && install -m 0755 "geth-linux-${TARGETARCH}-${GETH_VERSION}-${GETH_COMMIT}/geth" /usr/local/bin/geth \
  && rm -rf /tmp/geth \
  && geth version
 
 # Resolve the stable channel during preparation; use only its exact archive here.
-RUN mkdir -p "/root/.local/share/solana/install/releases/${SOLANA_VERSION}" \
+RUN if [ "$TARGETARCH" = amd64 ]; then \
+    mkdir -p "/root/.local/share/solana/install/releases/${SOLANA_VERSION}" \
  && curl -fsSL --retry 3 \
       "https://github.com/anza-xyz/agave/releases/download/${SOLANA_VERSION}/solana-release-x86_64-unknown-linux-gnu.tar.bz2" \
       -o /tmp/solana.tar.bz2 \
@@ -314,9 +318,19 @@ RUN mkdir -p "/root/.local/share/solana/install/releases/${SOLANA_VERSION}" \
  && rm /tmp/solana.tar.bz2 \
  && find /root/.local/share/solana/install/active_release/bin -maxdepth 1 -type f -executable \
       -exec ln -sf {} /usr/local/bin/ \; \
- && solana --version
+ && solana --version; fi
 
-RUN test "$(node --version)" = "v26.12.1" \
+# Native ARM64 bundles are compiled and verified by DIESDAS GitHub runners.
+ARG ARM64_TOOLCHAINS_RELEASE
+ARG ARM64_ELECTRUM_VERSION
+ARG ARM64_AGAVE_VERSION
+ARG ARM64_ELECTRUM_SHA256
+ARG ARM64_AGAVE_SHA256
+COPY --chmod=0755 build/install-arm64-toolchains.sh /usr/local/libexec/install-arm64-toolchains
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+    /usr/local/libexec/install-arm64-toolchains
+
+RUN test "$(node --version)" = "v26.13.0" \
  && test ! -x /root/.hermes/node/bin/node \
  && mkdir -p /README \
  && node -p 'JSON.stringify({node:process.versions.node,sqlite:process.versions.sqlite,nodeSource:"Official Node.js binary"})' > /README/node-runtime.json
