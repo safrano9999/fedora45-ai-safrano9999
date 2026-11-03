@@ -6,7 +6,7 @@ on:
       source_tag:
         description: "Existing version tag published by both architecture cascades"
         required: true
-        default: "2026.9.17.6"
+        default: "2026.9.17.28"
         type: string
       publish_latest:
         description: "Also publish the multi-architecture latest tags"

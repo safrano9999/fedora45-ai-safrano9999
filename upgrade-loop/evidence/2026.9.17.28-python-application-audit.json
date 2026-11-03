@@ -202,7 +202,9 @@
       "requirement": "mcp==2.0.0",
       "latest_stable": "2.3.0",
       "latest_satisfying_declared_requirement": "2.0.0",
-      "source": "https://pypi.org/project/mcp/"
+      "source": "https://pypi.org/project/mcp/",
+      "selected_requirement": "mcp==2.3.0",
+      "selected_version": "2.3.0"
     },
     {
       "repository": "KACHELMANN",

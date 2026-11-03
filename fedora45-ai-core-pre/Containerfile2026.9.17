@@ -300,7 +300,7 @@ RUN test -n "${CLOUDFLARED_VERSION}" \
 # Fedora system interpreter used by the generic runtime services.
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --system --python /usr/bin/python3 recurring-ical-events pypdfium2 \
- && /usr/bin/python3 -c 'import sys, json, traceback, dotenv, fastapi, jinja2, multipart, pymysql, psycopg, reportlab, sqlalchemy, uvicorn, yaml, icalendar, recurring_ical_events, weasyprint, pypdfium2; assert sys.prefix == sys.base_prefix' \
+ && /usr/bin/python3 -c 'import sys, json, traceback, dotenv, fastapi, jinja2, python_multipart, pymysql, psycopg, reportlab, sqlalchemy, uvicorn, yaml, icalendar, recurring_ical_events, weasyprint, pypdfium2; assert sys.prefix == sys.base_prefix' \
  && /usr/bin/python3 -I -c 'import json, traceback, yaml' \
  && rpm -q python3-libs python3-pyyaml \
  && timeout 90 hermes --version
