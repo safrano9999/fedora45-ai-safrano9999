@@ -47,3 +47,7 @@ jobs:
             cd /usr/local/lib/hermes-agent
             .venv/bin/python -m pytest -q tests/gateway/test_profile_authority_symlinked_store.py
           '
+      - name: Verify Fedora45 image names and documentation
+        run: |
+          docker run --rm -i --network none --read-only --entrypoint python3 \
+            "$IMAGE" - < .github/scripts/check-fedora45-image.py

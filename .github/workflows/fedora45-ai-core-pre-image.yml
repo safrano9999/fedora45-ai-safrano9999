@@ -370,7 +370,8 @@ jobs:
             /usr/local/lib/hermes-agent/.venv/bin/python -m pytest -q tests/gateway/test_profile_authority_symlinked_store.py
           '
 
-      - name: Verify private GHCR package
+      - name: Verify private generic GHCR package
+        if: matrix.arch == 'amd64'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
