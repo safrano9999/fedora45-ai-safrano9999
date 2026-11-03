@@ -26,7 +26,11 @@ async def check_chat():
 
     output = ""
     async with aiohttp.ClientSession() as session:
-        async with session.ws_connect("http://127.0.0.1:19119/api/pty?fresh=1",
+        async with session.get("http://127.0.0.1:19119/") as response:
+            html = await response.text()
+        token = re.search(r'window\.__HERMES_SESSION_TOKEN__\s*=\s*"([^"]+)"', html)
+        assert token, "Dashboard did not provide its browser session token"
+        async with session.ws_connect("http://127.0.0.1:19119/api/pty?fresh=1&token=" + token[1],
                                       origin="http://127.0.0.1:19119") as ws:
             deadline = time.monotonic() + 25
             while time.monotonic() < deadline:
@@ -62,7 +66,7 @@ def main():
         with (Path(temp) / "dashboard.log").open("w+") as log:
             server = subprocess.Popen([
                 "/usr/local/bin/hermes", "dashboard", "--host", "127.0.0.1",
-                "--port", "19119", "--insecure", "--skip-build",
+                "--port", "19119", "--insecure", "--skip-build", "--no-open",
             ], stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
             try:
                 for _ in range(90):

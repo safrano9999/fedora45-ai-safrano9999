@@ -1,0 +1,49 @@
+# Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
+name: Fedora 45 Hermes packaged runtime tests
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Existing Core-pre version to verify without rebuilding
+        required: true
+        default: '2026.9.17.28'
+        type: string
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            image: fedora45-ai-core-pre-amd64
+          - runner: ubuntu-24.04-arm
+            image: fedora45-ai-arm64-core-pre
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IMAGE: ghcr.io/safrano9999/${{ matrix.image }}:${{ inputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free runner disk space
+        run: .github/scripts/free-runner-disk-space.sh
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Verify dashboard chat offline
+        run: |
+          docker run --rm --network none --entrypoint /usr/local/lib/hermes-agent/.venv/bin/python \
+            -v "$PWD/fedora45-ai-core-pre/tests/smoke_hermes_dashboard.py:/tmp/smoke_hermes_dashboard.py:ro" \
+            "$IMAGE" /tmp/smoke_hermes_dashboard.py
+      - name: Verify profile persistence
+        run: |
+          docker run --rm --entrypoint bash "$IMAGE" -lc '
+            set -euo pipefail
+            uv pip install --python /usr/local/lib/hermes-agent/.venv/bin/python pytest pytest-asyncio
+            cd /usr/local/lib/hermes-agent
+            .venv/bin/python -m pytest -q tests/gateway/test_profile_authority_symlinked_store.py
+          '
