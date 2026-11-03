@@ -32,14 +32,15 @@ async def check_chat():
         assert token, "Dashboard did not provide its browser session token"
         async with session.ws_connect("http://127.0.0.1:19119/api/pty?fresh=1&token=" + token[1],
                                       origin="http://127.0.0.1:19119") as ws:
+            await ws.send_bytes(b"\x1b[RESIZE:120;40]")
             deadline = time.monotonic() + 25
             while time.monotonic() < deadline:
                 try:
                     msg = await asyncio.wait_for(ws.receive(), timeout=1)
                 except asyncio.TimeoutError:
                     continue
-                if msg.type == aiohttp.WSMsgType.TEXT:
-                    output += msg.data
+                if msg.type in (aiohttp.WSMsgType.TEXT, aiohttp.WSMsgType.BINARY):
+                    output += msg.data.decode("utf-8", "replace") if isinstance(msg.data, bytes) else msg.data
                     assert not any(error in output.lower() for error in (
                         "packaged pm runtime is missing", "chat could not start",
                         "cannot find module", "modulenotfounderror", "traceback (most recent call last)")), output
