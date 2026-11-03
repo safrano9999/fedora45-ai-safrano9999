@@ -157,3 +157,24 @@ directly from its SHA-256-pinned Linux x64 archive rather than DNF. Existing
 existing npm release pin remains in effect. Each subsequent series recipe
 uses its parent at **2026.9.17.12**; build retries reuse this exact version.
 GitHub Actions verifies the runtime and the absence of Fedora Node packages.
+
+### Fedora 45 Stable refresh: 2026.9.17.28
+
+All six layers share the `2026.9.17.28` version on native GitHub AMD64 and
+ARM64 runners. The foundation uses the digest-pinned official Fedora 45 final
+multiarch index. OpenClaw remains **2026.9.4**, including its deterministic
+artifact. Node follows the 26 LTS line at **26.13.0**. The series Hermes source
+follows `main` at `5b526a53189072c34349eb357803f4cc039505a7` and runs with
+Fedora's supported Python 3.14 in `/usr/local/lib/hermes-runtime/venv`.
+System services continue to use Fedora's system Python.
+
+Core-pre installs native Electrum, Agave/Solana, LND and Geth on both
+architectures. Base selects the matching native Nextcloud 35.0.2 runtime.
+Application requirements are upgraded within their declared version limits.
+The dependency audit, channel decisions and SHA256 values are recorded under
+[`upgrade-loop/evidence`](upgrade-loop/evidence/).
+
+Publish the generic multiarch manifests after both complete cascades pass.
+Local rollout stops affected services, completes Smart1, then starts those
+services again. Image builds and runtime smoke tests run exclusively on
+GitHub-hosted runners.

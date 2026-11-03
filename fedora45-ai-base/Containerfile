@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 ARG AI_CORE_IMAGE
 FROM ${AI_CORE_IMAGE} AS layer-sources
+ARG TARGETARCH
 USER root
 COPY build/ /tmp/fedora45-ai-base/build/
 COPY build.conf fedora45-ai-base.*_example /tmp/fedora45-ai-base/
@@ -12,10 +13,20 @@ ADD --keep-git-dir=true https://github.com/safrano9999/CODEANALYST.git /tmp/fedo
 ADD --keep-git-dir=true https://github.com/safrano9999/DIESDAS-.git /tmp/fedora45-ai-base/safrano9999/DIESDAS-/
 ADD --keep-git-dir=true https://github.com/safrano9999/safrano9999-paper.git /tmp/fedora45-ai-base/safrano9999/safrano9999-paper/
 RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+    set -euo pipefail; \
+    case "$TARGETARCH" in \
+      amd64) archive=nextcloud-fedora64-plugin-latest.zip ;; \
+      arm64) archive=nextcloud-fedora-arm64-plugin-latest.zip ;; \
+      *) echo "Unsupported Nextcloud architecture: $TARGETARCH" >&2; exit 1 ;; \
+    esac; \
     gh release download latest --repo safrano9999/NEXTCLOUD \
-      --pattern nextcloud-fedora64-plugin-latest.zip \
-      --pattern nextcloud-fedora64-plugin-latest.zip.sha256 \
-      --dir /tmp/fedora45-ai-base/.fedora45-runtime
+      --pattern "$archive" --pattern "$archive.sha256" \
+      --dir /tmp/nextcloud-native; \
+    cd /tmp/nextcloud-native; \
+    sha256sum --check --strict "$archive.sha256"; \
+    mkdir -p /tmp/fedora45-ai-base/.fedora45-runtime; \
+    cp "$archive" "$archive.sha256" /tmp/fedora45-ai-base/.fedora45-runtime/; \
+    cp "$archive" /tmp/fedora45-ai-base/.fedora45-runtime/nextcloud-native.zip
 RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
     /tmp/fedora45-ai-base/build/assemble-runtime.sh \
  && find /tmp/fedora45-ai-base/safrano9999 -name .git -type d -prune -exec rm -rf {} +
@@ -32,7 +43,7 @@ USER root
 # Architecture-specific tools are inherited from Core-pre.
 COPY --from=layer-sources /tmp/fedora45-ai-base/requirements.base.txt /requirements.base.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r /requirements.base.txt \
+    pip install --upgrade -r /requirements.base.txt \
  && pip check
 
 COPY --from=layer-sources /tmp/fedora45-ai-base/.fedora45-ai-base-source-tags.tsv /README/fedora45-ai-base-source-tags.tsv
@@ -49,16 +60,11 @@ COPY --from=layer-sources /tmp/fedora45-ai-base/safrano9999/ /opt/safrano9999/
 # would miss a runtime-only failure in that service's launcher.
 RUN python3 -c 'import pathlib, shlex, subprocess; unit = pathlib.Path("/etc/systemd/system/citadel.service").read_text(); command = next(line.split("=", 1)[1] for line in unit.splitlines() if line.startswith("ExecStart=")); argv = shlex.split(command); launcher = argv[:argv.index("webui.py")]; subprocess.run([*launcher, "-c", "import dotenv, fastapi, jinja2, uvicorn"], check=True)'
 
-COPY --from=layer-sources /tmp/fedora45-ai-base/.fedora45-runtime/nextcloud-fedora64-plugin-latest.zip \
-     /tmp/fedora45-ai-base/.fedora45-runtime/nextcloud-fedora64-plugin-latest.zip.sha256 \
-     /tmp/nextcloud-runtime/
-RUN cd /tmp/nextcloud-runtime \
- && sha256sum --check --strict nextcloud-fedora64-plugin-latest.zip.sha256 \
- && rm -rf /opt/safrano9999/NEXTCLOUD/runtime \
- && unzip -q nextcloud-fedora64-plugin-latest.zip 'runtime/*' \
-      -d /opt/safrano9999/NEXTCLOUD \
- && test -x /opt/safrano9999/NEXTCLOUD/runtime/opt/nextcloudcmd/bin/nextcloudcmd \
- && rm -rf /tmp/nextcloud-runtime
+COPY --from=layer-sources /tmp/fedora45-ai-base/.fedora45-runtime/nextcloud-native.zip /tmp/nextcloud-native.zip
+RUN rm -rf /opt/safrano9999/NEXTCLOUD/runtime \
+ && unzip -q /tmp/nextcloud-native.zip 'runtime/*' -d /opt/safrano9999/NEXTCLOUD \
+ && /opt/safrano9999/NEXTCLOUD/runtime/opt/nextcloudcmd/bin/nextcloudcmd --version \
+ && rm /tmp/nextcloud-native.zip
 
 RUN test -f /opt/safrano9999/safrano9999-paper/paper.pdf \
  && ln -sfnT \

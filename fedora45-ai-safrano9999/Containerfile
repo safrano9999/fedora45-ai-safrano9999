@@ -31,7 +31,7 @@ USER root
 COPY --from=layer-sources /tmp/fedora45-ai-safrano9999/requirements.safrano9999.txt /requirements.safrano9999.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     sed -i 's/psycopg\[binary\]/psycopg/g' /requirements.safrano9999.txt \
- && pip install -r /requirements.safrano9999.txt \
+ && pip install --upgrade -r /requirements.safrano9999.txt \
  && pip check
 
 ENV ZEROINBOX_DIR=/opt/safrano9999/ZEROINBOX

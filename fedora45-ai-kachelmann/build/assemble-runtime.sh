@@ -768,7 +768,12 @@ PY
 
 stage_runtime_assets() {
     local repository=NEXTCLOUD
-    local asset=nextcloud-fedora64-plugin-latest.zip
+    local asset
+    case "${TARGETARCH:-amd64}" in
+        amd64) asset=nextcloud-fedora64-plugin-latest.zip ;;
+        arm64) asset=nextcloud-fedora-arm64-plugin-latest.zip ;;
+        *) echo "Unsupported NEXTCLOUD architecture: $TARGETARCH" >&2; return 1 ;;
+    esac
     local expected actual
     mkdir -p "$RUNTIME_STAGE"
     printf 'repository\tasset\tsha256\tstatus\n' > "$RUNTIME_STAGE/manifest.tsv"

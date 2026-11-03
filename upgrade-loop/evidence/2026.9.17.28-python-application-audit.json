@@ -1,0 +1,649 @@
+{
+  "checked_at": "2026-11-03T08:00:21.923054+00:00",
+  "packages": [
+    {
+      "repository": "NOTE",
+      "requirement": "python-dotenv>=1.0",
+      "latest_stable": "1.2.4",
+      "latest_satisfying_declared_requirement": "1.2.4",
+      "source": "https://pypi.org/project/python-dotenv/"
+    },
+    {
+      "repository": "NOTE",
+      "requirement": "SQLAlchemy>=2.0",
+      "latest_stable": "2.1.6",
+      "latest_satisfying_declared_requirement": "2.1.6",
+      "source": "https://pypi.org/project/SQLAlchemy/"
+    },
+    {
+      "repository": "NOTE",
+      "requirement": "psycopg[binary]>=3.1",
+      "latest_stable": "3.3.7",
+      "latest_satisfying_declared_requirement": "3.3.7",
+      "source": "https://pypi.org/project/psycopg/"
+    },
+    {
+      "repository": "NOTE",
+      "requirement": "pymysql>=1.1",
+      "latest_stable": "1.2.3",
+      "latest_satisfying_declared_requirement": "1.2.3",
+      "source": "https://pypi.org/project/pymysql/"
+    },
+    {
+      "repository": "WELCOME",
+      "requirement": "python-dotenv",
+      "latest_stable": "1.2.4",
+      "latest_satisfying_declared_requirement": "1.2.4",
+      "source": "https://pypi.org/project/python-dotenv/"
+    },
+    {
+      "repository": "WELCOME",
+      "requirement": "reportlab",
+      "latest_stable": "5.1.0",
+      "latest_satisfying_declared_requirement": "5.1.0",
+      "source": "https://pypi.org/project/reportlab/"
+    },
+    {
+      "repository": "CITADEL",
+      "requirement": "python-dotenv",
+      "latest_stable": "1.2.4",
+      "latest_satisfying_declared_requirement": "1.2.4",
+      "source": "https://pypi.org/project/python-dotenv/"
+    },
+    {
+      "repository": "CITADEL",
+      "requirement": "fastapi>=0.110.0",
+      "latest_stable": "0.162.0",
+      "latest_satisfying_declared_requirement": "0.162.0",
+      "source": "https://pypi.org/project/fastapi/"
+    },
+    {
+      "repository": "CITADEL",
+      "requirement": "uvicorn[standard]>=0.29.0",
+      "latest_stable": "0.54.0",
+      "latest_satisfying_declared_requirement": "0.54.0",
+      "source": "https://pypi.org/project/uvicorn/"
+    },
+    {
+      "repository": "CITADEL",
+      "requirement": "jinja2>=3.1.0",
+      "latest_stable": "3.1.6",
+      "latest_satisfying_declared_requirement": "3.1.6",
+      "source": "https://pypi.org/project/jinja2/"
+    },
+    {
+      "repository": "NEXTCLOUD",
+      "requirement": "icalendar",
+      "latest_stable": "7.3.0",
+      "latest_satisfying_declared_requirement": "7.3.0",
+      "source": "https://pypi.org/project/icalendar/"
+    },
+    {
+      "repository": "NEXTCLOUD",
+      "requirement": "python-dotenv",
+      "latest_stable": "1.2.4",
+      "latest_satisfying_declared_requirement": "1.2.4",
+      "source": "https://pypi.org/project/python-dotenv/"
+    },
+    {
+      "repository": "NEXTCLOUD",
+      "requirement": "requests",
+      "latest_stable": "2.34.2",
+      "latest_satisfying_declared_requirement": "2.34.2",
+      "source": "https://pypi.org/project/requests/"
+    },
+    {
+      "repository": "NEXTCLOUD",
+      "requirement": "recurring_ical_events",
+      "latest_stable": "3.8.2",
+      "latest_satisfying_declared_requirement": "3.8.2",
+      "source": "https://pypi.org/project/recurring_ical_events/"
+    },
+    {
+      "repository": "CODEANALYST",
+      "requirement": "tldr>=3.4",
+      "latest_stable": "3.4.4",
+      "latest_satisfying_declared_requirement": "3.4.4",
+      "source": "https://pypi.org/project/tldr/"
+    },
+    {
+      "repository": "CODEANALYST",
+      "requirement": "python-dotenv",
+      "latest_stable": "1.2.4",
+      "latest_satisfying_declared_requirement": "1.2.4",
+      "source": "https://pypi.org/project/python-dotenv/"
+    },
+    {
+      "repository": "CODEANALYST",
+      "requirement": "fastapi>=0.110.0",
+      "latest_stable": "0.162.0",
+      "latest_satisfying_declared_requirement": "0.162.0",
+      "source": "https://pypi.org/project/fastapi/"
+    },
+    {
+      "repository": "CODEANALYST",
+      "requirement": "uvicorn[standard]>=0.29.0",
+      "latest_stable": "0.54.0",
+      "latest_satisfying_declared_requirement": "0.54.0",
+      "source": "https://pypi.org/project/uvicorn/"
+    },
+    {
+      "repository": "CODEANALYST",
+      "requirement": "jinja2>=3.1.0",
+      "latest_stable": "3.1.6",
+      "latest_satisfying_declared_requirement": "3.1.6",
+      "source": "https://pypi.org/project/jinja2/"
+    },
+    {
+      "repository": "DIESDAS-",
+      "requirement": "grpcio>=1.84.0",
+      "latest_stable": "1.85.1",
+      "latest_satisfying_declared_requirement": "1.85.1",
+      "source": "https://pypi.org/project/grpcio/"
+    },
+    {
+      "repository": "KACHELMANN",
+      "requirement": "fastapi",
+      "latest_stable": "0.162.0",
+      "latest_satisfying_declared_requirement": "0.162.0",
+      "source": "https://pypi.org/project/fastapi/"
+    },
+    {
+      "repository": "KACHELMANN",
+      "requirement": "uvicorn[standard]",
+      "latest_stable": "0.54.0",
+      "latest_satisfying_declared_requirement": "0.54.0",
+      "source": "https://pypi.org/project/uvicorn/"
+    },
+    {
+      "repository": "KACHELMANN",
+      "requirement": "sqlalchemy",
+      "latest_stable": "2.1.6",
+      "latest_satisfying_declared_requirement": "2.1.6",
+      "source": "https://pypi.org/project/sqlalchemy/"
+    },
+    {
+      "repository": "KACHELMANN",
+      "requirement": "PyMySQL",
+      "latest_stable": "1.2.3",
+      "latest_satisfying_declared_requirement": "1.2.3",
+      "source": "https://pypi.org/project/PyMySQL/"
+    },
+    {
+      "repository": "KACHELMANN",
+      "requirement": "psycopg[binary]",
+      "latest_stable": "3.3.7",
+      "latest_satisfying_declared_requirement": "3.3.7",
+      "source": "https://pypi.org/project/psycopg/"
+    },
+    {
+      "repository": "KACHELMANN",
+      "requirement": "python-dotenv",
+      "latest_stable": "1.2.4",
+      "latest_satisfying_declared_requirement": "1.2.4",
+      "source": "https://pypi.org/project/python-dotenv/"
+    },
+    {
+      "repository": "KACHELMANN",
+      "requirement": "jinja2",
+      "latest_stable": "3.1.6",
+      "latest_satisfying_declared_requirement": "3.1.6",
+      "source": "https://pypi.org/project/jinja2/"
+    },
+    {
+      "repository": "KACHELMANN",
+      "requirement": "mistune",
+      "latest_stable": "3.4.0",
+      "latest_satisfying_declared_requirement": "3.4.0",
+      "source": "https://pypi.org/project/mistune/"
+    },
+    {
+      "repository": "KACHELMANN",
+      "requirement": "mcp==2.0.0",
+      "latest_stable": "2.3.0",
+      "latest_satisfying_declared_requirement": "2.0.0",
+      "source": "https://pypi.org/project/mcp/"
+    },
+    {
+      "repository": "KACHELMANN",
+      "requirement": "Pillow",
+      "latest_stable": "13.0.0",
+      "latest_satisfying_declared_requirement": "13.0.0",
+      "source": "https://pypi.org/project/Pillow/"
+    },
+    {
+      "repository": "KACHELMANN",
+      "requirement": "python-multipart",
+      "latest_stable": "0.0.33",
+      "latest_satisfying_declared_requirement": "0.0.33",
+      "source": "https://pypi.org/project/python-multipart/"
+    },
+    {
+      "repository": "KACHELMANN",
+      "requirement": "reportlab",
+      "latest_stable": "5.1.0",
+      "latest_satisfying_declared_requirement": "5.1.0",
+      "source": "https://pypi.org/project/reportlab/"
+    },
+    {
+      "repository": "KACHELMANN",
+      "requirement": "pypdf",
+      "latest_stable": "6.21.4",
+      "latest_satisfying_declared_requirement": "6.21.4",
+      "source": "https://pypi.org/project/pypdf/"
+    },
+    {
+      "repository": "KACHELMANN",
+      "requirement": "slowapi",
+      "latest_stable": "0.1.10",
+      "latest_satisfying_declared_requirement": "0.1.10",
+      "source": "https://pypi.org/project/slowapi/"
+    },
+    {
+      "repository": "DAILYNEWS",
+      "requirement": "feedparser",
+      "latest_stable": "6.0.14",
+      "latest_satisfying_declared_requirement": "6.0.14",
+      "source": "https://pypi.org/project/feedparser/"
+    },
+    {
+      "repository": "DAILYNEWS",
+      "requirement": "reportlab",
+      "latest_stable": "5.1.0",
+      "latest_satisfying_declared_requirement": "5.1.0",
+      "source": "https://pypi.org/project/reportlab/"
+    },
+    {
+      "repository": "ZEROINBOX",
+      "requirement": "openai>=1.0.0",
+      "latest_stable": "3.42.1",
+      "latest_satisfying_declared_requirement": "3.42.1",
+      "source": "https://pypi.org/project/openai/"
+    },
+    {
+      "repository": "ZEROINBOX",
+      "requirement": "python-dotenv>=1.0.0",
+      "latest_stable": "1.2.4",
+      "latest_satisfying_declared_requirement": "1.2.4",
+      "source": "https://pypi.org/project/python-dotenv/"
+    },
+    {
+      "repository": "ZEROINBOX",
+      "requirement": "reportlab>=4.2.0",
+      "latest_stable": "5.1.0",
+      "latest_satisfying_declared_requirement": "5.1.0",
+      "source": "https://pypi.org/project/reportlab/"
+    },
+    {
+      "repository": "SPANKER",
+      "requirement": "fastapi>=0.115",
+      "latest_stable": "0.162.0",
+      "latest_satisfying_declared_requirement": "0.162.0",
+      "source": "https://pypi.org/project/fastapi/"
+    },
+    {
+      "repository": "SPANKER",
+      "requirement": "uvicorn[standard]>=0.30",
+      "latest_stable": "0.54.0",
+      "latest_satisfying_declared_requirement": "0.54.0",
+      "source": "https://pypi.org/project/uvicorn/"
+    },
+    {
+      "repository": "SPANKER",
+      "requirement": "SQLAlchemy>=2.0",
+      "latest_stable": "2.1.6",
+      "latest_satisfying_declared_requirement": "2.1.6",
+      "source": "https://pypi.org/project/SQLAlchemy/"
+    },
+    {
+      "repository": "SPANKER",
+      "requirement": "psycopg[binary]>=3.1",
+      "latest_stable": "3.3.7",
+      "latest_satisfying_declared_requirement": "3.3.7",
+      "source": "https://pypi.org/project/psycopg/"
+    },
+    {
+      "repository": "SPANKER",
+      "requirement": "pymysql>=1.1",
+      "latest_stable": "1.2.3",
+      "latest_satisfying_declared_requirement": "1.2.3",
+      "source": "https://pypi.org/project/pymysql/"
+    },
+    {
+      "repository": "JUGO",
+      "requirement": "fastapi>=0.110.0",
+      "latest_stable": "0.162.0",
+      "latest_satisfying_declared_requirement": "0.162.0",
+      "source": "https://pypi.org/project/fastapi/"
+    },
+    {
+      "repository": "JUGO",
+      "requirement": "uvicorn[standard]>=0.29.0",
+      "latest_stable": "0.54.0",
+      "latest_satisfying_declared_requirement": "0.54.0",
+      "source": "https://pypi.org/project/uvicorn/"
+    },
+    {
+      "repository": "JUGO",
+      "requirement": "httpx>=0.27.0",
+      "latest_stable": "0.28.1",
+      "latest_satisfying_declared_requirement": "0.28.1",
+      "source": "https://pypi.org/project/httpx/"
+    },
+    {
+      "repository": "JUGO",
+      "requirement": "openai",
+      "latest_stable": "3.42.1",
+      "latest_satisfying_declared_requirement": "3.42.1",
+      "source": "https://pypi.org/project/openai/"
+    },
+    {
+      "repository": "JUGO",
+      "requirement": "python-multipart>=0.0.9",
+      "latest_stable": "0.0.33",
+      "latest_satisfying_declared_requirement": "0.0.33",
+      "source": "https://pypi.org/project/python-multipart/"
+    },
+    {
+      "repository": "JUGO",
+      "requirement": "python-dotenv",
+      "latest_stable": "1.2.4",
+      "latest_satisfying_declared_requirement": "1.2.4",
+      "source": "https://pypi.org/project/python-dotenv/"
+    },
+    {
+      "repository": "JUGO",
+      "requirement": "libtmux>=0.31.0",
+      "latest_stable": "0.62.0",
+      "latest_satisfying_declared_requirement": "0.62.0",
+      "source": "https://pypi.org/project/libtmux/"
+    },
+    {
+      "repository": "JUGO",
+      "requirement": "elevenlabs>=1.0.0",
+      "latest_stable": "2.75.0",
+      "latest_satisfying_declared_requirement": "2.75.0",
+      "source": "https://pypi.org/project/elevenlabs/"
+    },
+    {
+      "repository": "JUGO",
+      "requirement": "google-cloud-texttospeech>=2.0.0",
+      "latest_stable": "2.38.0",
+      "latest_satisfying_declared_requirement": "2.38.0",
+      "source": "https://pypi.org/project/google-cloud-texttospeech/"
+    },
+    {
+      "repository": "JUGO",
+      "requirement": "sqlalchemy>=2.0.0",
+      "latest_stable": "2.1.6",
+      "latest_satisfying_declared_requirement": "2.1.6",
+      "source": "https://pypi.org/project/sqlalchemy/"
+    },
+    {
+      "repository": "JUGO",
+      "requirement": "psycopg2-binary>=2.9",
+      "latest_stable": "2.9.13",
+      "latest_satisfying_declared_requirement": "2.9.13",
+      "source": "https://pypi.org/project/psycopg2-binary/"
+    },
+    {
+      "repository": "JUGO",
+      "requirement": "pymysql>=1.1.0",
+      "latest_stable": "1.2.3",
+      "latest_satisfying_declared_requirement": "1.2.3",
+      "source": "https://pypi.org/project/pymysql/"
+    },
+    {
+      "repository": "PV_D-A-CH",
+      "requirement": "requests",
+      "latest_stable": "2.34.2",
+      "latest_satisfying_declared_requirement": "2.34.2",
+      "source": "https://pypi.org/project/requests/"
+    },
+    {
+      "repository": "PV_D-A-CH",
+      "requirement": "openai",
+      "latest_stable": "3.42.1",
+      "latest_satisfying_declared_requirement": "3.42.1",
+      "source": "https://pypi.org/project/openai/"
+    },
+    {
+      "repository": "PV_D-A-CH",
+      "requirement": "sqlalchemy",
+      "latest_stable": "2.1.6",
+      "latest_satisfying_declared_requirement": "2.1.6",
+      "source": "https://pypi.org/project/sqlalchemy/"
+    },
+    {
+      "repository": "PV_D-A-CH",
+      "requirement": "pymysql",
+      "latest_stable": "1.2.3",
+      "latest_satisfying_declared_requirement": "1.2.3",
+      "source": "https://pypi.org/project/pymysql/"
+    },
+    {
+      "repository": "PV_D-A-CH",
+      "requirement": "psycopg[binary]",
+      "latest_stable": "3.3.7",
+      "latest_satisfying_declared_requirement": "3.3.7",
+      "source": "https://pypi.org/project/psycopg/"
+    },
+    {
+      "repository": "PV_D-A-CH",
+      "requirement": "fastapi>=0.110.0",
+      "latest_stable": "0.162.0",
+      "latest_satisfying_declared_requirement": "0.162.0",
+      "source": "https://pypi.org/project/fastapi/"
+    },
+    {
+      "repository": "PV_D-A-CH",
+      "requirement": "uvicorn[standard]>=0.29.0",
+      "latest_stable": "0.54.0",
+      "latest_satisfying_declared_requirement": "0.54.0",
+      "source": "https://pypi.org/project/uvicorn/"
+    },
+    {
+      "repository": "PV_D-A-CH",
+      "requirement": "jinja2>=3.1.0",
+      "latest_stable": "3.1.6",
+      "latest_satisfying_declared_requirement": "3.1.6",
+      "source": "https://pypi.org/project/jinja2/"
+    },
+    {
+      "repository": "PV_D-A-CH",
+      "requirement": "python-dotenv",
+      "latest_stable": "1.2.4",
+      "latest_satisfying_declared_requirement": "1.2.4",
+      "source": "https://pypi.org/project/python-dotenv/"
+    },
+    {
+      "repository": "PV_D-A-CH",
+      "requirement": "OWSLib",
+      "latest_stable": "0.36.0",
+      "latest_satisfying_declared_requirement": "0.36.0",
+      "source": "https://pypi.org/project/OWSLib/"
+    },
+    {
+      "repository": "PV_D-A-CH",
+      "requirement": "Pillow",
+      "latest_stable": "13.0.0",
+      "latest_satisfying_declared_requirement": "13.0.0",
+      "source": "https://pypi.org/project/Pillow/"
+    },
+    {
+      "repository": "PV_D-A-CH",
+      "requirement": "tomli; python_version < \"3.11\"",
+      "latest_stable": "2.5.0",
+      "latest_satisfying_declared_requirement": "2.5.0",
+      "source": "https://pypi.org/project/tomli/"
+    },
+    {
+      "repository": "KIWIX_BRIDGE",
+      "requirement": "flask",
+      "latest_stable": "3.1.3",
+      "latest_satisfying_declared_requirement": "3.1.3",
+      "source": "https://pypi.org/project/flask/"
+    },
+    {
+      "repository": "KIWIX_BRIDGE",
+      "requirement": "openai",
+      "latest_stable": "3.42.1",
+      "latest_satisfying_declared_requirement": "3.42.1",
+      "source": "https://pypi.org/project/openai/"
+    },
+    {
+      "repository": "KIWIX_BRIDGE",
+      "requirement": "python-dotenv",
+      "latest_stable": "1.2.4",
+      "latest_satisfying_declared_requirement": "1.2.4",
+      "source": "https://pypi.org/project/python-dotenv/"
+    },
+    {
+      "repository": "KIWIX_BRIDGE",
+      "requirement": "beautifulsoup4",
+      "latest_stable": "4.15.0",
+      "latest_satisfying_declared_requirement": "4.15.0",
+      "source": "https://pypi.org/project/beautifulsoup4/"
+    },
+    {
+      "repository": "KIWIX_BRIDGE",
+      "requirement": "requests",
+      "latest_stable": "2.34.2",
+      "latest_satisfying_declared_requirement": "2.34.2",
+      "source": "https://pypi.org/project/requests/"
+    },
+    {
+      "repository": "NAPOLEON_HILLS_AI_MASTERMIND_CLASSES",
+      "requirement": "python-dotenv",
+      "latest_stable": "1.2.4",
+      "latest_satisfying_declared_requirement": "1.2.4",
+      "source": "https://pypi.org/project/python-dotenv/"
+    },
+    {
+      "repository": "NAPOLEON_HILLS_AI_MASTERMIND_CLASSES",
+      "requirement": "openai",
+      "latest_stable": "3.42.1",
+      "latest_satisfying_declared_requirement": "3.42.1",
+      "source": "https://pypi.org/project/openai/"
+    },
+    {
+      "repository": "NAPOLEON_HILLS_AI_MASTERMIND_CLASSES",
+      "requirement": "fastapi",
+      "latest_stable": "0.162.0",
+      "latest_satisfying_declared_requirement": "0.162.0",
+      "source": "https://pypi.org/project/fastapi/"
+    },
+    {
+      "repository": "NAPOLEON_HILLS_AI_MASTERMIND_CLASSES",
+      "requirement": "uvicorn[standard]",
+      "latest_stable": "0.54.0",
+      "latest_satisfying_declared_requirement": "0.54.0",
+      "source": "https://pypi.org/project/uvicorn/"
+    },
+    {
+      "repository": "NAPOLEON_HILLS_AI_MASTERMIND_CLASSES",
+      "requirement": "jinja2",
+      "latest_stable": "3.1.6",
+      "latest_satisfying_declared_requirement": "3.1.6",
+      "source": "https://pypi.org/project/jinja2/"
+    },
+    {
+      "repository": "NAPOLEON_HILLS_AI_MASTERMIND_CLASSES",
+      "requirement": "sqlalchemy",
+      "latest_stable": "2.1.6",
+      "latest_satisfying_declared_requirement": "2.1.6",
+      "source": "https://pypi.org/project/sqlalchemy/"
+    },
+    {
+      "repository": "NAPOLEON_HILLS_AI_MASTERMIND_CLASSES",
+      "requirement": "psycopg[binary]",
+      "latest_stable": "3.3.7",
+      "latest_satisfying_declared_requirement": "3.3.7",
+      "source": "https://pypi.org/project/psycopg/"
+    },
+    {
+      "repository": "NAPOLEON_HILLS_AI_MASTERMIND_CLASSES",
+      "requirement": "pymysql",
+      "latest_stable": "1.2.3",
+      "latest_satisfying_declared_requirement": "1.2.3",
+      "source": "https://pypi.org/project/pymysql/"
+    },
+    {
+      "repository": "NaturalGrounding-Tiktok-Ying-Video-Manager",
+      "requirement": "Django>=5.2,<6",
+      "latest_stable": "6.1.2",
+      "latest_satisfying_declared_requirement": "5.2.18",
+      "source": "https://pypi.org/project/Django/"
+    },
+    {
+      "repository": "NaturalGrounding-Tiktok-Ying-Video-Manager",
+      "requirement": "django-allauth[socialaccount]>=65",
+      "latest_stable": "65.21.1",
+      "latest_satisfying_declared_requirement": "65.21.1",
+      "source": "https://pypi.org/project/django-allauth/"
+    },
+    {
+      "repository": "NaturalGrounding-Tiktok-Ying-Video-Manager",
+      "requirement": "password-validator>=1.0",
+      "latest_stable": "1.0",
+      "latest_satisfying_declared_requirement": "1.0",
+      "source": "https://pypi.org/project/password-validator/"
+    },
+    {
+      "repository": "NaturalGrounding-Tiktok-Ying-Video-Manager",
+      "requirement": "gunicorn>=23",
+      "latest_stable": "26.2.0",
+      "latest_satisfying_declared_requirement": "26.2.0",
+      "source": "https://pypi.org/project/gunicorn/"
+    },
+    {
+      "repository": "NaturalGrounding-Tiktok-Ying-Video-Manager",
+      "requirement": "whitenoise>=6.8",
+      "latest_stable": "6.12.0",
+      "latest_satisfying_declared_requirement": "6.12.0",
+      "source": "https://pypi.org/project/whitenoise/"
+    },
+    {
+      "repository": "NaturalGrounding-Tiktok-Ying-Video-Manager",
+      "requirement": "stripe>=11",
+      "latest_stable": "16.1.0",
+      "latest_satisfying_declared_requirement": "16.1.0",
+      "source": "https://pypi.org/project/stripe/"
+    },
+    {
+      "repository": "NaturalGrounding-Tiktok-Ying-Video-Manager",
+      "requirement": "python-dotenv>=1.0",
+      "latest_stable": "1.2.4",
+      "latest_satisfying_declared_requirement": "1.2.4",
+      "source": "https://pypi.org/project/python-dotenv/"
+    },
+    {
+      "repository": "NaturalGrounding-Tiktok-Ying-Video-Manager",
+      "requirement": "yt-dlp",
+      "latest_stable": "2026.10.26",
+      "latest_satisfying_declared_requirement": "2026.10.26",
+      "source": "https://pypi.org/project/yt-dlp/"
+    },
+    {
+      "repository": "NaturalGrounding-Tiktok-Ying-Video-Manager",
+      "requirement": "psycopg[binary]",
+      "latest_stable": "3.3.7",
+      "latest_satisfying_declared_requirement": "3.3.7",
+      "source": "https://pypi.org/project/psycopg/"
+    },
+    {
+      "repository": "NaturalGrounding-Tiktok-Ying-Video-Manager",
+      "requirement": "PyMySQL",
+      "latest_stable": "1.2.3",
+      "latest_satisfying_declared_requirement": "1.2.3",
+      "source": "https://pypi.org/project/PyMySQL/"
+    },
+    {
+      "repository": "NaturalGrounding-Tiktok-Ying-Video-Manager",
+      "requirement": "SQLAlchemy>=2.0",
+      "latest_stable": "2.1.6",
+      "latest_satisfying_declared_requirement": "2.1.6",
+      "source": "https://pypi.org/project/SQLAlchemy/"
+    }
+  ]
+}
