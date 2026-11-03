@@ -1,0 +1,31 @@
+# Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
+name: Resolve third-party stable updates
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Resolve declared release channels and verify downloads
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+        run: |
+          python3 upgrade-loop/build_dependencies.py --apply > dependency-refresh.json
+          python3 .github/scripts/resolve-architecture-inputs.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: third-party-pins
+          path: |
+            dependency-refresh.json
+            upgrade-loop/build-dependencies-whitelist.json
+            fedora45-ai-core-pre/build.conf
+            fedora45-ai-core-pre/build/architecture-inputs.json
+          if-no-files-found: error

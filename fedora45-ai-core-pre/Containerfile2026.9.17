@@ -17,9 +17,8 @@ FROM scratch AS hermes-profile-store-fix
 ADD --checksum=sha256:b0429fc10a6f91ba53b6527bdf8b95ee55e85868057381831fe9667401ef9a1a \
     https://github.com/NousResearch/hermes-agent/commit/e678842b5d10e528721a3e389e5821efe74f2f10.patch /profile-store.patch
 
-FROM fedora45-approved-beta AS ai-core-pre
-# The Action supplies this named OCI context from the approved Fedora 45 Beta
-# archive, pinned by SHA256 and manifest digest in build-dependencies-whitelist.json.
+FROM registry.fedoraproject.org/fedora:45@sha256:c15d8d6067038f1d6b10d8e1b8440f787a474fe6dc641ef77a5c74b1bf01a05d AS ai-core-pre
+# Official Fedora 45 Stable index, with native amd64 and arm64 manifests.
 
 ARG WEBHOOK_VERSION
 # Pinned snapshot of upstream main (2026-10-22T18:29:13Z).

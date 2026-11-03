@@ -7,7 +7,7 @@ FROM scratch AS node-release
 ADD --checksum=sha256:6170b2d474e1c626f43cff3adc118df9fe3b573258a4fc3d850c8dbc6b079bbd \
     https://nodejs.org/dist/v26.12.1/node-v26.12.1-linux-x64.tar.xz /node.tar.xz
 
-FROM fedora45-approved-beta AS ai-core-pre
+FROM registry.fedoraproject.org/fedora:45@sha256:c15d8d6067038f1d6b10d8e1b8440f787a474fe6dc641ef77a5c74b1bf01a05d AS ai-core-pre
 # The Action supplies this named OCI context from the approved Fedora 45 Beta
 # archive, pinned by SHA256 and manifest digest in build-dependencies-whitelist.json.
 
