@@ -165,8 +165,11 @@ ARM64 runners. The foundation uses the digest-pinned official Fedora 45 final
 multiarch index. OpenClaw remains **2026.9.4**, including its deterministic
 artifact. Node follows the 26 LTS line at **26.13.0**. The series Hermes source
 follows `main` at `5b526a53189072c34349eb357803f4cc039505a7` and runs with
-Fedora's supported Python 3.14 in `/usr/local/lib/hermes-runtime/venv`.
-System services continue to use Fedora's system Python.
+its own PM-locked Python/uv toolchain and application `.venv` under
+`/usr/local/lib/hermes-runtime/hermes-agent`. The same directory contains the
+independent `pm-runtime` required by dashboard chat and the prebuilt Node/TUI.
+Dependencies follow upstream `uv.lock`; system services keep Fedora's Python.
+GitHub runners open the real dashboard chat WebSocket with networking disabled.
 
 Core-pre installs native Electrum, Agave/Solana, LND and Geth on both
 architectures. Base selects the matching native Nextcloud 35.0.2 runtime.

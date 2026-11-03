@@ -48,6 +48,9 @@ or host-side vendor directory is used.
 The `2026.9.17.28` refresh uses the official Fedora 45 Stable index and
 native AMD64/ARM64 runners. Node 26.13.0 and architecture-specific download
 checksums are recorded in `build/architecture-inputs.json`. Hermes's current
-main-branch snapshot uses Python 3.14 in an image-owned environment at
-`/usr/local/lib/hermes-runtime/venv`; generic services retain system Python.
+main-branch snapshot uses its own PM-managed Python, uv and Node, with the
+application `.venv` and independent `pm-runtime` inside
+`/usr/local/lib/hermes-runtime/hermes-agent`. Its upstream build APIs consume
+`pm/lock.json` and `uv.lock`; generic services retain system Python/Node.
+An offline runner test opens the real dashboard chat PTY from a fresh profile.
 Electrum, Agave/Solana, Geth, LND and Cloudflared are native on both platforms.

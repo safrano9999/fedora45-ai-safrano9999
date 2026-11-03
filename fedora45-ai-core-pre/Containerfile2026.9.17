@@ -17,6 +17,7 @@ ADD --checksum=sha256:f3b60b20ffaadd4415ed7957212a38ac63fa4c5fa375bd0f4a79777794
 # Upstream PR #143063: accept the profile's state.db through a persistent-volume symlink.
 FROM scratch AS hermes-profile-store-fix
 COPY build/hermes-profile-store.patch /profile-store.patch
+COPY build/install-hermes-runtime.py /install-hermes-runtime.py
 
 FROM registry.fedoraproject.org/fedora:45@sha256:c15d8d6067038f1d6b10d8e1b8440f787a474fe6dc641ef77a5c74b1bf01a05d AS ai-core-pre
 # Official Fedora 45 Stable index, with native amd64 and arm64 manifests.
@@ -85,7 +86,7 @@ RUN --mount=type=bind,from=node-release,source=/node.tar.xz,target=/tmp/node.tar
     nano vim-minimal less \
     curl wget ca-certificates openssl gnupg2 fuse-libs \
     libatomic libstdc++ \
-    python3 python3-libs python3-devel python3.14 python3.14-devel libpq \
+    python3 python3-libs python3-devel libpq \
     python3-dotenv python3-pyyaml python3-reportlab tldr \
     python3-fastapi python3-uvicorn+standard python3-jinja2 \
     python3-icalendar python3-requests python3-sqlalchemy \
@@ -156,9 +157,10 @@ RUN test -n "${UV_VERSION}" \
  && rm -f /tmp/uv-install.sh \
  && uv --version
 
-# Upstream Hermes supports Python 3.14, while Fedora 45 defaults to 3.15.
-# Keep its supported interpreter and pinned dependencies in the immutable image.
+# Use Hermes' own locked toolchain, application venv and independent PM runtime.
+# The host-independent store stays in the image, outside persistent profile data.
 RUN --mount=type=bind,from=hermes-profile-store-fix,source=/profile-store.patch,target=/tmp/hermes-profile-store.patch \
+    --mount=type=bind,from=hermes-profile-store-fix,source=/install-hermes-runtime.py,target=/tmp/install-hermes-runtime.py \
     set -euo pipefail; \
     [[ "$HERMES_COMMIT" =~ ^[0-9a-f]{40}$ ]]; \
     [[ "$HERMES_DISTANCE" =~ ^[0-9]+$ ]]; \
@@ -170,24 +172,9 @@ RUN --mount=type=bind,from=hermes-profile-store-fix,source=/profile-store.patch,
  && test "$(git -C /usr/local/lib/hermes-agent rev-parse HEAD)" = "${HERMES_COMMIT}" \
  && git -C /usr/local/lib/hermes-agent apply --check /tmp/hermes-profile-store.patch \
  && git -C /usr/local/lib/hermes-agent apply /tmp/hermes-profile-store.patch \
- && /usr/bin/python3 /usr/local/lib/hermes-agent/scripts/write_install_stamp.py \
-      --output /usr/local/lib/hermes-agent/install-stamp.json \
-      --commit "${HERMES_COMMIT}" --branch main --base-version "${HERMES_VERSION}" --distance "${HERMES_DISTANCE}" \
-      --source ci --distribution docker --update-mechanism external \
- && cd /usr/local/lib/hermes-runtime/hermes-agent \
- && uv venv --python /usr/bin/python3.14 /usr/local/lib/hermes-runtime/venv \
- && uv pip install --python /usr/local/lib/hermes-runtime/venv/bin/python \
-      --editable '/usr/local/lib/hermes-runtime/hermes-agent[all,messaging]' \
+ && HERMES_COMMIT="${HERMES_COMMIT}" HERMES_VERSION="${HERMES_VERSION}" HERMES_DISTANCE="${HERMES_DISTANCE}" \
+      /usr/bin/python3 /tmp/install-hermes-runtime.py /usr/local/lib/hermes-runtime/hermes-agent \
  && test "$(jq -er .baseVersion /usr/local/lib/hermes-agent/install-stamp.json)" = "${HERMES_VERSION}" \
- && ln -sfn /usr/local/lib/hermes-runtime/venv/bin/hermes /usr/local/bin/hermes \
- && test -x /usr/local/bin/hermes \
- && mkdir -p /usr/local/lib/hermes-agent/.hermes/bin \
- && ln -s /usr/local/bin/hermes /usr/local/lib/hermes-agent/.hermes/bin/hermes \
- && npm ci --workspace web --workspace ui-tui --include-workspace-root \
- && npm run build:ink --workspace ui-tui \
- && npm run build --workspace ui-tui \
- && npm run build --workspace web \
- && /usr/local/lib/hermes-runtime/venv/bin/python -c "import sys, certifi, hermes_cli, telegram, mcp; assert sys.version_info[:2] == (3, 14); assert certifi.__version__ == '2026.10.19'" \
  && timeout 90 hermes --version \
  && HERMES_HOME=/tmp/hermes-smoke-home timeout 90 hermes --version \
  && rm -rf /tmp/hermes-smoke-home

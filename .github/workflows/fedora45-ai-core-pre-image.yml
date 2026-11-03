@@ -351,15 +351,23 @@ jobs:
             = '["/sbin/init"]'
           docker buildx imagetools inspect "$image" >/dev/null
 
+      - name: Verify Hermes dashboard chat offline
+        if: inputs.build_series == '2026.9.17'
+        run: |
+          docker run --rm --network none --entrypoint /usr/local/lib/hermes-agent/.venv/bin/python \
+            -v "$PWD/fedora45-ai-core-pre/tests/smoke_hermes_dashboard.py:/tmp/smoke_hermes_dashboard.py:ro" \
+            "${{ steps.tags.outputs.image }}:${{ steps.tags.outputs.version }}" \
+            /tmp/smoke_hermes_dashboard.py
+
       - name: Verify Hermes profile persistence regression
         if: inputs.build_series == '2026.9.17'
         run: |
           docker run --rm --entrypoint bash \
             "${{ steps.tags.outputs.image }}:${{ steps.tags.outputs.version }}" -lc '
             set -euo pipefail
-            uv pip install --python /usr/local/lib/hermes-runtime/venv/bin/python pytest pytest-asyncio
+            uv pip install --python /usr/local/lib/hermes-agent/.venv/bin/python pytest pytest-asyncio
             cd /usr/local/lib/hermes-agent
-            /usr/local/lib/hermes-runtime/venv/bin/python -m pytest -q tests/gateway/test_profile_authority_symlinked_store.py
+            /usr/local/lib/hermes-agent/.venv/bin/python -m pytest -q tests/gateway/test_profile_authority_symlinked_store.py
           '
 
       - name: Verify private GHCR package

@@ -1519,7 +1519,7 @@
     "openclaw": "Explicitly frozen at 2026.9.4, deterministic.4 unchanged.",
     "node": "Update within the installed 26 LTS line to 26.13.0, separate verified architecture archives.",
     "solana": "Keep v4.3.2: the vendor stable channel still selects it; latest GitHub tag v4.4.0 is not the stable channel.",
-    "hermes": "Series recipe follows main at 5b526a53189072c34349eb357803f4cc039505a7, stamp 0.22.6+474. Supported Fedora Python 3.14 in private image environment; upstream dependency pins retained. Ordinary recipe follows stable 0.22.6.",
+    "hermes": "Series recipe follows main at 5b526a53189072c34349eb357803f4cc039505a7, stamp 0.22.6+474. Own PM-managed Python/uv/Node toolchain, sealed .venv and independent pm-runtime via upstream build APIs; pm/lock.json and uv.lock retained. Offline dashboard chat regression runs on both native runners. Ordinary recipe follows stable 0.22.6.",
     "nextcloud": "Update the Fedora stable desktop runtime from 33.0.7 to 35.0.2, built natively for both architectures. Debian package branch remains unchanged.",
     "go": "Latest Go 1.27 stable patch remains 1.27.3.",
     "jameica": "Stable 2.12.0 remains current, official download page checked.",
