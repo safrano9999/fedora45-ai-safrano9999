@@ -1526,7 +1526,7 @@
     "hibiscus": "Stable 2.12.4 remains current; development 2.13 snapshots are not selected.",
     "hbci4j": "Stable Maven artifact 4.1.17 remains current.",
     "supergateway": "Update released 4.1.0 to 4.2.1; port bearer propagation and session isolation; upstream internal dependency lock retained.",
-    "python_applications": "Audit 39 distinct packages across 92 declarations; install upgrades within declared constraints. Kachelmann exact MCP pin advances 2.0.0 to 2.3.0. Django remains 5.2 LTS, selects 5.2.18 rather than 6.x.",
+    "python_applications": "Audit 39 distinct packages across 92 declarations; install upgrades within declared constraints. Kachelmann exact MCP pin advances 2.0.0 to 2.3.0. Django remains 5.2 LTS, selects 5.2.18 rather than 6.x. Pip-owned packages are upgraded under /usr/local with RPM site-packages excluded only during installation; runtime search paths remain unchanged. Verified local FastAPI/Uvicorn imports and unmodified RPM files.",
     "mcp_bridge": "Bundled MCP SDK 1.32.2, esbuild 0.28.2 and Zod 4.6.7; OpenClaw host remains 2026.9.4.",
     "dotenv_mtg": "Keep 16.6.1 within declared Node dotenv 16.x; latest upstream major 18.x excluded."
   },
@@ -1592,6 +1592,78 @@
         "ripgrep": "15.2.0",
         "uv": "0.13.5"
       }
+    },
+    "cascade": {
+      "tag": "2026.9.17.28",
+      "runtime_source_commit": "b5868a9",
+      "amd64_runs": {
+        "core": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/41608203620",
+        "base": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/41609693327",
+        "kachelmann": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/41611381446",
+        "safrano9999": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/41612331122",
+        "full": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/41613571872"
+      },
+      "arm64_core_run": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/41607942033",
+      "arm64_core_job": 125822497247,
+      "arm64_base_through_full_run": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/41609697978",
+      "manifest_run": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/41614812166",
+      "verified_indexes": [
+        {
+          "image": "safrano9999/fedora45-ai-core-pre",
+          "tag": "2026.9.17.28",
+          "digest": "sha256:69c0d603f98858fb3a7eb701922870a827f56d6492160682425bb7b2eb0bbe95",
+          "architectures": [
+            "amd64",
+            "arm64"
+          ]
+        },
+        {
+          "image": "safrano9999/fedora45-ai-core",
+          "tag": "2026.9.17.28",
+          "digest": "sha256:40c63fb901434ad1ee6489c93bbedfd352e6c2bfae78ddd0c6a133aecac756aa",
+          "architectures": [
+            "amd64",
+            "arm64"
+          ]
+        },
+        {
+          "image": "safrano9999/fedora45-ai-base",
+          "tag": "2026.9.17.28",
+          "digest": "sha256:60c87a81060017f54ce2b8f861a68440d3a667e8285833dc98184d07a9d1b68a",
+          "architectures": [
+            "amd64",
+            "arm64"
+          ]
+        },
+        {
+          "image": "safrano9999/fedora45-ai-kachelmann",
+          "tag": "2026.9.17.28",
+          "digest": "sha256:ebf425fd9ca56512098fb5416110dd635361f934746c7adb937c20cde804796a",
+          "architectures": [
+            "amd64",
+            "arm64"
+          ]
+        },
+        {
+          "image": "safrano9999/fedora45-ai-safrano9999",
+          "tag": "2026.9.17.28",
+          "digest": "sha256:8e1c8708b6d0b3a473a5bfc15ebd3c641986a5a225d4d27053f1cdf0ca8996eb",
+          "architectures": [
+            "amd64",
+            "arm64"
+          ]
+        },
+        {
+          "image": "safrano9999/fedora45-ai-safrano9999-full",
+          "tag": "2026.9.17.28",
+          "digest": "sha256:f8732e25f478657888421c0b8bf9d57a67dcfca70891af682dc91c9447c90290",
+          "architectures": [
+            "amd64",
+            "arm64"
+          ]
+        }
+      ],
+      "checks": "All native builds and runtime checks passed; common indexes contain linux/amd64 and linux/arm64. Application dependency checks and original Fedora RPM integrity passed. OpenClaw remains 2026.9.4."
     }
   }
 }
