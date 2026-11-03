@@ -1574,6 +1574,24 @@
     "kachelmann": {
       "run": "https://github.com/safrano9999/KACHELMANN/actions/runs/41600941244",
       "mcp": "2.3.0"
+    },
+    "core_pre": {
+      "build_run": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/41605457562",
+      "verification_run": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/41607436604",
+      "build_commit": "4c6aeac",
+      "tag": "2026.9.17.28",
+      "notes": "Native image builds and base smoke tests passed. Initial dashboard test client lacked the session token and binary PTY handling; corrected standalone verification passed both architectures, including profile persistence and image checks.",
+      "amd64_digest": "sha256:f03f867073aac53b07c44b921f7f602dd154627d4448e1cf26b94d74e0693a20",
+      "arm64_digest": "sha256:062f213e6f4e8c7d29d17b170b5f8bb6cd73d8cac66db9d7d57f4cb8ee6fe9aa",
+      "hermes_managed_tools": {
+        "chromium": "1208+145.0.7632.6",
+        "ffmpeg": "9.0.1",
+        "node": "26.12.1",
+        "npm": "12.0.2",
+        "python": "3.14.9+20261021",
+        "ripgrep": "15.2.0",
+        "uv": "0.13.5"
+      }
     }
   }
 }
