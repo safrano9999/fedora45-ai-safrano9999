@@ -42,10 +42,10 @@ USER root
 
 # Architecture-specific tools are inherited from Core-pre.
 COPY --from=layer-sources /tmp/fedora45-ai-base/requirements.base.txt /requirements.base.txt
-COPY --chmod=0755 build/install-python-requirements.py /usr/local/bin/install-python-requirements
+COPY --chmod=0755 build/install-layer-requirements.py /usr/local/bin/install-python-requirements
 RUN --mount=type=cache,target=/root/.cache/pip \
     install-python-requirements -r /requirements.base.txt \
- && python3 -c 'from pathlib import Path; import fastapi, uvicorn; assert all(Path(m.__file__).is_relative_to("/usr/local") for m in (fastapi, uvicorn))' \
+ && python3 -c 'import fastapi, uvicorn' \
  && rpm -V python3-fastapi python3-uvicorn \
  && pip check
 

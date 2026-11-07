@@ -1,0 +1,30 @@
+# Source of truth: SCRIPTS/githubactions. Generated copies are overwritten.
+name: Cascade source checks
+on:
+  push:
+    branches: [main, 'update/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+      - name: Verify runtime and installer contracts
+        run: |
+          set -euo pipefail
+          for tests in fedora45-ai-*/tests; do
+            [ ! -d "$tests" ] || python3 -m unittest discover -s "$tests" -p 'test_*.py' -v
+          done
+          node --test fedora45-ai-core/tests/*.test.mjs fedora45-ai-core/tests/*.test.cjs
+          python3 .github/scripts/test-resolve-fedora-image-tag.py
+          git diff --exit-code

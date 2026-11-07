@@ -9,12 +9,25 @@ ARG NODE_SHA256=d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997
 ADD --checksum=sha256:${NODE_SHA256} \
     https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-${NODE_ARCH}.tar.xz /node.tar.xz
 
-FROM registry.fedoraproject.org/fedora:45@sha256:c15d8d6067038f1d6b10d8e1b8440f787a474fe6dc641ef77a5c74b1bf01a05d AS ai-core-pre
+# Official pip wheel, verified before the container's Python trust store is used.
+FROM scratch AS pip-release
+ADD --checksum=sha256:f3b60b20ffaadd4415ed7957212a38ac63fa4c5fa375bd0f4a797777940fad13 \
+    https://files.pythonhosted.org/packages/07/25/ee8c38ae72d66b844ce8eb9711ba905dba21ca1a8a0c960057c41cd23337/pip-26.3-py3-none-any.whl /pip-26.3-py3-none-any.whl
+
+# Upstream PR #143063: accept the profile's state.db through a persistent-volume symlink.
+FROM scratch AS hermes-profile-store-fix
+COPY build/hermes-profile-store.patch /profile-store.patch
+COPY build/install-hermes-runtime.py /install-hermes-runtime.py
+
+FROM registry.fedoraproject.org/fedora:45@sha256:5db9683660938d440b057d412247ee245172b9724f42428ae95ae01253bae699 AS ai-core-pre
 # Official Fedora 45 Stable index, with native amd64 and arm64 manifests.
 
 ARG TARGETARCH
 ARG WEBHOOK_VERSION
-ARG HERMES_VERSION=0.22.6
+# Pinned snapshot of upstream main (2026-11-07T20:54:11Z).
+ARG HERMES_VERSION=0.23.0
+ARG HERMES_COMMIT=63f6852249f6ce79a6e84f7d64fd4486facce5d1
+ARG HERMES_DISTANCE=774
 ARG VDITOR_VERSION
 ARG FEDORA_REPOMD_KEY
 ARG UV_VERSION
@@ -22,7 +35,7 @@ ARG UV_INSTALLER_SHA256
 ARG FUGU_COMMIT
 ARG CLOUDFLARED_VERSION
 ARG CLOUDFLARED_SHA256
-ARG OPENCLAW_VERSION=2026.9.4
+ARG OPENCLAW_VERSION=2026.11.1
 # Optional source override for this stable version. Empty uses its release tag.
 ARG OPENCLAW_UPSTREAM_SHA=
 ARG CODEX_VERSION
@@ -47,7 +60,7 @@ ARG VDITOR_SHA256
 ARG NPM_VERSION
 ARG NPM_SHA256
 ARG OPENCODE_VERSION=1.19.5
-ARG OPENCODE_TELEGRAM_VERSION=0.26.6
+ARG OPENCODE_TELEGRAM_VERSION=0.27.0
 
 LABEL org.opencontainers.image.title="fedora45-ai-core-pre" \
       org.opencontainers.image.description="Heavy generic Fedora 45 AI toolchain foundation without Safrano project content or ephemeral runtime configuration." \
@@ -67,13 +80,18 @@ RUN --mount=type=bind,from=node-release,source=/node.tar.xz,target=/tmp/node.tar
     --mount=type=cache,target=/var/cache/dnf \
     test -n "${FEDORA_REPOMD_KEY}" \
  && printf 'Fedora repository state: %s\n' "${FEDORA_REPOMD_KEY}" \
- && dnf -y update && dnf -y install \
+ && dnf -y update && dnf -y --exclude=python3-pip install \
     bash bash-completion shadow-utils sudo \
     git gh tmux \
     nano vim-minimal less \
     curl wget ca-certificates openssl gnupg2 fuse-libs \
     libatomic libstdc++ \
-    python3 python3-pip python3-devel libpq \
+    python3 python3-libs python3-devel libpq \
+    python3-dotenv python3-pyyaml python3-reportlab tldr \
+    python3-fastapi python3-uvicorn+standard python3-jinja2 \
+    python3-icalendar python3-requests python3-sqlalchemy \
+    python3-psycopg3 python3-PyMySQL python3-python-multipart \
+    python3-weasyprint \
     make gcc gcc-c++ \
     ripgrep fd-find jq sqlite unzip tar gzip xz bzip2 which file \
     iputils iproute procps-ng psmisc util-linux \
@@ -90,6 +108,18 @@ RUN --mount=type=bind,from=node-release,source=/node.tar.xz,target=/tmp/node.tar
  && ln -s /usr/local/bin/npm /usr/bin/npm \
  && ln -s /usr/local/bin/npx /usr/bin/npx \
  && test "$(/usr/bin/node --version)" = "v26.13.0"
+
+# Fedora's Python requires the python-pip-wheel data package. Replace its seed
+# wheel too, then install pip directly; no RPM pip executable.
+RUN --mount=type=bind,from=pip-release,source=/pip-26.3-py3-none-any.whl,target=/tmp/pip-26.3-py3-none-any.whl \
+    /usr/bin/python3 -c "import sysconfig; assert sysconfig.get_config_var('WHEEL_PKG_DIR') == '/usr/share/python-wheels/' or sysconfig.get_config_var('WHEEL_PKG_DIR') == '/usr/share/python-wheels'" \
+ && find /usr/share/python-wheels -maxdepth 1 -type f -name 'pip-*.whl' -delete \
+ && install -m 0644 /tmp/pip-26.3-py3-none-any.whl /usr/share/python-wheels/ \
+ && /usr/bin/python3 -c "import ensurepip; assert ensurepip.version() == '26.3'" \
+ && PYTHONPATH=/tmp/pip-26.3-py3-none-any.whl /usr/bin/python3 -m pip install \
+      --break-system-packages --no-index /tmp/pip-26.3-py3-none-any.whl \
+ && /usr/bin/python3 -c "import sys, pip, pip._vendor.certifi as certifi; assert sys.prefix == sys.base_prefix; assert pip.__version__ == '26.3'; assert certifi.__version__ == '2026.10.23'" \
+ && ! rpm -q python3-pip
 
 RUN curl -fsSL --retry 3 "https://registry.npmjs.org/npm/-/npm-${NPM_VERSION}.tgz" -o /tmp/npm.tgz \
  && echo "${NPM_SHA256}  /tmp/npm.tgz" | sha256sum -c - \
@@ -119,20 +149,35 @@ RUN --mount=type=cache,target=/root/.npm \
     opencode --version; \
     command -v opencode-telegram
 
-# Keep the installed Python/runtime outside persistent user data. Hermes owns
-# this checkout through its parent directory; the public project path stays stable.
-RUN set -euo pipefail; \
-    HERMES_TAG="$(curl -fsSL --retry 3 "https://api.github.com/repos/NousResearch/hermes-agent/releases/tags/v${HERMES_VERSION}" | jq -er --arg tag "v${HERMES_VERSION}" 'select(.draft == false and .prerelease == false and .tag_name == $tag) | .tag_name')"; \
-    HERMES_COMMIT="$(curl -fsSL --retry 3 "https://api.github.com/repos/NousResearch/hermes-agent/commits/${HERMES_TAG}" | jq -er '.sha | select(test("^[0-9a-f]{40}$"))')"; \
-    curl -fsSL "https://raw.githubusercontent.com/NousResearch/hermes-agent/${HERMES_COMMIT}/scripts/install.sh" \
-      | HERMES_HOME=/usr/local/lib/hermes-runtime bash -s -- --skip-setup \
-        --dir /usr/local/lib/hermes-runtime/hermes-agent --branch main --commit "${HERMES_COMMIT}" \
+RUN test -n "${UV_VERSION}" \
+ && test -n "${UV_INSTALLER_SHA256}" \
+ && curl -fsSL --retry 3 "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-installer.sh" -o /tmp/uv-install.sh \
+ && echo "${UV_INSTALLER_SHA256}  /tmp/uv-install.sh" | sha256sum -c - \
+ && UV_UNMANAGED_INSTALL=/usr/local/bin sh /tmp/uv-install.sh \
+ && rm -f /tmp/uv-install.sh \
+ && uv --version
+
+# Use Hermes' own locked toolchain, application venv and independent PM runtime.
+# The host-independent store stays in the image, outside persistent profile data.
+RUN --mount=type=bind,from=hermes-profile-store-fix,source=/profile-store.patch,target=/tmp/hermes-profile-store.patch \
+    --mount=type=bind,from=hermes-profile-store-fix,source=/install-hermes-runtime.py,target=/tmp/install-hermes-runtime.py \
+    set -euo pipefail; \
+    [[ "$HERMES_COMMIT" =~ ^[0-9a-f]{40}$ ]]; \
+    [[ "$HERMES_DISTANCE" =~ ^[0-9]+$ ]]; \
+    git init /usr/local/lib/hermes-runtime/hermes-agent \
+ && git -C /usr/local/lib/hermes-runtime/hermes-agent remote add origin https://github.com/NousResearch/hermes-agent.git \
+ && git -C /usr/local/lib/hermes-runtime/hermes-agent fetch --depth 1 origin "${HERMES_COMMIT}" \
+ && git -C /usr/local/lib/hermes-runtime/hermes-agent checkout --detach FETCH_HEAD \
  && ln -sfn /usr/local/lib/hermes-runtime/hermes-agent /usr/local/lib/hermes-agent \
  && test "$(git -C /usr/local/lib/hermes-agent rev-parse HEAD)" = "${HERMES_COMMIT}" \
+ && git -C /usr/local/lib/hermes-agent apply --check /tmp/hermes-profile-store.patch \
+ && git -C /usr/local/lib/hermes-agent apply /tmp/hermes-profile-store.patch \
+ && HERMES_COMMIT="${HERMES_COMMIT}" HERMES_VERSION="${HERMES_VERSION}" HERMES_DISTANCE="${HERMES_DISTANCE}" \
+      /usr/bin/python3 /tmp/install-hermes-runtime.py /usr/local/lib/hermes-runtime/hermes-agent \
  && test "$(jq -er .baseVersion /usr/local/lib/hermes-agent/install-stamp.json)" = "${HERMES_VERSION}" \
- && test -x /usr/local/lib/hermes-agent/.hermes/bin/hermes \
- && ln -sfn /usr/local/lib/hermes-agent/.hermes/bin/hermes /usr/local/bin/hermes \
- && npm --prefix /usr/local/lib/hermes-agent run build --workspace web
+ && timeout 90 hermes --version \
+ && HERMES_HOME=/tmp/hermes-smoke-home timeout 90 hermes --version \
+ && rm -rf /tmp/hermes-smoke-home
 
 RUN set -eux; \
     case "$(uname -m)" in \
@@ -196,14 +241,6 @@ RUN --mount=type=cache,target=/root/.npm \
  && test -f /usr/local/lib/vditor/dist/index.min.js \
  && rm -rf /tmp/vditor
 
-RUN test -n "${UV_VERSION}" \
- && test -n "${UV_INSTALLER_SHA256}" \
- && curl -fsSL --retry 3 "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-installer.sh" -o /tmp/uv-install.sh \
- && echo "${UV_INSTALLER_SHA256}  /tmp/uv-install.sh" | sha256sum -c - \
- && UV_UNMANAGED_INSTALL=/usr/local/bin sh /tmp/uv-install.sh \
- && rm -f /tmp/uv-install.sh \
- && uv --version
-
 RUN --mount=type=cache,target=/root/.npm \
     set -euo pipefail; test -n "${CODEX_VERSION}" \
  && test -n "${CLAUDE_CODE_VERSION}" \
@@ -245,10 +282,15 @@ RUN test -n "${CLOUDFLARED_VERSION}" \
  && chmod +x /usr/local/bin/cloudflared \
  && cloudflared --version
 
-COPY requirements.base.txt /requirements.base.txt
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r /requirements.base.txt python-multipart weasyprint pypdfium2 \
- && python3 -c 'import dotenv, fastapi, jinja2, multipart, pymysql, psycopg, reportlab, sqlalchemy, uvicorn, yaml'
+# Fedora supplies the base Python libraries above, including prebuilt PyYAML.
+# Only these two libraries are absent from the Fedora repositories. Use the
+# Fedora system interpreter used by the generic runtime services.
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system --python /usr/bin/python3 recurring-ical-events pypdfium2 \
+ && /usr/bin/python3 -c 'import sys, json, traceback, dotenv, fastapi, jinja2, python_multipart, pymysql, psycopg, reportlab, sqlalchemy, uvicorn, yaml, icalendar, recurring_ical_events, weasyprint, pypdfium2; assert sys.prefix == sys.base_prefix' \
+ && /usr/bin/python3 -I -c 'import json, traceback, yaml' \
+ && rpm -q python3-libs python3-pyyaml \
+ && timeout 90 hermes --version
 
 RUN echo '{"hasCompletedOnboarding":true}' > /root/.claude.json
 

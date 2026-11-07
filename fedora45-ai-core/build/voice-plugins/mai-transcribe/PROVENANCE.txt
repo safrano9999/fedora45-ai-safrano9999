@@ -1,0 +1,4 @@
+Moved unchanged from safrano9999/openclaw-deterministic-latest
+Commit: e4fa3ce32b8d3d386a356a80cef39768f0032795
+Path: plugins/mai-transcribe
+License: MIT (package.json). No patched OpenClaw runtime is required.

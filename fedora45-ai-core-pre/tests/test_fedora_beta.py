@@ -67,7 +67,7 @@ class FedoraBetaTests(unittest.TestCase):
         self.assertNotIn('source_archive', pin)
         self.assertRegex(pin['digest'], r'^sha256:[0-9a-f]{64}$')
         reference = f"FROM {pin['image']}:45@{pin['digest']} AS ai-core-pre"
-        for name in ('Containerfile', 'Containerfile2026.9.17'):
+        for name in ('Containerfile',):
             self.assertIn(reference,
                           (ROOT / 'fedora45-ai-core-pre' / name).read_text().splitlines())
 

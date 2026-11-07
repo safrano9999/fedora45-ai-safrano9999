@@ -13,7 +13,7 @@ on:
       build_series:
         description: 'Containerfile series, e.g. 2026.9.17; empty uses Containerfile'
         required: false
-        default: '2026.9.17'
+        default: ''
         type: string
       image_tag:
         description: "Fixed version; empty selects N+1 in the selected build series across both architectures."
@@ -146,7 +146,7 @@ jobs:
       - name: Test independent OpenClaw component installers
         run: |
           python3 -m unittest discover -s fedora45-ai-core/tests -v
-          node --test fedora45-ai-core/tests/*.test.mjs
+          node --test fedora45-ai-core/tests/*.test.mjs fedora45-ai-core/tests/*.test.cjs
 
       - name: Free runner disk space
         run: .github/scripts/free-runner-disk-space.sh
@@ -264,10 +264,18 @@ jobs:
             test -x /usr/local/bin/persistainer
             test -x /usr/local/bin/fedora45-ai-init-hooks
             test -x /usr/local/libexec/fedora45-wait-ready
-            test -f /root/.openclaw/extensions/note/openclaw.plugin.json
-            note_python="$("/root/.openclaw/extensions/note/scripts/setup-python.sh")"
-            test -x "$note_python"
-            "$note_python" -c "import dotenv, sqlalchemy, psycopg, pymysql"
+            if test -f "$(npm root -g)/openclaw/deterministic-build.json"; then
+              test -f /root/.openclaw/extensions/note/openclaw.plugin.json
+            else
+              for plugin in brave codex mai-transcribe speaches; do
+                test -f "/root/.openclaw/extensions/$plugin/openclaw.plugin.json"
+              done
+            fi
+            if test -f /root/.openclaw/extensions/note/scripts/setup-python.sh; then
+              note_python="$("/root/.openclaw/extensions/note/scripts/setup-python.sh")"
+              test -x "$note_python"
+              "$note_python" -c "import dotenv, sqlalchemy, psycopg, pymysql"
+            fi
             PYTHONPATH=/usr/local/lib/openclaw-ephemeral:/usr/local/lib/hermes-ephemeral \
               python3 -c "import yaml; import openclaw_ephemeral; import hermes_ephemeral"
             for unit in persistainer.service fedora45-ai-init-hooks.service \

@@ -1,6 +1,6 @@
 {
-  "checked_at": "2026-11-03T07:29:19.864964+00:00",
-  "openclaw_version": "2026.9.4",
+  "checked_at": "2026-11-07T22:37:11.672613+00:00",
+  "openclaw_version": "2026.11.1",
   "node_version": "26.13.0",
   "architectures": {
     "amd64": {
@@ -38,13 +38,15 @@
       "integrity": "sha512-tEqMvQahfhdDj8vceYpXtoIrvjPXm5XRfetWnPN5YISueU7adNx9JcUA3zZ+2GKuDVgDpGdQe1ZLtCZDjqodvA=="
     },
     "@grinev/opencode-telegram-bot": {
-      "version": "0.26.6",
-      "integrity": "sha512-0hwIxqhMOdllZxl8EomzQLIXjbo5gY7ITTU5K8yJ4W1Fr0f8ac+5Fh5p5MWbi1qkuiOJi/qAblpUUwpsZNjc/w=="
+      "version": "0.27.0",
+      "integrity": "sha512-MRSgfyE2UNWNDEhZu/atN3M3tls2LQuuLQfZIyk24hYwDVS9WMl+EjbNNkEyfemPup15y1S8pKbvQPjeeaWMQg=="
     }
   },
   "hermes": {
     "branch": "main",
-    "commit": "5b526a53189072c34349eb357803f4cc039505a7",
-    "date": "2026-11-03T06:58:51Z"
+    "commit": "63f6852249f6ce79a6e84f7d64fd4486facce5d1",
+    "date": "2026-11-07T20:54:11Z",
+    "base_version": "0.23.0",
+    "distance": 774
   }
 }

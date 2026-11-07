@@ -50,7 +50,7 @@ def main():
     node = next(row for row in document("https://nodejs.org/dist/index.json") if re.fullmatch(r"v26\.\d+\.\d+", row["version"]))
     node_version = node["version"].removeprefix("v")
     sums = dict((name, checksum) for checksum, name in re.findall(r"^([0-9a-f]{64})\s+(\S+)$", read(f"https://nodejs.org/dist/v{node_version}/SHASUMS256.txt").decode(), re.M))
-    result = {"checked_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "openclaw_version": "2026.9.4", "node_version": node_version, "architectures": {}, "python_bootstrap": {}, "npm": {}}
+    result = {"checked_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "openclaw_version": re.search(r"^ARG OPENCLAW_VERSION=(.+)$", (root / "fedora45-ai-core-pre/Containerfile").read_text(), re.M).group(1), "node_version": node_version, "architectures": {}, "python_bootstrap": {}, "npm": {}}
     for arch, node_arch in (("amd64", "x64"), ("arm64", "arm64")):
         geth_url = f"https://gethstore.blob.core.windows.net/builds/geth-linux-{arch}-{pins['GETH_VERSION']}-{pins['GETH_COMMIT']}.tar.gz"
         result["architectures"][arch] = {
