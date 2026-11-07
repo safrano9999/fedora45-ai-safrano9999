@@ -177,9 +177,11 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
         commits = {name: exact_commit(github(f"repos/safrano9999/{name}-ephemeral/commits/HEAD")["sha"])
                    for name in COMPONENTS}
         report["ephemeral_commits"] = commits
-        inputs = patch_inputs(latest["openclaw"], core,
-                              github("repos/safrano9999/openclaw-deterministic-latest/releases?per_page=100"),
-                              github("repos/safrano9999/openclaw-deterministic-latest/releases/latest"))
+        inputs = ({"OPENCLAW_VERSION": latest["openclaw"]}
+                  if "OPENCLAW_DETERMINISTIC_TAG" not in core else
+                  patch_inputs(latest["openclaw"], core,
+                               github("repos/safrano9999/openclaw-deterministic-latest/releases?per_page=100"),
+                               github("repos/safrano9999/openclaw-deterministic-latest/releases/latest")))
     report["ephemeral_commits"] = commits
     override = openclaw_override(before_foundation, latest["openclaw"])
     if snapshot is not None:

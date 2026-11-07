@@ -18,12 +18,18 @@ from source_snapshot import build_inputs, snapshot_id, validate_snapshot, opencl
 def snapshot(repository="safrano9999/FIXTURE", commit="a" * 40):
     return {"schema_version": 1, "source_policy": "latest-resolved-once", "source_commit": "c" * 40,
             "target": "fedora45-ai-safrano9999", "chain": [], "resolved_at": "2026-09-17T00:00:00Z",
-            "versions": {"openclaw": {"current": "2026.9.4", "latest": "2026.9.4"},
+            "versions": {"openclaw": {"current": "2026.11.1", "latest": "2026.11.1"},
                          "hermes": {"current": "0.21.2", "latest": "0.21.3"}},
             "repositories": [{"repository": repository, "ref": "HEAD", "commit": commit}]}
 
 
 class SnapshotTests(unittest.TestCase):
+    def test_standard_runtime_inputs_do_not_require_a_deterministic_release(self):
+        selected = snapshot()
+        selected["openclaw_source"] = {"version": "2026.11.1", "commit": "1" * 40, "override_commit": ""}
+        self.assertEqual(build_inputs(selected), {
+            "OPENCLAW_VERSION": "2026.11.1", "OPENCLAW_UPSTREAM_SHA": "1" * 40})
+
     def test_litellm_free_source_is_explicitly_allowed_in_both_validators(self):
         selected = snapshot("safrano9999/litellm-free")
         self.assertIn("safrano9999/litellm-free", validate_snapshot(selected))

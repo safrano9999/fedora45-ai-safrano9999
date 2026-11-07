@@ -138,7 +138,7 @@ class PreparationTests(unittest.TestCase):
                     prep.prepare(report)
             self.assertEqual(report['ephemeral_commits'], {'openclaw': 'a' * 40, 'hermes': 'b' * 40})
 
-    def test_preparation_refreshes_all_four_inputs_before_runtime_checks(self):
+    def test_standard_preparation_refreshes_sources_without_requesting_deterministic(self):
         pins = prep.current_versions((prep.REPO / "fedora45-ai-core-pre/Containerfile").read_text())
         for changed in ("openclaw", "hermes"):
             latest = dict(pins)
@@ -150,15 +150,15 @@ class PreparationTests(unittest.TestCase):
             note_release = {"tag_name": "2026.9.99", "draft": False, "prerelease": False,
                             "assets": [{"name": "note-latest.zip", "digest": "sha256:" + "d" * 64}]}
             replies = [{"tag_name": "v" + latest["openclaw"]}, {"name": "Hermes Agent v" + latest["hermes"]},
-                       {"sha": "a" * 40}, {"sha": "b" * 40}, [patch_release], patch_release,
-                       {"sha": "8" * 40}]
+                       {"sha": "a" * 40}, {"sha": "b" * 40}, {"sha": "8" * 40}]
             report = {}
             with self.subTest(changed=changed), patch.dict(prep.os.environ, {"GITHUB_ACTIONS": "true"}), patch.object(prep, "github", side_effect=replies) as gh, patch.object(prep.importlib.util, "spec_from_file_location", side_effect=RuntimeError('before runtime checks')):
                 with self.assertRaisesRegex(RuntimeError, 'before runtime checks'):
                     prep.prepare(report)
             self.assertEqual(report['ephemeral_commits']['openclaw'], 'a' * 40)
             self.assertEqual(report['ephemeral_commits']['hermes'], 'b' * 40)
-            self.assertEqual(report['build_inputs']['OPENCLAW_DETERMINISTIC_TAG'], patch_release['tag_name'])
+            self.assertEqual(report['build_inputs']['OPENCLAW_VERSION'], latest['openclaw'])
+            self.assertNotIn('OPENCLAW_DETERMINISTIC_TAG', report['build_inputs'])
             self.assertEqual(report['source_policy'], 'latest-resolved-per-preparation')
             self.assertIn('repos/safrano9999/openclaw-ephemeral/commits/HEAD', [c.args[0] for c in gh.call_args_list])
 

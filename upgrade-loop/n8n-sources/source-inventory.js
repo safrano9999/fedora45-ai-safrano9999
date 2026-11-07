@@ -89,16 +89,16 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
     }
     // Report the direct Containerfile sources; these commits are diagnostic
     // evidence only and are never injected into the image build.
-    for (const match of cf.matchAll(/^ADD(?: --[\w-]+=[^ ]+)* https:\/\/github\.com\/(safrano9999\/[A-Za-z0-9._-]+)\.git(?:\s)/gm)) {
+    for (const match of cf.matchAll(/^ADD(?: --[\w-]+=[^ ]+)* https:\/\/github\.com\/(safrano9999\/[A-Za-z0-9._-]+|f24sales\/litellm-free)\.git(?:\s)/gm)) {
       add(match[1], 'HEAD', layer, cfPath, 'containerfile-git');
     }
     if (layer === 'fedora45-ai-core') {
       const declared = cf.replace(/^ARG /gm, '');
-      const tag = literal(declared, 'OPENCLAW_DETERMINISTIC_TAG');
+      const tag = literal(declared, 'OPENCLAW_DETERMINISTIC_TAG', false);
       const version = openclawVersion || literal(declared, 'OPENCLAW_VERSION');
-      add(OWNER + '/openclaw-deterministic-latest', tag, layer, cfPath, 'containerfile-release',
+      if (tag) add(OWNER + '/openclaw-deterministic-latest', tag, layer, cfPath, 'containerfile-release',
           { type: 'pinned-release', asset: 'openclaw-' + version + '-deterministic.tar.gz' });
-      add(OWNER + '/NOTE', 'latest', layer, cfPath, 'containerfile-release',
+      if (/--repo safrano9999\/NOTE\s/.test(cf)) add(OWNER + '/NOTE', 'latest', layer, cfPath, 'containerfile-release',
           { type: 'latest-release', asset: 'note-latest.zip' });
     }
     if (/--repo safrano9999\/NEXTCLOUD\s/.test(cf)) {
@@ -162,7 +162,8 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
   return { schema_version: 1, target, image_repository: IMAGE_REPO, image_commit: commit,
     ...(openclawSource ? { openclaw_source: openclawSource } : {}),
     chain: chain.reverse(), external_base: externalBase, repositories: [...repos.values()],
-    source_policy: 'containerfile-latest-with-pinned-deterministic',
+    source_policy: repos.has(OWNER + '/openclaw-deterministic-latest')
+      ? 'containerfile-latest-with-pinned-deterministic' : 'containerfile-latest-with-standard-openclaw',
     clone_depth: 1, clone_gate: 'READY_FOR_BUILD', local_build: false };
 }
 
