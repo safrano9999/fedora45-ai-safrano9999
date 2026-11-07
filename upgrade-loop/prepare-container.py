@@ -199,10 +199,14 @@ def prepare(report, validate_only=False, snapshot=None, force_prepare=False, upg
     runtime = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(runtime)
     report["checks"] = {}
+    hermes_commit = re.search(r"^ARG HERMES_COMMIT=([0-9a-f]{40})$", before_foundation, re.M)
+    if hermes_commit and latest["hermes"] != current["hermes"]:
+        raise ValueError("Refresh the pinned Hermes main commit and distance with its base version before preparing this release")
     with tempfile.TemporaryDirectory(prefix="container-preparation-") as raw:
         scratch = Path(raw)
         targets = {name: runtime.prepare(name, latest[name], scratch / "runtimes",
-                    **({"source_inputs": inputs} if name == "openclaw" else {})) for name in COMPONENTS}
+                    **({"source_inputs": inputs} if name == "openclaw" else
+                       {"upstream_commit": hermes_commit.group(1)} if hermes_commit else {})) for name in COMPONENTS}
         # Install the selected Hermes release's declared runtime dependencies on the runner.
         run([sys.executable, "-m", "pip", "install", "-e", targets["hermes"]["source"]])
         for name in COMPONENTS:

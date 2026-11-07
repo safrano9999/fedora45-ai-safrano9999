@@ -31,3 +31,33 @@ jobs:
           npm ci --prefix upgrade-loop/n8n-sources --ignore-scripts --no-audit --no-fund
           node --test upgrade-loop/tests/*.cjs
           git diff --exit-code
+
+  plugins:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      npm_config_prefix: ${{ runner.temp }}/openclaw
+      HOME: ${{ runner.temp }}/plugin-home
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+      - name: Check direct plugins and TTS integration against the installed release
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME"
+          export PATH="$npm_config_prefix/bin:$PATH"
+          version="$(sed -n 's/^ARG OPENCLAW_VERSION=//p' fedora45-ai-core/Containerfile)"
+          npm install -g --omit=dev --no-audit --no-fund "openclaw@$version"
+          for plugin in brave-plugin codex; do
+            openclaw plugins install --force --accept-capabilities --pin "npm:@openclaw/$plugin@$version"
+          done
+          for plugin in mai-transcribe speaches; do
+            openclaw plugins install --force --accept-capabilities "$PWD/fedora45-ai-core/build/voice-plugins/$plugin"
+          done
+          python3 fedora45-ai-core/image/runtime/usr/local/libexec/openclaw-tts-provider-order.py
+          openclaw plugins registry --refresh
+          for plugin in brave codex mai-transcribe speaches; do
+            openclaw plugins inspect "$plugin" --json
+          done

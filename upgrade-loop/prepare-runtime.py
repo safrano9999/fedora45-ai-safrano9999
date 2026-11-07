@@ -36,12 +36,16 @@ def extract(archive, destination, root_name):
             (Path(raw) / root_name).rename(destination)
 
 
-def prepare(component, version, cache, source_inputs=None):
+def prepare(component, version, cache, source_inputs=None, upstream_commit=None):
     if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
         raise ValueError("Expected a numeric release version")
     if component == "openclaw" and source_inputs is None:
         raise ValueError("OpenClaw requires explicit Core-pre source inputs")
     repository = {"openclaw": "openclaw/openclaw", "hermes": "NousResearch/hermes-agent"}[component]
+    if upstream_commit is not None:
+        if component != "hermes" or not re.fullmatch(r"[0-9a-f]{40}", upstream_commit):
+            raise ValueError("Only Hermes accepts an explicit main-branch source commit")
+        cache = cache / upstream_commit
     if source_inputs is not None:
         if component != "openclaw" or source_inputs["OPENCLAW_VERSION"] != version:
             raise ValueError("Selected source inputs differ from the requested runtime")
@@ -71,7 +75,7 @@ def prepare(component, version, cache, source_inputs=None):
         tag = matching[0]["tag_name"]
     else:
         tag = f"v{version}"
-    commit = source_inputs["OPENCLAW_UPSTREAM_SHA"] if source_inputs else github(f"repos/{repository}/commits/{tag}")["sha"]
+    commit = source_inputs["OPENCLAW_UPSTREAM_SHA"] if source_inputs else upstream_commit or github(f"repos/{repository}/commits/{tag}")["sha"]
     if not re.fullmatch(r"[0-9a-f]{40}", commit):
         raise ValueError("Upstream release did not resolve to a commit")
     archive = cache / (f"hermes-{version}.tar.gz" if component == "hermes"
