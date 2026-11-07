@@ -20,6 +20,10 @@ on:
         description: "Existing ARM64 Core-pre foundation; this workflow starts at Core"
         type: string
         default: "2026.9.17.28"
+      replace_existing:
+        description: "Allow an explicitly requested candidate rebuild at the same version"
+        type: boolean
+        default: false
       publish_latest:
         description: "Advance the ARM64 latest tags"
         type: boolean
@@ -46,10 +50,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REQUESTED_TAG: ${{ inputs.image_tag }}
           START_LAYER: ${{ inputs.start_layer }}
+          REPLACE_EXISTING: ${{ inputs.replace_existing }}
         run: |
           set -euo pipefail
           [[ "$START_LAYER" = core || -n "$REQUESTED_TAG" ]] || { echo "Resuming requires image_tag" >&2; exit 1; }
-          version="$(.github/scripts/resolve-fedora-image-tag.sh "ghcr.io/safrano9999/fedora45-ai-arm64-$START_LAYER" "$REQUESTED_TAG")"
+          version="$(.github/scripts/resolve-fedora-image-tag.sh "ghcr.io/safrano9999/fedora45-ai-arm64-$START_LAYER" "$REQUESTED_TAG" "$REPLACE_EXISTING")"
           [[ "$version" =~ ^20[0-9]{2}[.][0-9]+[.][0-9]+([.][0-9]+)?$ ]]
           if [ -n "$BUILD_SERIES" ]; then [[ "$version" == "$BUILD_SERIES."* ]]; fi
           runtime="$(sed -n 's/^ARG OPENCLAW_VERSION=//p' "fedora45-ai-core/Containerfile${BUILD_SERIES}")"
@@ -116,7 +121,7 @@ jobs:
             openclaw config validate
             python3 -m pip check
             for plugin in brave codex mai-transcribe speaches; do
-              test -f "/root/.openclaw/extensions/$plugin/openclaw.plugin.json"
+              openclaw plugins inspect "$plugin" --json | jq -e --arg id "$plugin" ".plugin.id == \$id and .plugin.enabled == true and .plugin.status == \"loaded\" and (.install.installPath | length > 0)" >/dev/null
             done
           '
   base:
@@ -179,7 +184,7 @@ jobs:
             openclaw config validate
             python3 -m pip check
             for plugin in brave codex mai-transcribe speaches; do
-              test -f "/root/.openclaw/extensions/$plugin/openclaw.plugin.json"
+              openclaw plugins inspect "$plugin" --json | jq -e --arg id "$plugin" ".plugin.id == \$id and .plugin.enabled == true and .plugin.status == \"loaded\" and (.install.installPath | length > 0)" >/dev/null
             done
           '
   kachelmann:
@@ -248,7 +253,7 @@ jobs:
             openclaw config validate
             python3 -m pip check
             for plugin in brave codex mai-transcribe speaches; do
-              test -f "/root/.openclaw/extensions/$plugin/openclaw.plugin.json"
+              openclaw plugins inspect "$plugin" --json | jq -e --arg id "$plugin" ".plugin.id == \$id and .plugin.enabled == true and .plugin.status == \"loaded\" and (.install.installPath | length > 0)" >/dev/null
             done
           '
   safrano9999:
@@ -311,7 +316,7 @@ jobs:
             openclaw config validate
             python3 -m pip check
             for plugin in brave codex mai-transcribe speaches; do
-              test -f "/root/.openclaw/extensions/$plugin/openclaw.plugin.json"
+              openclaw plugins inspect "$plugin" --json | jq -e --arg id "$plugin" ".plugin.id == \$id and .plugin.enabled == true and .plugin.status == \"loaded\" and (.install.installPath | length > 0)" >/dev/null
             done
           '
   full:
@@ -374,6 +379,6 @@ jobs:
             openclaw config validate
             python3 -m pip check
             for plugin in brave codex mai-transcribe speaches; do
-              test -f "/root/.openclaw/extensions/$plugin/openclaw.plugin.json"
+              openclaw plugins inspect "$plugin" --json | jq -e --arg id "$plugin" ".plugin.id == \$id and .plugin.enabled == true and .plugin.status == \"loaded\" and (.install.installPath | length > 0)" >/dev/null
             done
           '

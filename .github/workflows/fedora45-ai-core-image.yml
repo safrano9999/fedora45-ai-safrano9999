@@ -268,7 +268,7 @@ jobs:
               test -f /root/.openclaw/extensions/note/openclaw.plugin.json
             else
               for plugin in brave codex mai-transcribe speaches; do
-                test -f "/root/.openclaw/extensions/$plugin/openclaw.plugin.json"
+                openclaw plugins inspect "$plugin" --json | jq -e --arg id "$plugin" ".plugin.id == \$id and .plugin.enabled == true and .plugin.status == \"loaded\" and (.install.installPath | length > 0)" >/dev/null
               done
             fi
             if test -f /root/.openclaw/extensions/note/scripts/setup-python.sh; then
