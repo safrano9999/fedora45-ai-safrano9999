@@ -74,3 +74,65 @@ class RuntimeBundleTests(unittest.TestCase):
     def test_incomplete_manifest_rejected_before_install(self):
         with self.assertRaisesRegex(ValueError, "manifest"):
             self.prepare(lambda manifest, payload: manifest["artifacts"].pop("brave.tgz"))
+
+
+class StandardRuntimeTests(unittest.TestCase):
+    def prepare(self, *, tamper=False, installed_version=None, deterministic=False):
+        with tempfile.TemporaryDirectory() as raw:
+            version, commit = "2026.11.1", "c" * 40
+            package_bytes = b"official npm package fixture"
+            digest = hashlib.sha256(package_bytes).hexdigest()
+            manifest = {"publicationArtifacts": {"npmPreflight": {
+                "preparedBundle": {"package": {"sha256": digest}}}}}
+            selected = {"OPENCLAW_VERSION": version, "OPENCLAW_UPSTREAM_SHA": commit}
+            real_download = runtime.download
+            urls = []
+
+            def download(url, destination, sha256=None):
+                urls.append(url)
+                if url.endswith("-release-manifest.json"):
+                    destination.write_text(json.dumps(manifest))
+                elif url.endswith(".tgz"):
+                    destination.write_bytes(b"tampered" if tamper else package_bytes)
+                else:
+                    destination.write_bytes(b"source fixture")
+                real_download(url, destination, sha256)
+
+            def extract(archive, destination, name):
+                destination.mkdir(parents=True)
+                (destination / "package.json").write_text(json.dumps({"version": version}))
+
+            def install(args, **kwargs):
+                package = Path(args[args.index("--prefix") + 1]) / "node_modules/openclaw"
+                package.mkdir(parents=True)
+                (package / "package.json").write_text(json.dumps({"version": installed_version or version}))
+                if deterministic:
+                    (package / "deterministic-build.json").write_text("{}")
+
+            with patch.object(runtime, "download", side_effect=download), patch.object(runtime, "extract", side_effect=extract), patch.object(runtime.subprocess, "run", side_effect=install) as npm:
+                try:
+                    result = runtime.prepare("openclaw", version, Path(raw), source_inputs=selected)
+                except ValueError:
+                    if tamper:
+                        npm.assert_not_called()
+                    raise
+                npm.assert_called_once()
+                self.assertEqual(result["distribution"], "standard")
+                self.assertEqual(result["artifact_sha256"], digest)
+                self.assertEqual(result["upstream_commit"], commit)
+                self.assertFalse(any("deterministic" in url for url in urls))
+
+    def test_official_package_is_verified_and_installed(self):
+        self.prepare()
+
+    def test_tampered_package_rejected_before_install(self):
+        with self.assertRaisesRegex(ValueError, "checksum mismatch"):
+            self.prepare(tamper=True)
+
+    def test_wrong_installed_version_rejected(self):
+        with self.assertRaisesRegex(ValueError, "versions differ"):
+            self.prepare(installed_version="2026.9.4")
+
+    def test_deterministic_runtime_rejected(self):
+        with self.assertRaisesRegex(ValueError, "Deterministic provenance"):
+            self.prepare(deterministic=True)
