@@ -228,6 +228,18 @@ CITADEL_HTTPS_ONLY=0
 #default-preset: Mozilla/5.0 (compatible; CITADEL/1.0)
 CITADEL_USER_AGENT=Mozilla/5.0 (compatible; CITADEL/1.0)
 
+# Bundled Alpine connector: HTTP/2 over TCP avoids QUIC timeouts when UDP is blocked.
+# Empty also uses http2. Host/systemd connectors need this in their own environment.
+#choices: http2 auto quic
+#default-preset: http2
+TUNNEL_TRANSPORT_PROTOCOL=http2
+
+# Browser Access login session, including email OTP. Applies to new and existing
+# browser applications on this tunnel; independent of API OAuth grant duration.
+# Whole hours from 1h to 720h; 720h = thirty days.
+#default-preset: 24h
+CITADEL_CLOUDFLARE_ACCESS_SESSION_DURATION=24h
+
 # OAuth for email entries in CLOUDFLARE-API_access.json. Bearer entries work independently.
 # Client callbacks: CLOUDFLARE_OAUTH_Whitelist.json (copy the .json.example).
 #choices: 0 1
