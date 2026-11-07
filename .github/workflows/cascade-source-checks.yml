@@ -28,5 +28,6 @@ jobs:
           node --test fedora45-ai-core/tests/*.test.mjs fedora45-ai-core/tests/*.test.cjs
           python3 .github/scripts/test-resolve-fedora-image-tag.py
           python3 -m unittest discover -s upgrade-loop/tests -v
+          npm ci --prefix upgrade-loop/n8n-sources --ignore-scripts --no-audit --no-fund
           node --test upgrade-loop/tests/*.cjs
           git diff --exit-code

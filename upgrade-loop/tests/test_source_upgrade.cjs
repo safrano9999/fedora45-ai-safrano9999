@@ -5,12 +5,12 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { inventory, IMAGE_REPO } = require('../n8n-sources/source-inventory');
-const { makeSnapshot, snapshotId } = require('../n8n-sources/source-snapshot');
+const { makeSnapshot, snapshotId, VERSION_LOCKS } = require('../n8n-sources/source-snapshot');
 const { upgradePlan, publishedImage } = require('../n8n-sources/source-upgrade');
 const root = path.resolve(__dirname, '../..');
 const current = 'a'.repeat(40), old = 'b'.repeat(40), fresh = 'c'.repeat(40);
 const digest = n => 'sha256:' + String(n).repeat(64);
-const versions = {openclaw:{current:'2026.9.4',latest:'2026.9.4'},hermes:{current:'0.21.3',latest:'0.21.3'}};
+const versions = {openclaw:{current:VERSION_LOCKS.openclaw,latest:VERSION_LOCKS.openclaw},hermes:{current:'0.21.3',latest:'0.21.3'}};
 async function fixture(target='fedora45-ai-base') {
   const files = {};
   for (const layer of await fs.readdir(root)) if (layer.startsWith('fedora45-ai-')) {
