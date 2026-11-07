@@ -2,11 +2,11 @@
   "schema_version": 1,
   "source_policy": "latest-resolved-once",
   "openclaw_source": {
-    "version": "2026.9.4",
+    "version": "2026.11.1",
     "override_commit": "",
-    "commit": "3a9d69db306cd7f081e06254cb89c4bcc14a7107"
+    "commit": "4ffdd2047d192dd65554de3c8c46c0e0197c6e2a"
   },
-  "source_commit": "66116c3cf2f0078fdcbcf32d1c5657e7231ba6fc",
+  "source_commit": "5d3e208c1b4c327ad2c00e852abb0ce310bf245e",
   "target": "fedora45-ai-safrano9999-full",
   "chain": [
     "fedora45-ai-core-pre",
@@ -16,207 +16,219 @@
     "fedora45-ai-safrano9999",
     "fedora45-ai-safrano9999-full"
   ],
-  "resolved_at": "2026-10-03T02:47:09.899Z",
+  "resolved_at": "2026-11-07T23:38:08.543Z",
   "versions": {
     "openclaw": {
-      "current": "2026.9.4",
-      "latest": "2026.9.4"
+      "current": "2026.11.1",
+      "latest": "2026.11.1"
     },
     "hermes": {
-      "current": "0.21.5",
-      "latest": "0.21.5"
+      "current": "0.23.0",
+      "latest": "0.23.0"
     }
   },
   "repositories": [
     {
       "repository": "safrano9999/VikAI",
       "ref": "HEAD",
-      "commit": "3af745375c7d67e229757e898067659e154fd668",
+      "commit": "0b44713d1bb1f89ccf0780738e1d3147243acdde",
       "sources": [
         {
           "layer": "fedora45-ai-safrano9999-full",
-          "file": "fedora45-ai-safrano9999-full/build.conf",
-          "kind": "standalone"
+          "file": "fedora45-ai-safrano9999-full/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/DAILYNEWS",
       "ref": "HEAD",
-      "commit": "5d166299e50d809a9f5a4fd8617defab11e92f2b",
+      "commit": "e69622557d64617b38ed64a85fa81fccf0b75a5d",
       "sources": [
         {
           "layer": "fedora45-ai-safrano9999",
-          "file": "fedora45-ai-safrano9999/build.conf",
-          "kind": "extensions"
+          "file": "fedora45-ai-safrano9999/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/ZEROINBOX",
       "ref": "HEAD",
-      "commit": "db149f57e3e735dec2c0d54f48db153e391f20f1",
+      "commit": "67304cc71645b4b1adf4fba1739a105e83c445f5",
       "sources": [
         {
           "layer": "fedora45-ai-safrano9999",
-          "file": "fedora45-ai-safrano9999/build.conf",
-          "kind": "extensions"
+          "file": "fedora45-ai-safrano9999/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/SPANKER",
       "ref": "HEAD",
-      "commit": "2c826e17dac819c73664278f346846f356aff145",
+      "commit": "792f2559e989783aecd327e3e50a6e6c124419db",
       "sources": [
         {
           "layer": "fedora45-ai-safrano9999",
-          "file": "fedora45-ai-safrano9999/build.conf",
-          "kind": "extensions"
+          "file": "fedora45-ai-safrano9999/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/JUGO",
       "ref": "HEAD",
-      "commit": "0c244b080e04defdf4d1d1792037d58afe0e9f0a",
+      "commit": "8318fb933ed2ad078ddab5bae5d59e0fe6c0ac8d",
       "sources": [
         {
           "layer": "fedora45-ai-safrano9999",
-          "file": "fedora45-ai-safrano9999/build.conf",
-          "kind": "standalone"
+          "file": "fedora45-ai-safrano9999/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/PV_D-A-CH",
       "ref": "HEAD",
-      "commit": "f1e9289502b5be3715ad87f662e78b8a3210e1e9",
+      "commit": "06fafd6e8a6561c0c16316d5aef7fb8b56a31cc2",
       "sources": [
         {
           "layer": "fedora45-ai-safrano9999",
-          "file": "fedora45-ai-safrano9999/build.conf",
-          "kind": "standalone"
+          "file": "fedora45-ai-safrano9999/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/KIWIX_BRIDGE",
       "ref": "HEAD",
-      "commit": "787c03f4fa527012b2bfdfbd0734a5cb779e7161",
+      "commit": "36d830e7e403ed6935b3847aa3f2ec7678967e16",
       "sources": [
         {
           "layer": "fedora45-ai-safrano9999",
-          "file": "fedora45-ai-safrano9999/build.conf",
-          "kind": "standalone"
+          "file": "fedora45-ai-safrano9999/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/NAPOLEON_HILLS_AI_MASTERMIND_CLASSES",
       "ref": "HEAD",
-      "commit": "cf7edca6133443ae896bc9e22c1b69a58e0c4915",
+      "commit": "ba5238accee07e127dcb30cdca1fc0ca4a836766",
       "sources": [
         {
           "layer": "fedora45-ai-safrano9999",
-          "file": "fedora45-ai-safrano9999/build.conf",
-          "kind": "standalone"
+          "file": "fedora45-ai-safrano9999/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/SOLANA_AIRGAPPED_DEBIAN_WORKFLOW",
       "ref": "HEAD",
-      "commit": "2f181988d4ec8849f5757f0d533282282f8704f0",
+      "commit": "0470d761cde61128ac223465d351482ef1b8899b",
       "sources": [
         {
           "layer": "fedora45-ai-safrano9999",
-          "file": "fedora45-ai-safrano9999/build.conf",
-          "kind": "standalone"
+          "file": "fedora45-ai-safrano9999/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/NaturalGrounding-Tiktok-Ying-Video-Manager",
       "ref": "HEAD",
-      "commit": "cde526323192125e3c5e5c6028da54d3180f3925",
+      "commit": "53c733727dce626954768a5678581641954dd238",
       "sources": [
         {
           "layer": "fedora45-ai-safrano9999",
-          "file": "fedora45-ai-safrano9999/build.conf",
-          "kind": "standalone"
+          "file": "fedora45-ai-safrano9999/Containerfile",
+          "kind": "containerfile-git"
+        }
+      ]
+    },
+    {
+      "repository": "safrano9999/KACHELMANN",
+      "ref": "HEAD",
+      "commit": "45236d73711d2dfd463a05629e079bee21bce26e",
+      "sources": [
+        {
+          "layer": "fedora45-ai-kachelmann",
+          "file": "fedora45-ai-kachelmann/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/WELCOME",
       "ref": "HEAD",
-      "commit": "bd59fc65391659cb390468f39a91e4e1822bcb1e",
+      "commit": "6dbf821440deb15b8e3f9a18af19aca3cea96001",
       "sources": [
         {
           "layer": "fedora45-ai-base",
-          "file": "fedora45-ai-base/build.conf",
-          "kind": "extensions"
+          "file": "fedora45-ai-base/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/CITADEL",
       "ref": "HEAD",
-      "commit": "70b1131db1ad976e3c33aa12f03c552d29828487",
+      "commit": "e12e88dd973b8f1dacf58710f0724d001ef6e2d6",
       "sources": [
         {
           "layer": "fedora45-ai-base",
-          "file": "fedora45-ai-base/build.conf",
-          "kind": "extensions"
+          "file": "fedora45-ai-base/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/NEXTCLOUD",
       "ref": "HEAD",
-      "commit": "83ee3a69db0e5f32289c013479bb1012bab805f9",
+      "commit": "db75a0e29dda31281d707d221b5be9bef00ae328",
       "sources": [
         {
           "layer": "fedora45-ai-base",
-          "file": "fedora45-ai-base/build.conf",
-          "kind": "extensions"
+          "file": "fedora45-ai-base/Containerfile",
+          "kind": "containerfile-git"
         }
       ],
       "runtime_assets": [
         {
           "name": "nextcloud-fedora64-plugin-latest.zip",
-          "id": 622627131,
-          "sha256": "7b1476faaca35d2583559777ca2f4263969fdc5aaabfd06e84aa60d5b01d111d"
+          "id": 704813623,
+          "sha256": "b5f08adfb4f2f4fe0a5fe6303d35342ef07e0a44e7c4a6fb64d6ef020f921629"
         },
         {
           "name": "nextcloud-fedora64-plugin-latest.zip.sha256",
-          "id": 622627129,
-          "sha256": "7b37ee9cd8bf6a28023479595f6ac037d5b579c46fb1301c207c9e41cee10b2b"
+          "id": 704813644,
+          "sha256": "43e86cca627a7452dda30d43abefdcbf60a7c0ca1cd586e98f33f501093d5bde"
         }
       ]
     },
     {
       "repository": "safrano9999/CODEANALYST",
       "ref": "HEAD",
-      "commit": "5135bd37621b7e59103ccee2dd9da7dbb6021eb5",
+      "commit": "d0629b4aba28c0875f1bff856186670502cbde31",
       "sources": [
         {
           "layer": "fedora45-ai-base",
-          "file": "fedora45-ai-base/build.conf",
-          "kind": "standalone"
+          "file": "fedora45-ai-base/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/DIESDAS-",
       "ref": "HEAD",
-      "commit": "c3dd09358b515d70cea9447832a90959a3cbad4f",
+      "commit": "ff5bb308a51d9d7d632a56c22297adfa4fde629f",
       "sources": [
         {
           "layer": "fedora45-ai-base",
-          "file": "fedora45-ai-base/build.conf",
-          "kind": "standalone"
+          "file": "fedora45-ai-base/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
@@ -227,90 +239,56 @@
       "sources": [
         {
           "layer": "fedora45-ai-base",
-          "file": "fedora45-ai-base/build.conf",
-          "kind": "standalone"
+          "file": "fedora45-ai-base/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
-      "repository": "safrano9999/NOTE",
-      "ref": "2026.8.4",
-      "commit": "483e70e8e3033f04bc00e3053daa4965f8686e49",
-      "sources": [
-        {
-          "layer": "fedora45-ai-core",
-          "file": "fedora45-ai-core/build.conf",
-          "kind": "declared-repository"
-        }
-      ],
-      "release": {
-        "ref": "2026.8.4",
-        "asset": "note-latest.zip",
-        "sha256": "3deca2d81a50c53fb3fc743a8b632837cff13abecefc8c8df755f76d588117af"
-      }
-    },
-    {
-      "repository": "safrano9999/openclaw-deterministic-latest",
-      "ref": "2026.9.4-deterministic.4",
-      "commit": "e4fa3ce32b8d3d386a356a80cef39768f0032795",
-      "sources": [
-        {
-          "layer": "fedora45-ai-core",
-          "file": "fedora45-ai-core/build/prepare-build-context.sh",
-          "kind": "declared-repository"
-        }
-      ],
-      "release": {
-        "ref": "2026.9.4-deterministic.4",
-        "asset": "openclaw-2026.9.4-deterministic.tar.gz",
-        "sha256": "4a6e0423c7fc93993155df004c0b6d091eb573ae0e7f7f6a431fe416a407a49a"
-      }
-    },
-    {
       "repository": "safrano9999/openclaw-ephemeral",
       "ref": "HEAD",
-      "commit": "c34d6ce0b21403f271d76da2501d7992b7303ce7",
+      "commit": "e5dc60972b9638ee08d9f544940f20db2038db6d",
       "sources": [
         {
           "layer": "fedora45-ai-core",
-          "file": "fedora45-ai-core/build/prepare-build-context.sh",
-          "kind": "declared-repository"
+          "file": "fedora45-ai-core/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/hermes-ephemeral",
       "ref": "HEAD",
-      "commit": "faeaaf235ddda462331311818e7f5be671c8b953",
+      "commit": "218db76ac20faa39f2d9d71810a7b5e735072597",
       "sources": [
         {
           "layer": "fedora45-ai-core",
-          "file": "fedora45-ai-core/build/prepare-build-context.sh",
-          "kind": "declared-repository"
+          "file": "fedora45-ai-core/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
       "repository": "safrano9999/opencode-ephemeral",
       "ref": "HEAD",
-      "commit": "143ac432144d5bb4373c9532446fa9c9307e1761",
+      "commit": "e512153df358114f258ba591bfe01c56eb41aed0",
       "sources": [
         {
           "layer": "fedora45-ai-core",
-          "file": "fedora45-ai-core/build/prepare-build-context.sh",
-          "kind": "declared-repository"
+          "file": "fedora45-ai-core/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
     {
-      "repository": "safrano9999/litellm-free",
+      "repository": "f24sales/litellm-free",
       "ref": "HEAD",
-      "commit": "f11cb01575cd9c80469de8d6f49643109b16c147",
+      "commit": "ec90093347c29cacb82254773d48bd0b5a759c0e",
       "sources": [
         {
           "layer": "fedora45-ai-core",
-          "file": "fedora45-ai-core/build/prepare-build-context.sh",
-          "kind": "declared-repository"
+          "file": "fedora45-ai-core/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     },
@@ -321,17 +299,10 @@
       "sources": [
         {
           "layer": "fedora45-ai-core-pre",
-          "file": "fedora45-ai-core-pre/build.conf",
-          "kind": "declared-repository"
+          "file": "fedora45-ai-core-pre/Containerfile",
+          "kind": "containerfile-git"
         }
       ]
     }
-  ],
-  "upgrade_build_deps": true,
-  "build_dependencies_baseline": {
-    "revision": "b6ad5f4fad00bf761a10454c8cd5d2e33da8b9c7",
-    "digest": "sha256:68de6318cd02040457ed2b1d2f2a6daaba8cff3f3b25db329bcd8309a3112517",
-    "policy_sha256": "0724685c324c5a9c16b585fdd1ee8c1ecb53514e14cd61595276df30cfa9f39a",
-    "tag": "2026.9.17.4"
-  }
+  ]
 }

@@ -100,7 +100,8 @@ The complete stable-channel audit, hashes and source ownership are recorded in
 [`upgrade-loop/evidence/2026.11.1-refresh`](upgrade-loop/evidence/2026.11.1-refresh).
 Core-pre refreshes Fedora 45 packages. Upper layers keep satisfied inherited
 Python dependencies and install only missing requirements; the resolver sees
-all version constraints and `pip check` verifies the result. No upper layer
+all version constraints. Every normal layer runs `pip check` and rejects duplicate
+distribution paths in the system interpreter. No upper layer
 reinstalls OpenClaw, Node, Hermes or OpenCode.
 
 All image builds and runtime tests run on GitHub-hosted Actions runners through

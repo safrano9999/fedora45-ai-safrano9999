@@ -24,7 +24,7 @@
   "package_policy": {
     "dnf": "Fedora 45 stable repositories; update once in Core-pre",
     "npm": "current stable packages, recorded versions and checksums",
-    "python": "Fedora packages in Core-pre; upper layers reuse satisfied requirements, install only missing requirements, and run pip check",
+    "python": "Fedora packages remain visible to pip in Core-pre and upper layers; install only missing requirements, run pip check, and reject duplicate distribution paths in each normal layer.",
     "hermes": "retain upstream locked isolated PM/application environments; required by the existing Hermes main runtime"
   },
   "layers": {
@@ -85,8 +85,30 @@
       "passing_integration": "https://github.com/safrano9999/openclaw-ephemeral/actions/runs/42422039222"
     },
     "mai_transcribe": {
-      "source": "fedora45-ai-core/build/voice-plugins/mai-transcribe/PROVENANCE.txt",
-      "live_transcription": "Not exercised against a paid provider"
-    }
+      "source": "https://learn.microsoft.com/en-us/azure/ai-services/speech-service/mai-transcribe",
+      "live_transcription": "Not exercised against a paid provider",
+      "default_model": "MAI-Transcribe-2",
+      "api_version": "2025-10-15",
+      "contract": "Microsoft documents enhancedMode.enabled=true and enhancedMode.model=MAI-Transcribe-2 on the transcription endpoint; the plugin uses this contract.",
+      "live_provider_request": false
+    },
+    "speaches": [
+      {
+        "model": "Systran/faster-whisper-small",
+        "sha": "536b0662742c02347bc0e980a01041f333bce120",
+        "private": false,
+        "gated": false,
+        "disabled": false,
+        "source": "https://huggingface.co/Systran/faster-whisper-small"
+      },
+      {
+        "model": "speaches-ai/piper-de_DE-thorsten-high",
+        "sha": "de6b0f19b0ed03b379c61aa1f71c7fde08e70f0a",
+        "private": false,
+        "gated": false,
+        "disabled": false,
+        "source": "https://huggingface.co/speaches-ai/piper-de_DE-thorsten-high"
+      }
+    ]
   }
 }

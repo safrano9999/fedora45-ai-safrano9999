@@ -94,7 +94,9 @@ async function upgradePlan(get, manifest, versions, readImage) {
     const content = await cached('/repos/' + IMAGE_REPO + '/contents/upgrade-loop/prepared-sources.json?ref=' + image.revision);
     if (content.encoding !== 'base64' || content.size > 1000000) throw new Error('Missing published source snapshot');
     const snapshot = JSON.parse(Buffer.from(content.content, 'base64').toString('utf8'));
-    validateSnapshot(snapshot, snapshotId(snapshot));
+    // Historical evidence can predate the current target lock. Keep validating
+    // its structure and identity without requiring the new target version.
+    validateSnapshot(snapshot, snapshotId(snapshot), { enforceVersionLocks: false });
     const old = await inventory(cached, { target: layer, ref: image.revision });
     const oldEntries = new Map(snapshot.repositories.map(e => [e.repository.toLowerCase(), e]));
     const owned = entry => entry.repository !== IMAGE_REPO && entry.sources.some(s => chain.slice(0, index + 1).includes(s.layer));

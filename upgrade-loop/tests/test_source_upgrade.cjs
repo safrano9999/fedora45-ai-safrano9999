@@ -41,6 +41,13 @@ test('no change means no preparation; compares published snapshots, not main pre
   const f=await fixture();const p=await upgradePlan(f.get,f.manifest,versions,f.readImage);
   assert.equal(p.required,false);assert.equal(p.start_key,null);assert.deepEqual(p.changes,[]);
 });
+test('a historical published runtime can be compared after advancing the target lock',async()=>{
+  const f=await fixture();
+  f.state.snapshot.versions={...f.state.snapshot.versions,openclaw:{current:'2026.9.4',latest:'2026.9.4'}};
+  const p=await upgradePlan(f.get,f.manifest,versions,f.readImage);
+  assert.equal(p.start_key,'fedora45_core_pre');
+  assert.ok(p.changes.some(c=>c.reason==='upstream-version'&&c.before==='2026.9.4'));
+});
 test('Hermes-only source update starts at Core; multiple changes choose earliest stage',async()=>{
   const f=await fixture();f.manifest.repositories.find(e=>e.repository.endsWith('/hermes-ephemeral')).commit='e'.repeat(40);
   f.manifest.repositories.find(e=>e.repository.endsWith('/CODEANALYST')).commit='f'.repeat(40);

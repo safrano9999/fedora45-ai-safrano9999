@@ -21,7 +21,7 @@ function snapshotId(snapshot) {
   return createHash('sha256').update(JSON.stringify(canonical(snapshot))).digest('hex');
 }
 
-function validateSnapshot(snapshot, expectedId) {
+function validateSnapshot(snapshot, expectedId, { enforceVersionLocks = true } = {}) {
   if (snapshot?.schema_version !== 1 || snapshot.source_policy !== 'latest-resolved-once' ||
       !SHA.test(snapshot.source_commit || '') || !/^fedora45-ai-[a-z0-9-]+$/.test(snapshot.target || '') ||
       !Array.isArray(snapshot.repositories) || snapshot.repositories.length === 0 || snapshot.repositories.length > 128 ||
@@ -45,7 +45,7 @@ function validateSnapshot(snapshot, expectedId) {
   for (const name of ['openclaw', 'hermes']) {
     const v = snapshot.versions?.[name];
     if (!v || !/^\d+\.\d+\.\d+$/.test(v.current) || !/^\d+\.\d+\.\d+$/.test(v.latest)) throw new Error('Missing snapshot versions');
-    if (VERSION_LOCKS[name] && (v.current !== VERSION_LOCKS[name] || v.latest !== VERSION_LOCKS[name])) {
+    if (enforceVersionLocks && VERSION_LOCKS[name] && (v.current !== VERSION_LOCKS[name] || v.latest !== VERSION_LOCKS[name])) {
       throw new Error('Version lock mismatch: ' + name);
     }
   }
