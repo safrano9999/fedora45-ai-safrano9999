@@ -65,43 +65,48 @@ their hardlinks. The Citadel runtime orders its WebUI after Tailscale up.
 - Foundation build: [Containerfile](fedora45-ai-core-pre/Containerfile).
 - Core integration: [Containerfile](fedora45-ai-core/Containerfile).
 
-Core-pre's `OPENCLAW_VERSION` and optional `OPENCLAW_UPSTREAM_SHA` arguments
-select the source for Deterministic builds and Ephemeral compatibility tests.
-The override is preserved while the stable version is unchanged. An upstream
-version increase clears it, returning to that release's official source.
-Deterministic is explicitly pinned in Core's Containerfile. The image cascade
-consumes that release; it does not upgrade or rebuild it implicitly.
-The standalone `openclaw-components.yml` entry point remains available for
-explicit component updates.
+The normal line targets **2026.11.1**. Core-pre installs the official
+OpenClaw **2026.11.1** npm release once, verified against its release manifest.
+Core inherits that installation and independently installs matching Brave and
+Codex plugins, MAI Transcribe 0.1.1, Speaches, and the Ephemeral adapters.
+The existing TTS fallback-order integration is retained separately.
+Deterministic and NOTE are no longer inputs to this line; the historical
+`Containerfile2026.9.17` recipes remain available with their original pins.
 
-Core installs Deterministic, the official npm Codex plugin, the pinned local
-voice plugins, and Ephemeral in separate steps. Deterministic installs the
-complete matching OpenClaw npm package; Core then installs Codex and the voice
-plugins in later layers. Ephemeral supplies configuration and startup code and
-discovers optional local models even without API keys. The Containerfiles fetch all other Safrano Git sources from their current
-default branches and release payloads from `latest`. No prepared source snapshot
-or external generator commit lock overrides these declarations.
+Standard OpenClaw accepts private MCP connections to the explicitly configured
+server origin. Ephemeral retains the per-server private-network option for older
+runtimes. Its GitHub integration job verifies generated configuration, real model
+catalog entries, agent filters, and a private MCP tool call with OpenClaw 2026.11.1.
 
-| Fixed component | Previous | New stable pin |
-|---|---|---|
-| OpenClaw | 2026.9.3 | 2026.9.4 |
-| Hermes | 0.21.0 | 0.21.2 |
-| Electrum | 4.7.2 | 4.8.1 |
-| LND / lncli | v0.20.1-beta | v0.21.3-beta |
-| Geth | 1.17.2 | 1.17.5 |
-| Webhook | 2.8.3 | 2.8.3 |
-| Vditor | 3.11.2 | 4.0.0 |
-| BIP39 | 0.5.6 | 0.5.6 |
+Hermes continues on its existing `main` branch, captured at
+`63f6852249f6ce79a6e84f7d64fd4486facce5d1` (0.23.0 + 774 commits).
+Its upstream PM/uv/pnpm locks define the isolated application environment.
+The profile-store symlink correction is retained. Node stays on the official
+26 LTS archive, currently 26.13.0. All Safrano Git contributions follow their
+existing default branches.
 
-The Brave and Codex plugins follow the pinned OpenClaw version. Node 26 comes
-from Fedora RPMs without a patch-version pin. npm is updated before installing
-Hermes so its installer keeps the system Node. Python development headers support
-source builds on Fedora's Python 3.15; Psycopg uses Fedora's libpq. Other floating
-channels (Codex CLI, Claude and uv) keep their previous selection strategy.
+| Component | Selected version |
+|---|---|
+| OpenClaw / Brave / Codex plugin | 2026.11.1 |
+| OpenCode | 1.19.5 |
+| OpenCode Telegram bridge | 0.27.0 |
+| Codex CLI | 0.167.0 |
+| Claude Code | 2.1.319 |
+| npm | 12.2.2 |
+| Electrum (amd64 and arm64) | 4.8.4 |
+| Agave / Solana | 4.3.2 |
 
-The Nous API-key patch follows Hermes 0.21.2's credential owners and preserves
-interactive OAuth. Its 16 API-key regressions and 169 related upstream checks
-pass, including the default chat transport and optional native Messages transport.
+The complete stable-channel audit, hashes and source ownership are recorded in
+[`upgrade-loop/evidence/2026.11.1-refresh`](upgrade-loop/evidence/2026.11.1-refresh).
+Core-pre refreshes Fedora 45 packages. Upper layers keep satisfied inherited
+Python dependencies and install only missing requirements; the resolver sees
+all version constraints and `pip check` verifies the result. No upper layer
+reinstalls OpenClaw, Node, Hermes or OpenCode.
+
+All image builds and runtime tests run on GitHub-hosted Actions runners through
+workflows maintained in SCRIPTS/githubactions. Version tags are tested before
+promoting the complete chain to `latest`. Publication does not pull images,
+restart containers, or change `images.json` on any deployment.
 
 ## Publishing and deployment
 

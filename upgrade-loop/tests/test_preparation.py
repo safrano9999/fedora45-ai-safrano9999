@@ -131,9 +131,9 @@ class PreparationTests(unittest.TestCase):
             numbers[-1] += 1
             latest[changed] = '.'.join(map(str, numbers))
             replies = [{"tag_name": "v" + latest["openclaw"]}, {"name": "Hermes Agent v" + latest["hermes"] + " release"},
-                       {"sha": "a" * 40}, {"sha": "b" * 40}, [], {}]
+                       {"sha": "a" * 40}, {"sha": "b" * 40}, {"sha": "8" * 40}]
             report = {}
-            with self.subTest(changed=changed), patch.dict(prep.os.environ, {"GITHUB_ACTIONS": "true"}), patch.object(prep, "github", side_effect=replies), patch.object(prep, "patch_inputs", side_effect=RuntimeError('snapshot captured')):
+            with self.subTest(changed=changed), patch.dict(prep.os.environ, {"GITHUB_ACTIONS": "true"}), patch.object(prep, "github", side_effect=replies), patch.object(prep.importlib.util, "spec_from_file_location", side_effect=RuntimeError('snapshot captured')):
                 with self.assertRaisesRegex(RuntimeError, 'snapshot captured'):
                     prep.prepare(report)
             self.assertEqual(report['ephemeral_commits'], {'openclaw': 'a' * 40, 'hermes': 'b' * 40})
