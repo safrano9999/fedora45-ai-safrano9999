@@ -24,7 +24,7 @@ container check is owned by the user and is not implemented by this workflow.
    Test both selected Ephemeral generators against their selected upstream
    releases, including the component whose upstream version did not change.
    Check Hermes patch applicability and the selected pinned OpenClaw artifact.
-5. After checks pass, publish the upstream and Deterministic inputs plus compatibility evidence together
+5. After checks pass, publish the selected upstream inputs and compatibility evidence together
    with `upgrade-loop/prepared-sources.json` in one Git commit. Concurrent main
    changes block the push; never force-push or mix different source snapshots.
 6. Verify that the returned snapshot matches the one selected by n8n. Only
@@ -35,8 +35,9 @@ container check is owned by the user and is not implemented by this workflow.
 
 The snapshot records the sources used for these compatibility checks. It does
 not select package sources for image builds: each Containerfile fetches current
-Safrano Git default branches and `latest` release payloads directly. Deterministic
-is the explicit exception and remains pinned in Core's Containerfile.
+Safrano Git default branches and `latest` release payloads directly. The normal
+line uses official OpenClaw with a verified release checksum. Historical
+Deterministic inputs are included only when the selected recipe declares them.
 
 The pinned-series MCP path uses `build_series` and does not invoke n8n. It verifies
 all corresponding `Containerfile<series>` files and builds them at one immutable
@@ -154,10 +155,13 @@ in `build.conf` and reads native Git `ADD` declarations from each Containerfile.
 Runtime role lists must refer to sources declared by that layer; branch pins in
 those lists are rejected. External upstreams are excluded from the Safrano list.
 
-The preview reports `source_policy: containerfile-latest-with-pinned-deterministic`
+The normal preview reports `source_policy: containerfile-latest-with-standard-openclaw`
 and records resolved commits for diagnostics and compatibility tests. Those
 checkouts are separate from the image build: advancing Git branches are consumed
-by BuildKit at build time, while Deterministic keeps its declared release tag.
+by BuildKit at build time. Legacy recipes that declare Deterministic retain the
+`containerfile-latest-with-pinned-deterministic` policy and their declared release tag.
+Hermes compatibility preparation uses the exact selected `main` commit; refreshing
+its base release also requires updating the main commit and release distance together.
 
 Checkouts live at `/home/node/.n8n/fedora45-sources/<repository>` in the existing
 n8n named volume. First checkout uses `git clone --depth 1`; updates use

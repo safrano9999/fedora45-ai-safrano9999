@@ -57,7 +57,7 @@ their hardlinks. The Citadel runtime orders its WebUI after Tailscale up.
 
 - x86_64 workflow SOT: [SCRIPTS/githubactions/fedora45-ai-safrano9999](https://github.com/safrano9999/SCRIPTS/tree/main/githubactions/fedora45-ai-safrano9999).
 - ARM64 workflow SOT: [SCRIPTS/githubactions/fedora45-ai-safrano9999-arm64](https://github.com/safrano9999/SCRIPTS/tree/main/githubactions/fedora45-ai-safrano9999-arm64).
-- [openclaw-deterministic-latest](https://github.com/safrano9999/openclaw-deterministic-latest).
+- [Official OpenClaw](https://github.com/openclaw/openclaw); [Deterministic](https://github.com/safrano9999/openclaw-deterministic-latest) is retained only for historical recipes.
 - [openclaw-ephemeral](https://github.com/safrano9999/openclaw-ephemeral).
 - [hermes-ephemeral](https://github.com/safrano9999/hermes-ephemeral).
 - [opencode-ephemeral](https://github.com/safrano9999/opencode-ephemeral).
@@ -114,8 +114,9 @@ Each layer provides `Containerfile` for the normal line and
 `Containerfile2026.9.17` for the pinned OpenClaw/Fedora line. SAFRANO_MCP accepts
 `build_series="2026.9.17"`, reserves one next revision (for example `.10` → `.11`),
 and passes the same series, tag and matching parent tags through Core-pre → Full.
-Only Deterministic is explicitly version-pinned among the Safrano components.
-The existing OpenClaw and Fedora foundation pins remain intact.
+Historical recipes keep their existing Deterministic, OpenClaw and Fedora pins.
+The normal line selects the official OpenClaw release and the foundation inputs
+documented above; it does not request a Deterministic build.
 
 The planned n8n workflow for repeatable builds, regression tests and corrections
 across the entire Fedora45 image chain is described in

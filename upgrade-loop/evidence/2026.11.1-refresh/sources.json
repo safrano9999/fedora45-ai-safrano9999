@@ -84,7 +84,7 @@
       "catalog_contract": "Custom provider model IDs are preserved by Ephemeral and returned by the installed OpenClaw runtime; no dummy model dependency",
       "passing_integration": "https://github.com/safrano9999/openclaw-ephemeral/actions/runs/42422039222"
     },
-    "maI_transcribe": {
+    "mai_transcribe": {
       "source": "fedora45-ai-core/build/voice-plugins/mai-transcribe/PROVENANCE.txt",
       "live_transcription": "Not exercised against a paid provider"
     }
