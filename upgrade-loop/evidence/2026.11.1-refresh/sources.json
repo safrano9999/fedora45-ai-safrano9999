@@ -5,7 +5,7 @@
     "version": "2026.11.1",
     "source": "https://github.com/openclaw/openclaw/releases/tag/v2026.11.1",
     "commit": "4ffdd2047d192dd65554de3c8c46c0e0197c6e2a",
-    "runtime": "unmodified npm release"
+    "runtime": "Official npm release in Core-pre; Core retains the existing TTS fallback-order integration"
   },
   "hermes": {
     "branch": "main",
@@ -71,5 +71,22 @@
       "VikAI"
     ]
   },
-  "deployment": "No running containers, Quadlets or images.json changes."
+  "deployment": "No running containers, Quadlets or images.json changes.",
+  "models": {
+    "opencode": {
+      "configured_default": "opencode/mimo-v2.6-flash-free",
+      "listed_in_official_documentation": true,
+      "source": "https://opencode.ai/docs/console/models/",
+      "live_catalog_without_credentials": "HTTP 403; no inference or authenticated provider call performed"
+    },
+    "openclaw": {
+      "version": "2026.11.1",
+      "catalog_contract": "Custom provider model IDs are preserved by Ephemeral and returned by the installed OpenClaw runtime; no dummy model dependency",
+      "passing_integration": "https://github.com/safrano9999/openclaw-ephemeral/actions/runs/42422039222"
+    },
+    "maI_transcribe": {
+      "source": "fedora45-ai-core/build/voice-plugins/mai-transcribe/PROVENANCE.txt",
+      "live_transcription": "Not exercised against a paid provider"
+    }
+  }
 }
