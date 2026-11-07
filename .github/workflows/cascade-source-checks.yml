@@ -35,9 +35,6 @@ jobs:
   plugins:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      npm_config_prefix: ${{ runner.temp }}/openclaw
-      HOME: ${{ runner.temp }}/plugin-home
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,6 +43,8 @@ jobs:
       - name: Check direct plugins and TTS integration against the installed release
         run: |
           set -euo pipefail
+          export npm_config_prefix="$RUNNER_TEMP/openclaw"
+          export HOME="$RUNNER_TEMP/plugin-home"
           mkdir -p "$HOME"
           export PATH="$npm_config_prefix/bin:$PATH"
           version="$(sed -n 's/^ARG OPENCLAW_VERSION=//p' fedora45-ai-core/Containerfile)"

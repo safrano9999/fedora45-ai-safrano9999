@@ -54,8 +54,8 @@ test('already rebuilt Core still leaves stale descendants eligible, and asset ch
   f.state.freshSnapshot=makeSnapshot(f.manifest,versions);
   f.state.images['fedora45-ai-core']={image:'fedora45-ai-core',revision:fresh,digest:digest(9),layers:[digest(1),digest(2)]};
   assert.equal((await upgradePlan(f.get,f.manifest,versions,f.readImage)).start_key,'fedora45_base');
-  const g=await fixture();g.manifest.repositories.find(e=>e.repository.endsWith('/NOTE')).release={ref:'latest',asset:'note.zip',sha256:'a'.repeat(64)};
-  assert.equal((await upgradePlan(g.get,g.manifest,versions,g.readImage)).start_key,'fedora45_core');
+  const g=await fixture();g.manifest.repositories.find(e=>e.repository.endsWith('/NEXTCLOUD')).runtime_assets=[{name:'nextcloud-fedora64-plugin-latest.zip',sha256:'a'.repeat(64)}];
+  assert.equal((await upgradePlan(g.get,g.manifest,versions,g.readImage)).start_key,'fedora45_base');
 });
 test('changed parent content, removed repositories and layer definitions are detected',async()=>{
   const f=await fixture();f.state.images['fedora45-ai-core-pre']={image:'fedora45-ai-core-pre',revision:old,digest:digest(9),layers:[digest(9)]};
