@@ -3,8 +3,12 @@ name: fedora45-ai ARM64 cascade
 on:
   workflow_dispatch:
     inputs:
+      build_series:
+        description: "Empty selects the normal line; 2026.9.17 retains the historical recipes"
+        type: string
+        default: ""
       image_tag:
-        description: "Fixed 2026.9.17.N; empty selects the next revision across both architectures"
+        description: "Fixed image version; empty selects the next revision for the selected line"
         type: string
         default: ""
       start_layer:
@@ -16,6 +20,10 @@ on:
         description: "Existing ARM64 Core-pre foundation; this workflow starts at Core"
         type: string
         default: "2026.9.17.28"
+      replace_existing:
+        description: "Allow an explicitly requested candidate rebuild at the same version"
+        type: boolean
+        default: false
       publish_latest:
         description: "Advance the ARM64 latest tags"
         type: boolean
@@ -24,7 +32,7 @@ concurrency:
   group: fedora45-ai-arm64-cascade
   cancel-in-progress: false
 env:
-  BUILD_SERIES: 2026.9.17
+  BUILD_SERIES: ${{ inputs.build_series }}
 jobs:
   resolve:
     runs-on: ubuntu-24.04-arm
@@ -33,6 +41,7 @@ jobs:
       packages: read
     outputs:
       version: ${{ steps.version.outputs.version }}
+      openclaw_version: ${{ steps.version.outputs.openclaw_version }}
     steps:
       - uses: actions/checkout@v4
       - name: Resolve unused shared series revision
@@ -41,11 +50,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REQUESTED_TAG: ${{ inputs.image_tag }}
           START_LAYER: ${{ inputs.start_layer }}
+          REPLACE_EXISTING: ${{ inputs.replace_existing }}
         run: |
           set -euo pipefail
           [[ "$START_LAYER" = core || -n "$REQUESTED_TAG" ]] || { echo "Resuming requires image_tag" >&2; exit 1; }
-          version="$(.github/scripts/resolve-fedora-image-tag.sh "ghcr.io/safrano9999/fedora45-ai-arm64-$START_LAYER" "$REQUESTED_TAG")"
-          [[ "$version" =~ ^2026[.]9[.]17[.][1-9][0-9]*$ ]]
+          version="$(.github/scripts/resolve-fedora-image-tag.sh "ghcr.io/safrano9999/fedora45-ai-arm64-$START_LAYER" "$REQUESTED_TAG" "$REPLACE_EXISTING")"
+          [[ "$version" =~ ^20[0-9]{2}[.][0-9]+[.][0-9]+([.][0-9]+)?$ ]]
+          if [ -n "$BUILD_SERIES" ]; then [[ "$version" == "$BUILD_SERIES."* ]]; fi
+          runtime="$(sed -n 's/^ARG OPENCLAW_VERSION=//p' "fedora45-ai-core/Containerfile${BUILD_SERIES}")"
+          [[ "$runtime" =~ ^[0-9]+[.][0-9]+[.][0-9]+$ ]]
+          echo "openclaw_version=$runtime" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
   core:
     name: Build ARM64 core
@@ -58,6 +72,7 @@ jobs:
       packages: write
     env:
       CASCADE_TAG: ${{ needs.resolve.outputs.version }}
+      EXPECTED_OPENCLAW_VERSION: ${{ needs.resolve.outputs.openclaw_version }}
       DOCKER_BUILD_RECORD_UPLOAD: "false"
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +90,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./fedora45-ai-core
-          file: ./fedora45-ai-core/Containerfile2026.9.17
+          file: ./fedora45-ai-core/Containerfile${{ inputs.build_series }}
           target: ai-core
           platforms: linux/arm64
           pull: true
@@ -97,11 +112,17 @@ jobs:
         run: .github/scripts/prune-container-build-space.sh
       - name: Verify installed runtime on native ARM64
         run: |
-          docker run --rm --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-core:"$CASCADE_TAG" -lc '
+          docker run --rm -e EXPECTED_OPENCLAW_VERSION --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-core:"$CASCADE_TAG" -lc '
             set -euo pipefail
             test "$(uname -m)" = aarch64
-            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = 2026.9.4
-            test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/litellm-free.py
+            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = "$EXPECTED_OPENCLAW_VERSION"
+            test -x /opt/safrano9999/litellm-free/ops/refresh-models.sh
+            openclaw-ephemeral.py configure
+            openclaw config validate
+            python3 -m pip check
+            for plugin in brave codex mai-transcribe speaches; do
+              openclaw plugins inspect "$plugin" --json | jq -e --arg id "$plugin" ".plugin.id == \$id and .plugin.enabled == true and .plugin.status == \"loaded\" and (.install.installPath | length > 0)" >/dev/null
+            done
           '
   base:
     name: Build ARM64 base
@@ -114,6 +135,7 @@ jobs:
       packages: write
     env:
       CASCADE_TAG: ${{ needs.resolve.outputs.version }}
+      EXPECTED_OPENCLAW_VERSION: ${{ needs.resolve.outputs.openclaw_version }}
       DOCKER_BUILD_RECORD_UPLOAD: "false"
     steps:
       - uses: actions/checkout@v4
@@ -131,7 +153,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./fedora45-ai-base
-          file: ./fedora45-ai-base/Containerfile2026.9.17
+          file: ./fedora45-ai-base/Containerfile${{ inputs.build_series }}
           target: ai-base
           platforms: linux/arm64
           pull: true
@@ -153,11 +175,17 @@ jobs:
         run: .github/scripts/prune-container-build-space.sh
       - name: Verify installed runtime on native ARM64
         run: |
-          docker run --rm --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-base:"$CASCADE_TAG" -lc '
+          docker run --rm -e EXPECTED_OPENCLAW_VERSION --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-base:"$CASCADE_TAG" -lc '
             set -euo pipefail
             test "$(uname -m)" = aarch64
-            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = 2026.9.4
-            test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/litellm-free.py
+            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = "$EXPECTED_OPENCLAW_VERSION"
+            test -x /opt/safrano9999/litellm-free/ops/refresh-models.sh
+            openclaw-ephemeral.py configure
+            openclaw config validate
+            python3 -m pip check
+            for plugin in brave codex mai-transcribe speaches; do
+              openclaw plugins inspect "$plugin" --json | jq -e --arg id "$plugin" ".plugin.id == \$id and .plugin.enabled == true and .plugin.status == \"loaded\" and (.install.installPath | length > 0)" >/dev/null
+            done
           '
   kachelmann:
     name: Build ARM64 kachelmann
@@ -170,6 +198,7 @@ jobs:
       packages: write
     env:
       CASCADE_TAG: ${{ needs.resolve.outputs.version }}
+      EXPECTED_OPENCLAW_VERSION: ${{ needs.resolve.outputs.openclaw_version }}
       DOCKER_BUILD_RECORD_UPLOAD: "false"
     steps:
       - uses: actions/checkout@v4
@@ -193,7 +222,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./fedora45-ai-kachelmann
-          file: ./fedora45-ai-kachelmann/Containerfile2026.9.17
+          file: ./fedora45-ai-kachelmann/Containerfile${{ inputs.build_series }}
           target: ai-kachelmann
           platforms: linux/arm64
           pull: true
@@ -215,11 +244,17 @@ jobs:
         run: .github/scripts/prune-container-build-space.sh
       - name: Verify installed runtime on native ARM64
         run: |
-          docker run --rm --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-kachelmann:"$CASCADE_TAG" -lc '
+          docker run --rm -e EXPECTED_OPENCLAW_VERSION --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-kachelmann:"$CASCADE_TAG" -lc '
             set -euo pipefail
             test "$(uname -m)" = aarch64
-            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = 2026.9.4
-            test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/litellm-free.py
+            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = "$EXPECTED_OPENCLAW_VERSION"
+            test -x /opt/safrano9999/litellm-free/ops/refresh-models.sh
+            openclaw-ephemeral.py configure
+            openclaw config validate
+            python3 -m pip check
+            for plugin in brave codex mai-transcribe speaches; do
+              openclaw plugins inspect "$plugin" --json | jq -e --arg id "$plugin" ".plugin.id == \$id and .plugin.enabled == true and .plugin.status == \"loaded\" and (.install.installPath | length > 0)" >/dev/null
+            done
           '
   safrano9999:
     name: Build ARM64 safrano9999
@@ -232,6 +267,7 @@ jobs:
       packages: write
     env:
       CASCADE_TAG: ${{ needs.resolve.outputs.version }}
+      EXPECTED_OPENCLAW_VERSION: ${{ needs.resolve.outputs.openclaw_version }}
       DOCKER_BUILD_RECORD_UPLOAD: "false"
     steps:
       - uses: actions/checkout@v4
@@ -249,7 +285,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./fedora45-ai-safrano9999
-          file: ./fedora45-ai-safrano9999/Containerfile2026.9.17
+          file: ./fedora45-ai-safrano9999/Containerfile${{ inputs.build_series }}
           target: ai-safrano9999
           platforms: linux/arm64
           pull: true
@@ -271,11 +307,17 @@ jobs:
         run: .github/scripts/prune-container-build-space.sh
       - name: Verify installed runtime on native ARM64
         run: |
-          docker run --rm --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-safrano9999:"$CASCADE_TAG" -lc '
+          docker run --rm -e EXPECTED_OPENCLAW_VERSION --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-safrano9999:"$CASCADE_TAG" -lc '
             set -euo pipefail
             test "$(uname -m)" = aarch64
-            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = 2026.9.4
-            test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/litellm-free.py
+            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = "$EXPECTED_OPENCLAW_VERSION"
+            test -x /opt/safrano9999/litellm-free/ops/refresh-models.sh
+            openclaw-ephemeral.py configure
+            openclaw config validate
+            python3 -m pip check
+            for plugin in brave codex mai-transcribe speaches; do
+              openclaw plugins inspect "$plugin" --json | jq -e --arg id "$plugin" ".plugin.id == \$id and .plugin.enabled == true and .plugin.status == \"loaded\" and (.install.installPath | length > 0)" >/dev/null
+            done
           '
   full:
     name: Build ARM64 full
@@ -288,6 +330,7 @@ jobs:
       packages: write
     env:
       CASCADE_TAG: ${{ needs.resolve.outputs.version }}
+      EXPECTED_OPENCLAW_VERSION: ${{ needs.resolve.outputs.openclaw_version }}
       DOCKER_BUILD_RECORD_UPLOAD: "false"
     steps:
       - uses: actions/checkout@v4
@@ -305,7 +348,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./fedora45-ai-safrano9999-full
-          file: ./fedora45-ai-safrano9999-full/Containerfile2026.9.17
+          file: ./fedora45-ai-safrano9999-full/Containerfile${{ inputs.build_series }}
           target: ai-safrano9999-full
           platforms: linux/arm64
           pull: true
@@ -327,9 +370,15 @@ jobs:
         run: .github/scripts/prune-container-build-space.sh
       - name: Verify installed runtime on native ARM64
         run: |
-          docker run --rm --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-full:"$CASCADE_TAG" -lc '
+          docker run --rm -e EXPECTED_OPENCLAW_VERSION --entrypoint bash ghcr.io/safrano9999/fedora45-ai-arm64-full:"$CASCADE_TAG" -lc '
             set -euo pipefail
             test "$(uname -m)" = aarch64
-            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = 2026.9.4
-            test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/litellm-free.py
+            test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = "$EXPECTED_OPENCLAW_VERSION"
+            test -x /opt/safrano9999/litellm-free/ops/refresh-models.sh
+            openclaw-ephemeral.py configure
+            openclaw config validate
+            python3 -m pip check
+            for plugin in brave codex mai-transcribe speaches; do
+              openclaw plugins inspect "$plugin" --json | jq -e --arg id "$plugin" ".plugin.id == \$id and .plugin.enabled == true and .plugin.status == \"loaded\" and (.install.installPath | length > 0)" >/dev/null
+            done
           '

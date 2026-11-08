@@ -106,6 +106,9 @@ def build_inputs(snapshot):
     entries = validate_snapshot(snapshot)
     try:
         version = snapshot["versions"]["openclaw"]["latest"]
+        if "safrano9999/openclaw-deterministic-latest" not in entries:
+            return {"OPENCLAW_VERSION": version,
+                    "OPENCLAW_UPSTREAM_SHA": snapshot["openclaw_source"]["commit"]}
         patch = entries["safrano9999/openclaw-deterministic-latest"]["release"]
         if patch["asset"] != f"openclaw-{version}-deterministic.tar.gz":
             raise ValueError("Snapshot asset differs from target runtime")

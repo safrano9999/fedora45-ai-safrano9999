@@ -217,7 +217,13 @@ jobs:
             test -x /usr/local/bin/openclaw-ephemeral-yolo
             test -x /usr/local/bin/hermes-ephemeral
             test -x /usr/local/bin/persistainer
-            test -f /root/.openclaw/extensions/note/openclaw.plugin.json
+            if test -f "$(npm root -g)/openclaw/deterministic-build.json"; then
+              test -f /root/.openclaw/extensions/note/openclaw.plugin.json
+            else
+              for plugin in brave codex mai-transcribe speaches; do
+                openclaw plugins inspect "$plugin" --json | jq -e --arg id "$plugin" ".plugin.id == \$id and .plugin.enabled == true and .plugin.status == \"loaded\" and (.install.installPath | length > 0)" >/dev/null
+              done
+            fi
             for project in WELCOME CODEANALYST CITADEL DIESDAS- NEXTCLOUD \
               JUGO PV_D-A-CH KIWIX_BRIDGE \
               NAPOLEON_HILLS_AI_MASTERMIND_CLASSES \

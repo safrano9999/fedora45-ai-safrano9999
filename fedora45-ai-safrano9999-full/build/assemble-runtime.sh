@@ -236,11 +236,8 @@ write_requirements() {
     {
         stripped = $0
         sub(/^[[:space:]]+/, "", stripped)
-        if (stripped == "" || substr(stripped, 1, 1) == "#") { print; next }
-        match(stripped, /^[A-Za-z0-9._-]+/)
-        if (RSTART == 0) { print; next }
-        key = tolower(substr(stripped, RSTART, RLENGTH))
-        if (!(key in seen)) { seen[key] = 1; print }
+        sub(/[[:space:]]+$/, "", stripped)
+        if (!(stripped in seen)) { seen[stripped] = 1; print }
     }
     ' "${requirement_files[@]}" > "$REQUIREMENTS"
 }

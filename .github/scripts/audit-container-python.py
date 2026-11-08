@@ -38,6 +38,18 @@ try:
 except Exception as e:
  r['native_trust']={'error':type(e).__name__}
 
+# Record visible distributions to distinguish reused parent packages from
+# multiple versions shadowing each other in the same interpreter environment.
+if metadata is not None:
+ distributions = {}
+ for dist in metadata.distributions():
+  name = re.sub(r'[-_.]+', '-', dist.metadata.get('Name', '')).lower()
+  if not name: continue
+  record = {'version':dist.version, 'path':str(dist.locate_file(''))}
+  if record not in distributions.setdefault(name, []): distributions[name].append(record)
+ r['distributions'] = distributions
+ r['duplicate_distributions'] = {name:records for name,records in distributions.items() if len(records)>1}
+
 for name in ('pip','certifi','requests','urllib3','uv','httpx','litellm','hermes-agent','fastapi','mcp'):
  try:
   d=metadata.distribution(name)

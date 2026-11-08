@@ -1,0 +1,114 @@
+{
+  "checked_at": "2026-11-07",
+  "research_run": "https://github.com/safrano9999/fedora45-ai-safrano9999/actions/runs/42421439172",
+  "openclaw": {
+    "version": "2026.11.1",
+    "source": "https://github.com/openclaw/openclaw/releases/tag/v2026.11.1",
+    "commit": "4ffdd2047d192dd65554de3c8c46c0e0197c6e2a",
+    "runtime": "Official npm release in Core-pre; Core retains the existing TTS fallback-order integration"
+  },
+  "hermes": {
+    "branch": "main",
+    "commit": "63f6852249f6ce79a6e84f7d64fd4486facce5d1",
+    "base_version": "0.23.0",
+    "distance": 774,
+    "source": "https://github.com/NousResearch/hermes-agent/commit/63f6852249f6ce79a6e84f7d64fd4486facce5d1",
+    "retained_patch": "build/hermes-profile-store.patch"
+  },
+  "plugins": {
+    "brave": "@openclaw/brave-plugin@2026.11.1",
+    "codex": "@openclaw/codex@2026.11.1",
+    "mai-transcribe": "vendored 0.1.1; see PROVENANCE.txt",
+    "speaches": "existing Core plugin"
+  },
+  "package_policy": {
+    "dnf": "Fedora 45 stable repositories; update once in Core-pre",
+    "npm": "current stable packages, recorded versions and checksums",
+    "python": "Fedora packages remain visible to pip in Core-pre and upper layers; install only missing requirements, run pip check, and reject duplicate distribution paths in each normal layer.",
+    "hermes": "retain upstream locked isolated PM/application environments; required by the existing Hermes main runtime"
+  },
+  "layers": {
+    "core-pre": [
+      "Node",
+      "npm",
+      "OpenClaw",
+      "Hermes",
+      "OpenCode",
+      "CLI tools",
+      "base Python/RPM libraries"
+    ],
+    "core": [
+      "Ephemeral adapters",
+      "Brave",
+      "Codex plugin",
+      "MAI",
+      "Speaches",
+      "LiteLLM-Free"
+    ],
+    "base": [
+      "WELCOME",
+      "CITADEL",
+      "NEXTCLOUD",
+      "CODEANALYST",
+      "DIESDAS-",
+      "safrano9999-paper"
+    ],
+    "kachelmann": [
+      "KACHELMANN"
+    ],
+    "safrano9999": [
+      "DAILYNEWS",
+      "ZEROINBOX",
+      "SPANKER",
+      "JUGO",
+      "PV_D-A-CH",
+      "KIWIX_BRIDGE",
+      "NAPOLEON_HILLS_AI_MASTERMIND_CLASSES",
+      "SOLANA_AIRGAPPED_DEBIAN_WORKFLOW",
+      "NaturalGrounding-Tiktok-Ying-Video-Manager"
+    ],
+    "full": [
+      "VikAI"
+    ]
+  },
+  "deployment": "No running containers, Quadlets or images.json changes.",
+  "models": {
+    "opencode": {
+      "configured_default": "opencode/mimo-v2.6-flash-free",
+      "listed_in_official_documentation": true,
+      "source": "https://opencode.ai/docs/console/models/",
+      "live_catalog_without_credentials": "HTTP 403; no inference or authenticated provider call performed"
+    },
+    "openclaw": {
+      "version": "2026.11.1",
+      "catalog_contract": "Custom provider model IDs are preserved by Ephemeral and returned by the installed OpenClaw runtime; no dummy model dependency",
+      "passing_integration": "https://github.com/safrano9999/openclaw-ephemeral/actions/runs/42422039222"
+    },
+    "mai_transcribe": {
+      "source": "https://learn.microsoft.com/en-us/azure/ai-services/speech-service/mai-transcribe",
+      "live_transcription": "Not exercised against a paid provider",
+      "default_model": "MAI-Transcribe-2",
+      "api_version": "2025-10-15",
+      "contract": "Microsoft documents enhancedMode.enabled=true and enhancedMode.model=MAI-Transcribe-2 on the transcription endpoint; the plugin uses this contract.",
+      "live_provider_request": false
+    },
+    "speaches": [
+      {
+        "model": "Systran/faster-whisper-small",
+        "sha": "536b0662742c02347bc0e980a01041f333bce120",
+        "private": false,
+        "gated": false,
+        "disabled": false,
+        "source": "https://huggingface.co/Systran/faster-whisper-small"
+      },
+      {
+        "model": "speaches-ai/piper-de_DE-thorsten-high",
+        "sha": "de6b0f19b0ed03b379c61aa1f71c7fde08e70f0a",
+        "private": false,
+        "gated": false,
+        "disabled": false,
+        "source": "https://huggingface.co/speaches-ai/piper-de_DE-thorsten-high"
+      }
+    ]
+  }
+}

@@ -36,19 +36,26 @@ def extract(archive, destination, root_name):
             (Path(raw) / root_name).rename(destination)
 
 
-def prepare(component, version, cache, source_inputs=None):
+def prepare(component, version, cache, source_inputs=None, upstream_commit=None):
     if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
         raise ValueError("Expected a numeric release version")
     if component == "openclaw" and source_inputs is None:
-        raise ValueError("OpenClaw requires the Core-pre selected Deterministic runtime")
+        raise ValueError("OpenClaw requires explicit Core-pre source inputs")
     repository = {"openclaw": "openclaw/openclaw", "hermes": "NousResearch/hermes-agent"}[component]
+    if upstream_commit is not None:
+        if component != "hermes" or not re.fullmatch(r"[0-9a-f]{40}", upstream_commit):
+            raise ValueError("Only Hermes accepts an explicit main-branch source commit")
+        cache = cache / upstream_commit
     if source_inputs is not None:
         if component != "openclaw" or source_inputs["OPENCLAW_VERSION"] != version:
             raise ValueError("Selected source inputs differ from the requested runtime")
-        for key, length in (("OPENCLAW_UPSTREAM_SHA", 40), ("OPENCLAW_DETERMINISTIC_SHA256", 64)):
+        pins = [("OPENCLAW_UPSTREAM_SHA", 40)]
+        if "OPENCLAW_DETERMINISTIC_TAG" in source_inputs:
+            pins.append(("OPENCLAW_DETERMINISTIC_SHA256", 64))
+        for key, length in pins:
             if not re.fullmatch(r"[0-9a-f]{" + str(length) + r"}", source_inputs[key]):
                 raise ValueError("Invalid selected runtime pin: " + key)
-        cache = cache / (source_inputs["OPENCLAW_UPSTREAM_SHA"] + "-" + source_inputs["OPENCLAW_DETERMINISTIC_SHA256"][:16])
+        cache = cache / (source_inputs["OPENCLAW_UPSTREAM_SHA"] + "-" + source_inputs.get("OPENCLAW_DETERMINISTIC_SHA256", "standard")[:16])
     cache.mkdir(parents=True, exist_ok=True)
     evidence = cache / f"{component}-{version}-inputs.json"
     if evidence.exists():
@@ -62,13 +69,13 @@ def prepare(component, version, cache, source_inputs=None):
     if component == "hermes":
         releases = github(f"repos/{repository}/releases?per_page=100")
         matching = [r for r in releases if not r["draft"] and not r["prerelease"]
-                    and r["name"].startswith(f"Hermes Agent v{version} ")]
+                    and re.match(r"Hermes Agent v" + re.escape(version) + r"(?:\s|$)", r["name"])]
         if len(matching) != 1:
             raise ValueError("Expected exactly one matching Hermes release")
         tag = matching[0]["tag_name"]
     else:
         tag = f"v{version}"
-    commit = source_inputs["OPENCLAW_UPSTREAM_SHA"] if source_inputs else github(f"repos/{repository}/commits/{tag}")["sha"]
+    commit = source_inputs["OPENCLAW_UPSTREAM_SHA"] if source_inputs else upstream_commit or github(f"repos/{repository}/commits/{tag}")["sha"]
     if not re.fullmatch(r"[0-9a-f]{40}", commit):
         raise ValueError("Upstream release did not resolve to a commit")
     archive = cache / (f"hermes-{version}.tar.gz" if component == "hermes"
@@ -80,7 +87,7 @@ def prepare(component, version, cache, source_inputs=None):
     extract(archive, source, root_name)
     result = {"component": component, "version": version, "repository": repository,
               "tag": tag, "upstream_commit": commit, "source": str(source)}
-    if component == "openclaw" and source_inputs:
+    if component == "openclaw" and source_inputs and "OPENCLAW_DETERMINISTIC_TAG" in source_inputs:
         release = source_inputs["OPENCLAW_DETERMINISTIC_TAG"]
         bundle = cache / f"openclaw-{version}-deterministic.tar.gz"
         download(f"https://github.com/safrano9999/openclaw-deterministic-latest/releases/download/{release}/{bundle.name}",
@@ -113,6 +120,26 @@ def prepare(component, version, cache, source_inputs=None):
         (installed / "deterministic-build.json").write_text(json.dumps(manifest) + "\n")
         result.update(package=str(installed),
                       artifact_sha256=source_inputs["OPENCLAW_DETERMINISTIC_SHA256"])
+    elif component == "openclaw":
+        # Same official artifact and release-manifest checksum as Core-pre.
+        manifest_path = cache / f"openclaw-{version}-release-manifest.json"
+        download(f"https://github.com/openclaw/openclaw/releases/download/v{version}/{manifest_path.name}", manifest_path)
+        manifest = json.loads(manifest_path.read_text())
+        digest = manifest["publicationArtifacts"]["npmPreflight"]["preparedBundle"]["package"]["sha256"]
+        if not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise ValueError("Invalid official OpenClaw artifact checksum")
+        package = cache / f"openclaw-{version}.tgz"
+        download(f"https://registry.npmjs.org/openclaw/-/openclaw-{version}.tgz", package, digest)
+        prefix = cache / "selected-runtime"
+        subprocess.run(["npm", "install", "--prefix", str(prefix), "--omit=dev",
+                        "--no-audit", "--no-fund", str(package)], check=True)
+        installed = prefix / "node_modules/openclaw"
+        for directory in (source, installed):
+            if json.loads((directory / "package.json").read_text())["version"] != version:
+                raise ValueError("Selected source and runtime versions differ")
+        if (installed / "deterministic-build.json").exists():
+            raise ValueError("Standard runtime unexpectedly contains Deterministic provenance")
+        result.update(package=str(installed), artifact_sha256=digest, distribution="standard")
     temporary = evidence.with_suffix(".json.tmp")
     temporary.write_text(json.dumps(result, indent=2) + "\n")
     temporary.replace(evidence)

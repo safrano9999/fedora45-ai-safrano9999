@@ -24,9 +24,9 @@
       "repository": "spesmilo/electrum",
       "release_line": "stable",
       "pins": {
-        "ELECTRUM_VERSION": "4.8.3",
-        "ELECTRUM_SHA256": "aabe3bb2c99ffca172a004b0fd6f4afdf1b204079f7691b65f23bc5b63a9de0c",
-        "ELECTRUM_KEYS_COMMIT": "b774e151de7ec1150cf5df3b846d8441e75adc50"
+        "ELECTRUM_VERSION": "4.8.4",
+        "ELECTRUM_SHA256": "199b1b3cc6bfc29cb771ca14ec7bb1aff1dcfcb01f5049030aa6a49e336f67af",
+        "ELECTRUM_KEYS_COMMIT": "54ff65dfe1b77ef6e00f00f296a557d86c454ca0"
       }
     },
     {
@@ -98,8 +98,8 @@
       "repository": "@openai/codex",
       "release_line": "stable",
       "pins": {
-        "CODEX_VERSION": "0.166.0",
-        "CODEX_SHA256": "67ee6f4069d9328956401f54ac202c20369233159058af9f4ec1af731b87f5b7"
+        "CODEX_VERSION": "0.167.0",
+        "CODEX_SHA256": "e858522a37b85b5bbe695919190cfb0974aee5ae739d84d8d629c39735fb03a9"
       }
     },
     {
@@ -107,8 +107,8 @@
       "repository": "@anthropic-ai/claude-code",
       "release_line": "stable",
       "pins": {
-        "CLAUDE_CODE_VERSION": "2.1.317",
-        "CLAUDE_CODE_SHA256": "bf8543506740f8ba36bbec24a5e02937dd8b514237fc951db69d9de394965c74"
+        "CLAUDE_CODE_VERSION": "2.1.319",
+        "CLAUDE_CODE_SHA256": "733a926c19df1c84f35a8e4285a637edce7bf2de13672cfe13a1397efd0bf823"
       }
     },
     {
@@ -125,8 +125,8 @@
       "repository": "npm",
       "release_line": "stable",
       "pins": {
-        "NPM_VERSION": "12.2.1",
-        "NPM_SHA256": "228bd64aaef23270dbdbd2cf3d5ef5c467602ef38c4066246cef1984adab9a67"
+        "NPM_VERSION": "12.2.2",
+        "NPM_SHA256": "07fecbf753e2c3bc10ebeb3e9ed8738f6a0cc1292998b79e2e9f1dd2a5525e0c"
       }
     }
   ],
@@ -137,7 +137,7 @@
       "release_line": "45",
       "containerfile": "fedora45-ai-core-pre/Containerfile",
       "stage": "ai-core-pre",
-      "digest": "sha256:c15d8d6067038f1d6b10d8e1b8440f787a474fe6dc641ef77a5c74b1bf01a05d"
+      "digest": "sha256:5db9683660938d440b057d412247ee245172b9724f42428ae95ae01253bae699"
     }
   ]
 }

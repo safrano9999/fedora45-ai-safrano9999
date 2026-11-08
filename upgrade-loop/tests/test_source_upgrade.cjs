@@ -5,12 +5,12 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { inventory, IMAGE_REPO } = require('../n8n-sources/source-inventory');
-const { makeSnapshot, snapshotId } = require('../n8n-sources/source-snapshot');
+const { makeSnapshot, snapshotId, VERSION_LOCKS } = require('../n8n-sources/source-snapshot');
 const { upgradePlan, publishedImage } = require('../n8n-sources/source-upgrade');
 const root = path.resolve(__dirname, '../..');
 const current = 'a'.repeat(40), old = 'b'.repeat(40), fresh = 'c'.repeat(40);
 const digest = n => 'sha256:' + String(n).repeat(64);
-const versions = {openclaw:{current:'2026.9.4',latest:'2026.9.4'},hermes:{current:'0.21.3',latest:'0.21.3'}};
+const versions = {openclaw:{current:VERSION_LOCKS.openclaw,latest:VERSION_LOCKS.openclaw},hermes:{current:'0.21.3',latest:'0.21.3'}};
 async function fixture(target='fedora45-ai-base') {
   const files = {};
   for (const layer of await fs.readdir(root)) if (layer.startsWith('fedora45-ai-')) {
@@ -41,6 +41,13 @@ test('no change means no preparation; compares published snapshots, not main pre
   const f=await fixture();const p=await upgradePlan(f.get,f.manifest,versions,f.readImage);
   assert.equal(p.required,false);assert.equal(p.start_key,null);assert.deepEqual(p.changes,[]);
 });
+test('a historical published runtime can be compared after advancing the target lock',async()=>{
+  const f=await fixture();
+  f.state.snapshot.versions={...f.state.snapshot.versions,openclaw:{current:'2026.9.4',latest:'2026.9.4'}};
+  const p=await upgradePlan(f.get,f.manifest,versions,f.readImage);
+  assert.equal(p.start_key,'fedora45_core_pre');
+  assert.ok(p.changes.some(c=>c.reason==='upstream-version'&&c.before==='2026.9.4'));
+});
 test('Hermes-only source update starts at Core; multiple changes choose earliest stage',async()=>{
   const f=await fixture();f.manifest.repositories.find(e=>e.repository.endsWith('/hermes-ephemeral')).commit='e'.repeat(40);
   f.manifest.repositories.find(e=>e.repository.endsWith('/CODEANALYST')).commit='f'.repeat(40);
@@ -54,8 +61,8 @@ test('already rebuilt Core still leaves stale descendants eligible, and asset ch
   f.state.freshSnapshot=makeSnapshot(f.manifest,versions);
   f.state.images['fedora45-ai-core']={image:'fedora45-ai-core',revision:fresh,digest:digest(9),layers:[digest(1),digest(2)]};
   assert.equal((await upgradePlan(f.get,f.manifest,versions,f.readImage)).start_key,'fedora45_base');
-  const g=await fixture();g.manifest.repositories.find(e=>e.repository.endsWith('/NOTE')).release={ref:'latest',asset:'note.zip',sha256:'a'.repeat(64)};
-  assert.equal((await upgradePlan(g.get,g.manifest,versions,g.readImage)).start_key,'fedora45_core');
+  const g=await fixture();g.manifest.repositories.find(e=>e.repository.endsWith('/NEXTCLOUD')).runtime_assets=[{name:'nextcloud-fedora64-plugin-latest.zip',sha256:'a'.repeat(64)}];
+  assert.equal((await upgradePlan(g.get,g.manifest,versions,g.readImage)).start_key,'fedora45_base');
 });
 test('changed parent content, removed repositories and layer definitions are detected',async()=>{
   const f=await fixture();f.state.images['fedora45-ai-core-pre']={image:'fedora45-ai-core-pre',revision:old,digest:digest(9),layers:[digest(9)]};

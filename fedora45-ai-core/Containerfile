@@ -6,34 +6,18 @@ ADD https://github.com/safrano9999/openclaw-ephemeral.git /sources/openclaw-ephe
 ADD https://github.com/safrano9999/hermes-ephemeral.git /sources/hermes-ephemeral/
 ADD https://github.com/safrano9999/opencode-ephemeral.git /sources/opencode-ephemeral/
 ADD https://github.com/f24sales/litellm-free.git /sources/litellm-free/
-RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
-    gh release download latest --repo safrano9999/NOTE \
-      --pattern note-latest.zip --pattern note-latest.zip.sha256 --dir /sources/note \
- && cd /sources/note && sha256sum -c note-latest.zip.sha256
-
 FROM ${AI_CORE_PRE_IMAGE} AS ai-core
 
-ARG OPENCLAW_VERSION=2026.9.4
-ARG OPENCLAW_UPSTREAM_SHA=3a9d69db306cd7f081e06254cb89c4bcc14a7107
-ARG OPENCLAW_DETERMINISTIC_TAG=2026.9.4-deterministic.4
-ARG OPENCLAW_DETERMINISTIC_SHA256=4a6e0423c7fc93993155df004c0b6d091eb573ae0e7f7f6a431fe416a407a49a
-RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
-    gh release download "${OPENCLAW_DETERMINISTIC_TAG}" \
-      --repo safrano9999/openclaw-deterministic-latest \
-      --pattern "openclaw-${OPENCLAW_VERSION}-deterministic.tar.gz" \
-      --output /tmp/openclaw-deterministic.tar.gz \
- && echo "${OPENCLAW_DETERMINISTIC_SHA256}  /tmp/openclaw-deterministic.tar.gz" | sha256sum -c -
+ARG OPENCLAW_VERSION=2026.11.1
+ARG OPENCLAW_UPSTREAM_SHA=4ffdd2047d192dd65554de3c8c46c0e0197c6e2a
 
 LABEL org.opencontainers.image.title="fedora45-ai-core" \
-      org.opencontainers.image.description="Small ephemeral OpenClaw, NOTE, Hermes configuration, and systemd runtime layer on fedora45-ai-core-pre." \
+      org.opencontainers.image.description="Ephemeral OpenClaw, Hermes configuration, plugins and systemd runtime on Core-pre." \
       org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
       io.safrano9999.parent="fedora45-ai-core-pre" \
       io.safrano9999.openclaw.version="${OPENCLAW_VERSION}" \
-      io.safrano9999.openclaw.build="${OPENCLAW_VERSION}-patched" \
-      io.safrano9999.openclaw.upstream-commit="${OPENCLAW_UPSTREAM_SHA}" \
-      io.safrano9999.openclaw.deterministic-release="${OPENCLAW_DETERMINISTIC_TAG}" \
-      io.safrano9999.note.repository="safrano9999/NOTE" \
-      io.safrano9999.note.release="latest"
+      io.safrano9999.openclaw.build="${OPENCLAW_VERSION}" \
+      io.safrano9999.openclaw.upstream-commit="${OPENCLAW_UPSTREAM_SHA}"
 
 # Assemble the distro-neutral OpenClaw payload directly on Fedora.
 ENV HOME=/root \
@@ -48,16 +32,22 @@ RUN install -d -o root -g root -m 0700 "${OPENCLAW_CONFIG_DIR}"
 
 # LiteLLM-Free is immutable image code; credentials and client config stay runtime-only.
 RUN --mount=type=cache,target=/var/cache/dnf \
-    dnf -y install cronie python3-pyyaml python3-dotenv
+    dnf -y install cronie
 COPY --from=core-sources /sources/litellm-free/ /opt/safrano9999/litellm-free/
 COPY --from=core-sources /sources/litellm-free/image/runtime/ /
 RUN chmod 0755 /opt/safrano9999/litellm-free/ops/refresh-models.sh \
  && python3 -c 'import yaml, dotenv' \
  && systemctl enable crond.service
 
-# Deterministic alone stays pinned. Codex is installed from its
-# official npm package so OpenClaw records trusted npm provenance.
-RUN --mount=type=bind,source=build,target=/tmp/core-build python3 /tmp/core-build/install-deterministic.py /tmp/openclaw-deterministic.tar.gz "$(npm root -g)/openclaw" "$OPENCLAW_VERSION" "$OPENCLAW_UPSTREAM_SHA" "$OPENCLAW_DETERMINISTIC_TAG" && rm /tmp/openclaw-deterministic.tar.gz
+# OpenClaw is inherited once from Core-pre. Install plugins independently.
+RUN test "$(jq -r .version "$(npm root -g)/openclaw/package.json")" = "$OPENCLAW_VERSION" \
+ && test ! -e "$(npm root -g)/openclaw/deterministic-build.json"
+RUN --mount=type=cache,target=/root/.npm \
+    openclaw plugins install --force --accept-capabilities --pin \
+      "npm:@openclaw/brave-plugin@${OPENCLAW_VERSION}"
+RUN --mount=type=bind,source=build,target=/tmp/core-build \
+    openclaw plugins install --force --accept-capabilities \
+      /tmp/core-build/voice-plugins/mai-transcribe
 RUN --mount=type=cache,target=/root/.npm \
     openclaw plugins install \
       --force \
@@ -74,25 +64,8 @@ RUN --mount=type=bind,source=build,target=/tmp/core-build \
     --mount=type=bind,from=core-sources,source=/sources/opencode-ephemeral,target=/tmp/opencode-ephemeral \
     python3 /tmp/core-build/install-opencode-ephemeral.py /tmp/opencode-ephemeral
 
-COPY --from=core-sources /sources/note/note-latest.zip /tmp/note-latest.zip
-
-RUN set -euo pipefail; \
-    openclaw_root="$(npm root -g)/openclaw"; \
-    codex_root="$(openclaw plugins inspect codex --json | jq -er '.install.installPath')"; \
-    test -f "$codex_root/openclaw.plugin.json"; \
-    test -f "$codex_root/$(jq -er '.openclaw.runtimeExtensions[0] // .openclaw.extensions[0]' "$codex_root/package.json")"; \
-    openclaw plugins install \
-      --force \
-      --accept-capabilities \
-      /tmp/note-latest.zip; \
-    rm -f /tmp/note-latest.zip; \
-    test -f /root/.openclaw/extensions/note/openclaw.plugin.json; \
-    sed -i 's/psycopg\[binary\]/psycopg/g' /root/.openclaw/extensions/note/requirements.txt; \
-    note_python="$(/root/.openclaw/extensions/note/scripts/setup-python.sh)"; \
-    "$note_python" -c 'import dotenv, sqlalchemy, psycopg, pymysql'; \
-    rm -rf /root/.openclaw/extensions/note/.uv; \
-    node "$openclaw_root/openclaw.mjs" --version | grep -F "${OPENCLAW_VERSION}"; \
-    find /root/.openclaw -maxdepth 1 -name 'openclaw.json*' -delete
+RUN openclaw --version | grep -F "$OPENCLAW_VERSION" \
+ && find /root/.openclaw -maxdepth 1 -name 'openclaw.json*' -delete
 
 # Preserve only public install records outside the persistent state directory.
 # Bootstrap uses them when an older SQLite ledger is mounted over this image.
@@ -108,7 +81,7 @@ with sqlite3.connect(database_path.as_uri() + "?mode=ro", uri=True) as database:
         ("plugins.installedIndex",),
     ).fetchone()
 records = json.loads(row[0])["index"]["installRecords"]
-assert {"codex", "brave", "mai-transcribe", "speaches", "note"} <= records.keys()
+assert {"codex", "brave", "mai-transcribe", "speaches"} <= records.keys()
 for record in records.values():
     package = json.loads((Path(record["installPath"]) / "package.json").read_text())
     assert package["version"] == record["version"]

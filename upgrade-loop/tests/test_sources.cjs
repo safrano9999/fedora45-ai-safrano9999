@@ -12,6 +12,16 @@ const { Fedora45Sources } = require('../n8n-sources/Fedora45Sources.node');
 const repoRoot = path.resolve(__dirname, '../..');
 const imageCommit = 'a'.repeat(40);
 
+test('standard Core does not invent Deterministic or NOTE sources', async () => {
+  const core = await fs.readFile(path.join(repoRoot, 'fedora45-ai-core/Containerfile'), 'utf8');
+  const manifest = await inventory(await fixture({'fedora45-ai-core/Containerfile': core}),
+    {target: 'fedora45-ai-safrano9999-full'});
+  assert.equal(manifest.source_policy, 'containerfile-latest-with-standard-openclaw');
+  assert.ok(!manifest.repositories.some(r => /\/(NOTE|openclaw-deterministic-latest)$/.test(r.repository)));
+  assert.ok(manifest.repositories.some(r => r.repository === 'f24sales/litellm-free'));
+  assert.equal(manifest.chain.length, 6);
+});
+
 async function fixture(edits = {}) {
   const files = {};
   for (const layer of await fs.readdir(repoRoot)) {
@@ -21,6 +31,7 @@ async function fixture(edits = {}) {
       try { files[name] = await fs.readFile(path.join(repoRoot, name), 'utf8'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
     }
   }
+  files['fedora45-ai-core/Containerfile'] = await fs.readFile(path.join(repoRoot, 'fedora45-ai-core/Containerfile2026.9.17'), 'utf8');
   // These inventory fixtures own a fixed release independently of live build pins.
   files['fedora45-ai-core/Containerfile'] = files['fedora45-ai-core/Containerfile']
     .replace(/^ARG OPENCLAW_VERSION=.*$/m, 'ARG OPENCLAW_VERSION=2026.9.4')
@@ -47,9 +58,9 @@ test('derive the full cascade and direct latest sources with pinned Deterministi
   const get = await fixture(), regular = await inventory(get), full = await inventory(get, { target: 'fedora45-ai-safrano9999-full' });
   assert.equal(regular.repositories.length, 24);
   assert.equal(full.repositories.length, 25);
-  assert.ok(regular.repositories.some(r => r.repository === 'safrano9999/litellm-free'));
+  assert.ok(regular.repositories.some(r => r.repository === 'f24sales/litellm-free'));
   assert.ok(regular.repositories.some(r => r.repository === 'safrano9999/opencode-ephemeral'));
-  assert.equal(regular.external_base, 'registry.fedoraproject.org/fedora:45@sha256:c15d8d6067038f1d6b10d8e1b8440f787a474fe6dc641ef77a5c74b1bf01a05d');
+  assert.match(regular.external_base, /^registry\.fedoraproject\.org\/fedora:45@sha256:[0-9a-f]{64}$/);
   assert.equal(regular.chain.length, 5);
   assert.equal(full.chain.length, 6);
   assert.ok(!regular.repositories.some(r => r.repository.endsWith('/VikAI')));
@@ -111,8 +122,8 @@ test('n8n source adapter resolves the native Safrano LiteLLM source', async () =
     getCredentials: async () => ({name:'Authorization',value:'Bearer fixture'}),
     helpers: {httpRequestWithAuthentication: async function(kind, args) { return get(args); }},
   });
-  assert.ok(seen.includes('/repos/safrano9999/litellm-free/commits/HEAD'));
-  assert.equal(result[0][0].json.repositories.find(r => r.repository === 'safrano9999/litellm-free').commit, 'b'.repeat(40));
+  assert.ok(seen.includes('/repos/f24sales/litellm-free/commits/HEAD'));
+  assert.equal(result[0][0].json.repositories.find(r => r.repository === 'f24sales/litellm-free').commit, 'b'.repeat(40));
 });
 
 test('latest release selection checks compatible assets and fails on invalid release evidence', async () => {

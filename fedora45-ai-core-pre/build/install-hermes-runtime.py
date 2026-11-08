@@ -34,6 +34,12 @@ def main():
         stage_manager_runtime(python=python, destination=root / "pm-runtime", project=root / "pm")
         seal_pm_runtime(root, python)
         env = env_for("npm", base_env=dict(os.environ))
+        # Newer upstream main uses the pnpm version pinned in its own PM lock.
+        # Retain compatibility with the historical npm-based source series.
+        lock = json.loads((root / "pm/lock.json").read_text())
+        if "pnpm" in lock["packages"]:
+            ensure("pnpm", explicit=True)
+            env = env_for("pnpm", base_env=env)
         env["HERMES_PYTHON"] = str(python)
 
         def run(*args):
@@ -68,7 +74,8 @@ def main():
         Path("/usr/local/bin/hermes").symlink_to(root / ".venv/bin/hermes")
         # Match upstream: retain TypeScript for runtime linting, not Vite/esbuild.
         typescript = scratch / "typescript"
-        shutil.move(root / "node_modules/typescript", typescript)
+        # pnpm's workspace entry is a link into the virtual store removed below.
+        shutil.copytree((root / "node_modules/typescript").resolve(), typescript)
         for path in (root / "node_modules", root / "web/node_modules", root / "ui-tui/node_modules"):
             shutil.rmtree(path, ignore_errors=True)
         (root / "node_modules/.bin").mkdir(parents=True)

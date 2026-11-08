@@ -62,6 +62,8 @@ jobs:
             [full]="fedora45-ai-arm64-full"
           )
 
+          # Resolve every stage before moving any generic/latest reference.
+          declare -A amd_digests arm_digests
           for stage in core-pre core base kachelmann safrano9999 full; do
             generic="${REGISTRY}/${images[$stage]}"
             amd64="${generic}-amd64"
@@ -70,6 +72,16 @@ jobs:
             arm_digest="$(docker buildx imagetools inspect "$arm64:$SOURCE_TAG" --format '{{json .Manifest}}' | jq -er .digest)"
             [[ "$amd_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
             [[ "$arm_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+            amd_digests[$stage]="$amd_digest"
+            arm_digests[$stage]="$arm_digest"
+          done
+
+          for stage in core-pre core base kachelmann safrano9999 full; do
+            generic="${REGISTRY}/${images[$stage]}"
+            amd64="${generic}-amd64"
+            arm64="${REGISTRY}/${arm_images[$stage]}"
+            amd_digest="${amd_digests[$stage]}"
+            arm_digest="${arm_digests[$stage]}"
 
             tags=(--tag "$generic:$SOURCE_TAG")
             if [[ "$PUBLISH_LATEST" == true ]]; then
@@ -81,5 +93,9 @@ jobs:
 
             docker buildx imagetools inspect "$generic:$SOURCE_TAG" --raw \
               | jq -e '[.manifests[].platform | select(.os == "linux") | .architecture] | unique | sort == ["amd64", "arm64"]' >/dev/null
+            if [[ "$PUBLISH_LATEST" == true ]]; then
+              docker buildx imagetools create --prefer-index=false --tag "$amd64:latest" "$amd64@$amd_digest"
+              docker buildx imagetools create --prefer-index=false --tag "$arm64:latest" --tag "$generic-arm64:latest" "$arm64@$arm_digest"
+            fi
             printf '%s: amd64 + arm64 → %s:%s\n' "$stage" "$generic" "$SOURCE_TAG" >> "$GITHUB_STEP_SUMMARY"
           done

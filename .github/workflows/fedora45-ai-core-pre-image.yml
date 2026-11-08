@@ -352,7 +352,6 @@ jobs:
           docker buildx imagetools inspect "$image" >/dev/null
 
       - name: Verify Hermes dashboard chat offline
-        if: inputs.build_series == '2026.9.17'
         run: |
           docker run --rm --network none --entrypoint /usr/local/lib/hermes-agent/.venv/bin/python \
             -v "$PWD/fedora45-ai-core-pre/tests/smoke_hermes_dashboard.py:/tmp/smoke_hermes_dashboard.py:ro" \
@@ -360,7 +359,6 @@ jobs:
             /tmp/smoke_hermes_dashboard.py
 
       - name: Verify Hermes profile persistence regression
-        if: inputs.build_series == '2026.9.17'
         run: |
           docker run --rm --entrypoint bash \
             "${{ steps.tags.outputs.image }}:${{ steps.tags.outputs.version }}" -lc '

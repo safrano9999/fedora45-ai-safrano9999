@@ -253,7 +253,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const pin=$('Published version pins').first().json;\nif(pin.encoding!=='base64') throw new Error('Unexpected GitHub content encoding');\nconst text=Buffer.from(pin.content,'base64').toString('utf8');\nconst release={hermes:$('Latest Hermes release').first().json};\nconst locks={\"openclaw\":\"2026.9.4\"};\nconst versions={};\nconst parse=v=>{if(!/^\\d+\\.\\d+\\.\\d+$/.test(v))throw new Error('Invalid release version');return v.split('.').map(Number);};\nfor(const name of ['openclaw','hermes']){\n const matches=[...text.matchAll(new RegExp('^ARG '+name.toUpperCase()+'_VERSION=(\\\\S+)$','gm'))];\n if(matches.length!==1) throw new Error('Missing or duplicate version pin: '+name);\n const current=matches[0][1],locked=locks[name];\n if(locked){if(current!==locked)throw new Error(name+' pin mismatch: expected '+locked+', found '+current);versions[name]={current,latest:locked};continue;}\n const r=release[name];if(!r||r.draft||r.prerelease)throw new Error('Expected stable release: '+name);\n const latest=name==='openclaw'?r.tag_name.replace(/^v/,''):r.name.match(/^Hermes Agent v(\\d+\\.\\d+\\.\\d+)(?:\\s|$)/)?.[1];\n const a=parse(current),b=parse(latest??'');\n const first=a.findIndex((v,i)=>v!==b[i]);if(first>=0&&b[first]<a[first])throw new Error('Upstream release older than pin');\n versions[name]={current,latest};\n}\nconst update=Object.values(versions).some(v=>v.current!==v.latest);\nconst stdout=['openclaw','hermes'].map(n=>{const v=versions[n],label=n==='openclaw'?'OpenClaw':'Hermes';return v.current===v.latest?`✅ ${label} version ${v.current} is actual`:`🟡 ${label}: New version available! actual ${v.current}, latest ${v.latest}`;}).join('\\n');\nreturn [{json:{...$('Read request').first().json,versions,update,stdout,baseline:'GitHub main version pins',version_locks:locks}}];"
+        "jsCode": "const pin=$('Published version pins').first().json;\nif(pin.encoding!=='base64') throw new Error('Unexpected GitHub content encoding');\nconst text=Buffer.from(pin.content,'base64').toString('utf8');\nconst release={hermes:$('Latest Hermes release').first().json};\nconst locks={\"openclaw\":\"2026.11.1\"};\nconst versions={};\nconst parse=v=>{if(!/^\\d+\\.\\d+\\.\\d+$/.test(v))throw new Error('Invalid release version');return v.split('.').map(Number);};\nfor(const name of ['openclaw','hermes']){\n const matches=[...text.matchAll(new RegExp('^ARG '+name.toUpperCase()+'_VERSION=(\\\\S+)$','gm'))];\n if(matches.length!==1) throw new Error('Missing or duplicate version pin: '+name);\n const current=matches[0][1],locked=locks[name];\n if(locked){if(current!==locked)throw new Error(name+' pin mismatch: expected '+locked+', found '+current);versions[name]={current,latest:locked};continue;}\n const r=release[name];if(!r||r.draft||r.prerelease)throw new Error('Expected stable release: '+name);\n const latest=name==='openclaw'?r.tag_name.replace(/^v/,''):r.name.match(/^Hermes Agent v(\\d+\\.\\d+\\.\\d+)(?:\\s|$)/)?.[1];\n const a=parse(current),b=parse(latest??'');\n const first=a.findIndex((v,i)=>v!==b[i]);if(first>=0&&b[first]<a[first])throw new Error('Upstream release older than pin');\n versions[name]={current,latest};\n}\nconst update=Object.values(versions).some(v=>v.current!==v.latest);\nconst stdout=['openclaw','hermes'].map(n=>{const v=versions[n],label=n==='openclaw'?'OpenClaw':'Hermes';return v.current===v.latest?`✅ ${label} version ${v.current} is actual`:`🟡 ${label}: New version available! actual ${v.current}, latest ${v.latest}`;}).join('\\n');\nreturn [{json:{...$('Read request').first().json,versions,update,stdout,baseline:'GitHub main version pins',version_locks:locks}}];"
       }
     },
     {
@@ -425,167 +425,6 @@
       "parameters": {
         "jsCode": "const request={...$json,run_id:'n8n-'+$execution.id,started_at:new Date().toISOString(),deadline:Date.now()+10800000};\nreturn [{json:request}];"
       }
-    },
-    {
-      "id": "670f8c55-ff35-5fd1-a3f9-c2aeab38e301",
-      "name": "OpenClaw lock present?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        2000,
-        -300
-      ],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "id": "OpenClaw lock present?",
-              "leftValue": "={{ Boolean($json.version_locks?.openclaw) }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "c6fc0ae8-db9b-5bcd-8970-c3b034fccdaf",
-      "name": "Read Deterministic releases",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        2220,
-        -460
-      ],
-      "parameters": {
-        "url": "https://api.github.com/repos/safrano9999/openclaw-deterministic-latest/releases?per_page=100",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Accept",
-              "value": "application/vnd.github+json"
-            },
-            {
-              "name": "X-GitHub-Api-Version",
-              "value": "2022-11-28"
-            }
-          ]
-        },
-        "options": {
-          "timeout": 30000
-        }
-      },
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "fedora45GitHubPreparation",
-          "name": "Fedora45 GitHub preparation"
-        }
-      },
-      "retryOnFail": false
-    },
-    {
-      "id": "afbe6d78-520f-5a4c-a9a4-df5be35eb4bd",
-      "name": "Check Deterministic release",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2440,
-        -460
-      ],
-      "parameters": {
-        "jsCode": "const request=$('Prepare request').first().json;\nconst version=request.version_locks?.openclaw;\nconst releases=Array.isArray($json)?$json:[];\nconst asset=`openclaw-${version}-deterministic.tar.gz`;\nconst ready=releases.some(release=>!release.draft&&!release.prerelease&&\n  typeof release.tag_name==='string'&&release.tag_name.startsWith(`${version}-deterministic.`)&&\n  release.assets?.some(item=>item.name===asset&&/^sha256:[0-9a-f]{64}$/.test(item.digest??'')));\nreturn [{json:{...request,deterministic_ready:ready,deterministic_version:version}}];"
-      }
-    },
-    {
-      "id": "54d552cf-df7e-5108-80f2-9b1e7a499cff",
-      "name": "Deterministic release present?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        2660,
-        -460
-      ],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "combinator": "and",
-          "conditions": [
-            {
-              "id": "Deterministic release present?",
-              "leftValue": "={{ $json.deterministic_ready === true }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ]
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "489f6cfa-07bb-5189-9ef4-90e9744f30ba",
-      "name": "Dispatch Deterministic when missing",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        2880,
-        -620
-      ],
-      "parameters": {
-        "url": "https://api.github.com/repos/safrano9999/fedora45-ai-safrano9999/actions/workflows/openclaw-components.yml/dispatches",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Accept",
-              "value": "application/vnd.github+json"
-            },
-            {
-              "name": "X-GitHub-Api-Version",
-              "value": "2022-11-28"
-            }
-          ]
-        },
-        "options": {
-          "timeout": 30000
-        },
-        "method": "POST",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ {ref:'main',inputs:{run_id:$json.run_id,publish:true,target_version:$json.deterministic_version}} }}"
-      },
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "fedora45GitHubPreparation",
-          "name": "Fedora45 GitHub preparation"
-        }
-      },
-      "retryOnFail": false
     },
     {
       "id": "a8fad7eb-6e9c-501e-b92a-98db6001a1a5",
@@ -920,7 +759,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const binary=$input.first().binary??{};\nconst keys=Object.keys(binary).filter(k=>binary[k].fileName==='container-preparation.json');\nif(keys.length!==1)throw new Error('Missing preparation report');\nconst report=JSON.parse((await this.helpers.getBinaryDataBuffer(0,keys[0])).toString('utf8'));\nconst validation=$('Prepare request').first().json.validate_only===true;\nconst statuses=validation?['VALIDATED_ONLY']:['NO_UPDATE','READY_FOR_BUILD'];\nif(report.schema_version!==1||!statuses.includes(report.status)||report.validate_only!==validation)throw new Error('Preparation is not ready');\nif(report.build_started!==false||report.image_pulled!==false||report.container_restarted!==false)throw new Error('Preparation scope violated');\nif(report.status!=='NO_UPDATE'){\n const expected=$('Resolve latest sources once').first().json;\n const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;\n if(!/^[0-9a-f]{64}$/.test(report.source_snapshot_id??'')||report.source_snapshot_id!==expected.source_snapshot_id||JSON.stringify(canonical(report.source_snapshot))!==JSON.stringify(canonical(expected.source_snapshot)))throw new Error('Preparation changed the shared source snapshot');\n const entries=Object.fromEntries(report.source_snapshot.repositories.map(e=>[e.repository,e]));\n if(!validation&&!/^[0-9a-f]{40}$/.test(report.build_commit??''))throw new Error('Missing build commit');\n for(const name of ['openclaw','hermes']){\n  const sha=report.ephemeral_commits?.[name];\n  if(!/^[0-9a-f]{40}$/.test(sha??'')||report.checks?.[name]?.status!=='PASS'||report.checks[name].generator_commit!==sha||report.ephemeral_commits?.[name]!==sha)throw new Error('Incomplete generator evidence: '+name);\n  if(entries['safrano9999/'+name+'-ephemeral']?.commit!==sha)throw new Error('Generator differs from n8n snapshot');\n }\n for(const [repo,prefix] of [['openclaw-deterministic-latest','OPENCLAW_DETERMINISTIC']]){\n  const release=entries['safrano9999/'+repo]?.release;\n  if(!release||report.build_inputs?.[prefix+'_TAG']!==release.ref||report.build_inputs?.[prefix+'_SHA256']!==release.sha256)throw new Error('Release differs from n8n snapshot');\n  if(repo==='openclaw-deterministic-latest'&&report.build_inputs?.OPENCLAW_UPSTREAM_SHA!==report.source_snapshot.openclaw_source?.commit)throw new Error('OpenClaw source differs from n8n snapshot');\n }\n}\nconst plan=report.source_snapshot?.build_plan;\nif(plan&&JSON.stringify(report.build_plan)!==JSON.stringify(plan))throw new Error('Preparation changed the build start plan');\nconst requestedDeps=$('Read request').first().json.upgrade_build_deps===true;\nif(requestedDeps&&(report.upgrade_build_deps!==true||report.build_dependencies?.schema_version!==1||report.build_dependencies.status!=='PASS'||typeof report.build_dependencies.required!=='boolean'||report.build_dependencies.image!=='fedora45-ai-core-pre'))throw new Error('Missing build dependency evidence');\nif(!requestedDeps&&report.upgrade_build_deps===true)throw new Error('Unrequested build dependency upgrade');\nconst depsChanged=requestedDeps&&report.build_dependencies.required;\nconst key=depsChanged?'fedora45_core_pre':plan?.start_key??'fedora45_core_pre';\nif(plan?.required!==undefined&&report.status==='READY_FOR_BUILD'&&!plan.required&&!depsChanged)throw new Error('No source update to build');\nconst request=$('Read request').first().json;\nconst automatic=request.auto===true?{auto_pull:true,...(request.auto_upgrade===true?{auto_upgrade:true}:{}),feedback:request.build_feedback!==false}:{};\nconst dispatch=report.status==='READY_FOR_BUILD'?{safrano_build_inputs:{build_commit:report.build_commit},safrano_build_key:key,safrano_build_request:{...automatic,action:'run',section:'chains',key,cascade:depsChanged?request.target!=='fedora45-ai-core-pre':plan?.cascade??(request.target!=='fedora45-ai-core-pre'),inputs:{build_commit:report.build_commit}}}:{};\nconst custom=!validation&&request.upgrade_custom_images===true?{safrano_custom_images_request:{action:'run',auto_pull:request.auto===true,restart:request.auto_upgrade===true,feedback:request.build_feedback!==false}}:{};\nconst standalone=report.status==='NO_UPDATE'&&request.auto_upgrade===true?{safrano_upgrade_request:{action:'auto-update',feedback:request.build_feedback!==false}}:{};\nreturn [{json:{...report,...dispatch,...standalone,...custom,target:request.target,auto:request.auto===true,auto_upgrade:request.auto_upgrade===true,next:report.status==='NO_UPDATE'?(request.auto_upgrade===true?'No source build needed. Pass safrano_upgrade_request unchanged to Safrano MCP podman_smart1 to complete the authorized whitelist upgrade.':'No update; finished.'):\n(request.auto===true?'Continue the authorized automatic update (build, Smart1 pull and, when auto_upgrade is selected, whitelist digest/service upgrade): pass safrano_build_request unchanged to Safrano MCP build_images. Saved feedback is already selected unless explicitly disabled. ':'User/Hermes controls build and pull through Safrano MCP. Pass safrano_build_request to build_images. ')+ 'Its key is the earliest affected stage; cascade stops at target. The workflow and all cascade sources stay on this build_commit. Container tests are a separate routine after restart.'}}];"
+        "jsCode": "const binary=$input.first().binary??{};\nconst keys=Object.keys(binary).filter(k=>binary[k].fileName==='container-preparation.json');\nif(keys.length!==1)throw new Error('Missing preparation report');\nconst report=JSON.parse((await this.helpers.getBinaryDataBuffer(0,keys[0])).toString('utf8'));\nconst validation=$('Prepare request').first().json.validate_only===true;\nconst statuses=validation?['VALIDATED_ONLY']:['NO_UPDATE','READY_FOR_BUILD'];\nif(report.schema_version!==1||!statuses.includes(report.status)||report.validate_only!==validation)throw new Error('Preparation is not ready');\nif(report.build_started!==false||report.image_pulled!==false||report.container_restarted!==false)throw new Error('Preparation scope violated');\nif(report.status!=='NO_UPDATE'){\n const expected=$('Resolve latest sources once').first().json;\n const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;\n if(!/^[0-9a-f]{64}$/.test(report.source_snapshot_id??'')||report.source_snapshot_id!==expected.source_snapshot_id||JSON.stringify(canonical(report.source_snapshot))!==JSON.stringify(canonical(expected.source_snapshot)))throw new Error('Preparation changed the shared source snapshot');\n const entries=Object.fromEntries(report.source_snapshot.repositories.map(e=>[e.repository,e]));\n if(!validation&&!/^[0-9a-f]{40}$/.test(report.build_commit??''))throw new Error('Missing build commit');\n for(const name of ['openclaw','hermes']){\n  const sha=report.ephemeral_commits?.[name];\n  if(!/^[0-9a-f]{40}$/.test(sha??'')||report.checks?.[name]?.status!=='PASS'||report.checks[name].generator_commit!==sha||report.ephemeral_commits?.[name]!==sha)throw new Error('Incomplete generator evidence: '+name);\n  if(entries['safrano9999/'+name+'-ephemeral']?.commit!==sha)throw new Error('Generator differs from n8n snapshot');\n }\n if(report.build_inputs?.OPENCLAW_UPSTREAM_SHA!==report.source_snapshot.openclaw_source?.commit)throw new Error('OpenClaw source differs from n8n snapshot');\n for(const [repo,prefix] of [['openclaw-deterministic-latest','OPENCLAW_DETERMINISTIC']]){\n  const release=entries['safrano9999/'+repo]?.release;\n  if(!release&&report.build_inputs?.[prefix+'_TAG']===undefined&&report.build_inputs?.[prefix+'_SHA256']===undefined)continue;\n  if(!release||report.build_inputs?.[prefix+'_TAG']!==release.ref||report.build_inputs?.[prefix+'_SHA256']!==release.sha256)throw new Error('Release differs from n8n snapshot');\n  if(repo==='openclaw-deterministic-latest'&&report.build_inputs?.OPENCLAW_UPSTREAM_SHA!==report.source_snapshot.openclaw_source?.commit)throw new Error('OpenClaw source differs from n8n snapshot');\n }\n}\nconst plan=report.source_snapshot?.build_plan;\nif(plan&&JSON.stringify(report.build_plan)!==JSON.stringify(plan))throw new Error('Preparation changed the build start plan');\nconst requestedDeps=$('Read request').first().json.upgrade_build_deps===true;\nif(requestedDeps&&(report.upgrade_build_deps!==true||report.build_dependencies?.schema_version!==1||report.build_dependencies.status!=='PASS'||typeof report.build_dependencies.required!=='boolean'||report.build_dependencies.image!=='fedora45-ai-core-pre'))throw new Error('Missing build dependency evidence');\nif(!requestedDeps&&report.upgrade_build_deps===true)throw new Error('Unrequested build dependency upgrade');\nconst depsChanged=requestedDeps&&report.build_dependencies.required;\nconst key=depsChanged?'fedora45_core_pre':plan?.start_key??'fedora45_core_pre';\nif(plan?.required!==undefined&&report.status==='READY_FOR_BUILD'&&!plan.required&&!depsChanged)throw new Error('No source update to build');\nconst request=$('Read request').first().json;\nconst automatic=request.auto===true?{auto_pull:true,...(request.auto_upgrade===true?{auto_upgrade:true}:{}),feedback:request.build_feedback!==false}:{};\nconst dispatch=report.status==='READY_FOR_BUILD'?{safrano_build_inputs:{build_commit:report.build_commit},safrano_build_key:key,safrano_build_request:{...automatic,action:'run',section:'chains',key,cascade:depsChanged?request.target!=='fedora45-ai-core-pre':plan?.cascade??(request.target!=='fedora45-ai-core-pre'),inputs:{build_commit:report.build_commit}}}:{};\nconst custom=!validation&&request.upgrade_custom_images===true?{safrano_custom_images_request:{action:'run',auto_pull:request.auto===true,restart:request.auto_upgrade===true,feedback:request.build_feedback!==false}}:{};\nconst standalone=report.status==='NO_UPDATE'&&request.auto_upgrade===true?{safrano_upgrade_request:{action:'auto-update',feedback:request.build_feedback!==false}}:{};\nreturn [{json:{...report,...dispatch,...standalone,...custom,target:request.target,auto:request.auto===true,auto_upgrade:request.auto_upgrade===true,next:report.status==='NO_UPDATE'?(request.auto_upgrade===true?'No source build needed. Pass safrano_upgrade_request unchanged to Safrano MCP podman_smart1 to complete the authorized whitelist upgrade.':'No update; finished.'):\n(request.auto===true?'Continue the authorized automatic update (build, Smart1 pull and, when auto_upgrade is selected, whitelist digest/service upgrade): pass safrano_build_request unchanged to Safrano MCP build_images. Saved feedback is already selected unless explicitly disabled. ':'User/Hermes controls build and pull through Safrano MCP. Pass safrano_build_request to build_images. ')+ 'Its key is the earliest affected stage; cascade stops at target. The workflow and all cascade sources stay on this build_commit. Container tests are a separate routine after restart.'}}];"
       }
     },
     {
@@ -1252,75 +1091,6 @@
       ]
     },
     "Prepare request": {
-      "main": [
-        [
-          {
-            "node": "OpenClaw lock present?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OpenClaw lock present?": {
-      "main": [
-        [
-          {
-            "node": "Read Deterministic releases",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Resolve latest sources once",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Read Deterministic releases": {
-      "main": [
-        [
-          {
-            "node": "Check Deterministic release",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Deterministic release": {
-      "main": [
-        [
-          {
-            "node": "Deterministic release present?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Deterministic release present?": {
-      "main": [
-        [
-          {
-            "node": "Resolve latest sources once",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Dispatch Deterministic when missing",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Dispatch Deterministic when missing": {
       "main": [
         [
           {

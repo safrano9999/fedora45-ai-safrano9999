@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "image": "fedora45-ai-core-pre",
+  "required": true,
+  "policy_sha256": "ecfccd3a2d45c050ba10fb1bdf15de5cf74f9a3c4d02a9a00bbecee93a3182c7",
+  "selected": [
+    {
+      "id": "solana",
+      "release_line": "stable",
+      "pins": {
+        "SOLANA_VERSION": "v4.3.2",
+        "SOLANA_SHA256": "5c9599d7fa397375df69d58e8d4f550ee45463dd6d1ecad9e5a1f053ce8e0933"
+      }
+    },
+    {
+      "id": "electrum",
+      "release_line": "stable",
+      "pins": {
+        "ELECTRUM_VERSION": "4.8.4",
+        "ELECTRUM_SHA256": "199b1b3cc6bfc29cb771ca14ec7bb1aff1dcfcb01f5049030aa6a49e336f67af",
+        "ELECTRUM_KEYS_COMMIT": "54ff65dfe1b77ef6e00f00f296a557d86c454ca0"
+      }
+    },
+    {
+      "id": "lnd",
+      "release_line": "stable",
+      "pins": {
+        "LND_VERSION": "v0.21.6-beta",
+        "LND_SHA256": "47db47290df2d183393259a7b313ddcfc7376e9cd941bd691858250246fc763e"
+      }
+    },
+    {
+      "id": "geth",
+      "release_line": "stable",
+      "pins": {
+        "GETH_VERSION": "1.17.10",
+        "GETH_COMMIT": "1df30b18",
+        "GETH_SHA256": "e016aca8cc391c8d5d14dc17c9af589488d99c37ed71d892213c80757935ba64"
+      }
+    },
+    {
+      "id": "bip39",
+      "release_line": "stable",
+      "pins": {
+        "BIP39_VERSION": "0.5.6",
+        "BIP39_SHA256": "129b03505824879b8a4429576e3de6951c8599644c1afcaae80840f79237695a"
+      }
+    },
+    {
+      "id": "uv",
+      "release_line": "stable",
+      "pins": {
+        "UV_VERSION": "0.13.7",
+        "UV_INSTALLER_SHA256": "d263ee68314cf5bea36b08e6bd9e2c4563240d7adb73756cf33af5c199b92db4"
+      }
+    },
+    {
+      "id": "cloudflared",
+      "release_line": "stable",
+      "pins": {
+        "CLOUDFLARED_VERSION": "2026.10.7",
+        "CLOUDFLARED_SHA256": "1f99fb518b83dec2ba8d870a7cc991d82a77e6196295a3d2754ba17ab9f91872"
+      }
+    },
+    {
+      "id": "webhook",
+      "release_line": "stable",
+      "pins": {
+        "WEBHOOK_VERSION": "2.8.3",
+        "WEBHOOK_SHA256": "3cdf93f0615f11bfc575c158d0d613666394228f6e830ff6f792178933773f7b"
+      }
+    },
+    {
+      "id": "fugu",
+      "release_line": "stable",
+      "pins": {
+        "FUGU_VERSION": "user-demo-v1",
+        "FUGU_COMMIT": "12fda08ca9dd7f4e070c4438b016835a8c9a3e23"
+      }
+    },
+    {
+      "id": "codex",
+      "release_line": "stable",
+      "pins": {
+        "CODEX_VERSION": "0.167.0",
+        "CODEX_SHA256": "e858522a37b85b5bbe695919190cfb0974aee5ae739d84d8d629c39735fb03a9"
+      }
+    },
+    {
+      "id": "claude-code",
+      "release_line": "stable",
+      "pins": {
+        "CLAUDE_CODE_VERSION": "2.1.319",
+        "CLAUDE_CODE_SHA256": "733a926c19df1c84f35a8e4285a637edce7bf2de13672cfe13a1397efd0bf823"
+      }
+    },
+    {
+      "id": "vditor",
+      "release_line": "stable",
+      "pins": {
+        "VDITOR_VERSION": "4.0.1",
+        "VDITOR_SHA256": "b72767473a6220c0363abda5845a21762574190a247d07f27281caa07f66745b"
+      }
+    },
+    {
+      "id": "npm",
+      "release_line": "stable",
+      "pins": {
+        "NPM_VERSION": "12.2.2",
+        "NPM_SHA256": "07fecbf753e2c3bc10ebeb3e9ed8738f6a0cc1292998b79e2e9f1dd2a5525e0c"
+      }
+    },
+    {
+      "id": "fedora45-base",
+      "release_line": "45",
+      "digest": "sha256:5db9683660938d440b057d412247ee245172b9724f42428ae95ae01253bae699"
+    }
+  ],
+  "changes": [
+    {
+      "id": "electrum",
+      "before": {
+        "ELECTRUM_VERSION": "4.8.3",
+        "ELECTRUM_SHA256": "aabe3bb2c99ffca172a004b0fd6f4afdf1b204079f7691b65f23bc5b63a9de0c",
+        "ELECTRUM_KEYS_COMMIT": "b774e151de7ec1150cf5df3b846d8441e75adc50"
+      },
+      "after": {
+        "ELECTRUM_VERSION": "4.8.4",
+        "ELECTRUM_SHA256": "199b1b3cc6bfc29cb771ca14ec7bb1aff1dcfcb01f5049030aa6a49e336f67af",
+        "ELECTRUM_KEYS_COMMIT": "54ff65dfe1b77ef6e00f00f296a557d86c454ca0"
+      }
+    },
+    {
+      "id": "codex",
+      "before": {
+        "CODEX_VERSION": "0.166.0",
+        "CODEX_SHA256": "67ee6f4069d9328956401f54ac202c20369233159058af9f4ec1af731b87f5b7"
+      },
+      "after": {
+        "CODEX_VERSION": "0.167.0",
+        "CODEX_SHA256": "e858522a37b85b5bbe695919190cfb0974aee5ae739d84d8d629c39735fb03a9"
+      }
+    },
+    {
+      "id": "claude-code",
+      "before": {
+        "CLAUDE_CODE_VERSION": "2.1.317",
+        "CLAUDE_CODE_SHA256": "bf8543506740f8ba36bbec24a5e02937dd8b514237fc951db69d9de394965c74"
+      },
+      "after": {
+        "CLAUDE_CODE_VERSION": "2.1.319",
+        "CLAUDE_CODE_SHA256": "733a926c19df1c84f35a8e4285a637edce7bf2de13672cfe13a1397efd0bf823"
+      }
+    },
+    {
+      "id": "npm",
+      "before": {
+        "NPM_VERSION": "12.2.1",
+        "NPM_SHA256": "228bd64aaef23270dbdbd2cf3d5ef5c467602ef38c4066246cef1984adab9a67"
+      },
+      "after": {
+        "NPM_VERSION": "12.2.2",
+        "NPM_SHA256": "07fecbf753e2c3bc10ebeb3e9ed8738f6a0cc1292998b79e2e9f1dd2a5525e0c"
+      }
+    },
+    {
+      "id": "fedora45-base",
+      "before": {
+        "digest": "sha256:c15d8d6067038f1d6b10d8e1b8440f787a474fe6dc641ef77a5c74b1bf01a05d"
+      },
+      "after": {
+        "digest": "sha256:5db9683660938d440b057d412247ee245172b9724f42428ae95ae01253bae699"
+      }
+    }
+  ]
+}
