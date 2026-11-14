@@ -97,6 +97,8 @@ RUN set -euo pipefail; \
     test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/litellm-free.py; \
     rm -rf -- /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/lib/ops/refresh_common.py; \
     ln -s /opt/safrano9999/litellm-free/ops/refresh_common.py /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/lib/ops/refresh_common.py; \
+    rm -f -- /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/lib/ops/openclaw; \
+    ln -s /opt/safrano9999/litellm-free/ops/openclaw /root/.openclaw/extensions/openclaw-mcp-server-bridge/extensions/litellm-free/lib/ops/openclaw; \
     jq -e '(.version | type == "string") and (.version | length > 0)' /root/.openclaw/extensions/openclaw-mcp-server-bridge/package.json >/dev/null; \
     test -s /root/.openclaw/extensions/openclaw-mcp-server-bridge/assets/favicon.jpeg; \
     install -Dm0755 /root/.openclaw/extensions/openclaw-mcp-server-bridge/image/init/20-openclaw-mcp-bridge.py \
