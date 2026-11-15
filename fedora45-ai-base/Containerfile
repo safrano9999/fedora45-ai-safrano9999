@@ -25,7 +25,7 @@ RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
     cd /tmp/nextcloud-native; \
     sha256sum --check --strict "$archive.sha256"; \
     case "$TARGETARCH" in \
-      amd64) expected=e2529564aab8004177a675df9af39cafa23104694cbbd510371c32d4b3f3aae1 ;; \
+      amd64) expected=b5f08adfb4f2f4fe0a5fe6303d35342ef07e0a44e7c4a6fb64d6ef020f921629 ;; \
       arm64) expected=380f0fd3286af474245e3b48623604ccbd6f42fc06ef23d18790bd3c560875d8 ;; \
       *) echo "Unsupported Nextcloud architecture: $TARGETARCH" >&2; exit 1 ;; \
     esac; \
