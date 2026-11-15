@@ -3,7 +3,7 @@ ARG AI_CORE_PRE_IMAGE
 FROM ${AI_CORE_PRE_IMAGE} AS core-sources
 ARG MCP_BRIDGE_RELEASE=2026.11.3
 # Git fragments pin the reviewed commits from the current default branches.
-ADD https://github.com/safrano9999/openclaw-ephemeral.git#726c83b44aaa9374b4a760e7d29e76091b8d3fe6 /sources/openclaw-ephemeral/
+ADD https://github.com/safrano9999/openclaw-ephemeral.git#808fc67c9fb77e0ef7daaab1dc109481dd25c460 /sources/openclaw-ephemeral/
 ADD https://github.com/safrano9999/hermes-ephemeral.git#218db76ac20faa39f2d9d71810a7b5e735072597 /sources/hermes-ephemeral/
 ADD https://github.com/safrano9999/opencode-ephemeral.git#e512153df358114f258ba591bfe01c56eb41aed0 /sources/opencode-ephemeral/
 ADD https://github.com/f24sales/litellm-free.git#75090b82c2c6c093efa05f0af62c82793abadbf7 /sources/litellm-free/
