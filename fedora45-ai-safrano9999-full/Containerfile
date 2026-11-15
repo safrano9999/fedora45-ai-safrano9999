@@ -4,8 +4,8 @@ FROM ${AI_SAFRANO9999_IMAGE} AS layer-sources
 USER root
 COPY build/ /tmp/fedora45-ai-safrano9999-full/build/
 COPY build.conf fedora45-ai-safrano9999-full.*_example /tmp/fedora45-ai-safrano9999-full/
-# Native Git ADD follows each repository's current default branch.
-ADD --keep-git-dir=true https://github.com/safrano9999/VikAI.git /tmp/fedora45-ai-safrano9999-full/safrano9999/VikAI/
+# Git ADD is pinned to the reviewed commit from the repository's default branch.
+ADD --keep-git-dir=true https://github.com/safrano9999/VikAI.git#0b44713d1bb1f89ccf0780738e1d3147243acdde /tmp/fedora45-ai-safrano9999-full/safrano9999/VikAI/
 RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
     /tmp/fedora45-ai-safrano9999-full/build/assemble-runtime.sh \
  && find /tmp/fedora45-ai-safrano9999-full/safrano9999 -name .git -type d -prune -exec rm -rf {} +

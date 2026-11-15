@@ -4,16 +4,16 @@ FROM ${AI_KACHELMANN_IMAGE} AS layer-sources
 USER root
 COPY build/ /tmp/fedora45-ai-safrano9999/build/
 COPY build.conf fedora45-ai-safrano9999.*_example /tmp/fedora45-ai-safrano9999/
-# Native Git ADD follows each repository's current default branch.
-ADD --keep-git-dir=true https://github.com/safrano9999/DAILYNEWS.git /tmp/fedora45-ai-safrano9999/safrano9999/DAILYNEWS/
-ADD --keep-git-dir=true https://github.com/safrano9999/ZEROINBOX.git /tmp/fedora45-ai-safrano9999/safrano9999/ZEROINBOX/
-ADD --keep-git-dir=true https://github.com/safrano9999/SPANKER.git /tmp/fedora45-ai-safrano9999/safrano9999/SPANKER/
-ADD --keep-git-dir=true https://github.com/safrano9999/JUGO.git /tmp/fedora45-ai-safrano9999/safrano9999/JUGO/
-ADD --keep-git-dir=true https://github.com/safrano9999/PV_D-A-CH.git /tmp/fedora45-ai-safrano9999/safrano9999/PV_D-A-CH/
-ADD --keep-git-dir=true https://github.com/safrano9999/KIWIX_BRIDGE.git /tmp/fedora45-ai-safrano9999/safrano9999/KIWIX_BRIDGE/
-ADD --keep-git-dir=true https://github.com/safrano9999/NAPOLEON_HILLS_AI_MASTERMIND_CLASSES.git /tmp/fedora45-ai-safrano9999/safrano9999/NAPOLEON_HILLS_AI_MASTERMIND_CLASSES/
-ADD --keep-git-dir=true https://github.com/safrano9999/SOLANA_AIRGAPPED_DEBIAN_WORKFLOW.git /tmp/fedora45-ai-safrano9999/safrano9999/SOLANA_AIRGAPPED_DEBIAN_WORKFLOW/
-ADD --keep-git-dir=true https://github.com/safrano9999/NaturalGrounding-Tiktok-Ying-Video-Manager.git /tmp/fedora45-ai-safrano9999/safrano9999/NaturalGrounding-Tiktok-Ying-Video-Manager/
+# Git ADD is pinned to the reviewed commit from each repository's default branch.
+ADD --keep-git-dir=true https://github.com/safrano9999/DAILYNEWS.git#e69622557d64617b38ed64a85fa81fccf0b75a5d /tmp/fedora45-ai-safrano9999/safrano9999/DAILYNEWS/
+ADD --keep-git-dir=true https://github.com/safrano9999/ZEROINBOX.git#67304cc71645b4b1adf4fba1739a105e83c445f5 /tmp/fedora45-ai-safrano9999/safrano9999/ZEROINBOX/
+ADD --keep-git-dir=true https://github.com/safrano9999/SPANKER.git#792f2559e989783aecd327e3e50a6e6c124419db /tmp/fedora45-ai-safrano9999/safrano9999/SPANKER/
+ADD --keep-git-dir=true https://github.com/safrano9999/JUGO.git#8318fb933ed2ad078ddab5bae5d59e0fe6c0ac8d /tmp/fedora45-ai-safrano9999/safrano9999/JUGO/
+ADD --keep-git-dir=true https://github.com/safrano9999/PV_D-A-CH.git#06fafd6e8a6561c0c16316d5aef7fb8b56a31cc2 /tmp/fedora45-ai-safrano9999/safrano9999/PV_D-A-CH/
+ADD --keep-git-dir=true https://github.com/safrano9999/KIWIX_BRIDGE.git#36d830e7e403ed6935b3847aa3f2ec7678967e16 /tmp/fedora45-ai-safrano9999/safrano9999/KIWIX_BRIDGE/
+ADD --keep-git-dir=true https://github.com/safrano9999/NAPOLEON_HILLS_AI_MASTERMIND_CLASSES.git#ba5238accee07e127dcb30cdca1fc0ca4a836766 /tmp/fedora45-ai-safrano9999/safrano9999/NAPOLEON_HILLS_AI_MASTERMIND_CLASSES/
+ADD --keep-git-dir=true https://github.com/safrano9999/SOLANA_AIRGAPPED_DEBIAN_WORKFLOW.git#0470d761cde61128ac223465d351482ef1b8899b /tmp/fedora45-ai-safrano9999/safrano9999/SOLANA_AIRGAPPED_DEBIAN_WORKFLOW/
+ADD --keep-git-dir=true https://github.com/safrano9999/NaturalGrounding-Tiktok-Ying-Video-Manager.git#53c733727dce626954768a5678581641954dd238 /tmp/fedora45-ai-safrano9999/safrano9999/NaturalGrounding-Tiktok-Ying-Video-Manager/
 RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
     /tmp/fedora45-ai-safrano9999/build/assemble-runtime.sh \
  && find /tmp/fedora45-ai-safrano9999/safrano9999 -name .git -type d -prune -exec rm -rf {} +

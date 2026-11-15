@@ -295,8 +295,8 @@ jobs:
             "$image" -lc '
             set -euxo pipefail
             grep -q "Fedora release 45" /etc/fedora-release
-            test "$(node --version)" = "v26.13.0"
-            test "$(/usr/bin/node --version)" = "v26.13.0"
+            test "$(node --version)" = "v26.13.1"
+            test "$(/usr/bin/node --version)" = "v26.13.1"
             test "$(readlink -f /usr/bin/node)" = /usr/local/bin/node
             npm --version
             npx --version

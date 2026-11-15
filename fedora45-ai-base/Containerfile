@@ -5,13 +5,13 @@ ARG TARGETARCH
 USER root
 COPY build/ /tmp/fedora45-ai-base/build/
 COPY build.conf fedora45-ai-base.*_example /tmp/fedora45-ai-base/
-# Native Git ADD follows each repository's current default branch.
-ADD --keep-git-dir=true https://github.com/safrano9999/WELCOME.git /tmp/fedora45-ai-base/safrano9999/WELCOME/
-ADD --keep-git-dir=true https://github.com/safrano9999/CITADEL.git /tmp/fedora45-ai-base/safrano9999/CITADEL/
-ADD --keep-git-dir=true https://github.com/safrano9999/NEXTCLOUD.git /tmp/fedora45-ai-base/safrano9999/NEXTCLOUD/
-ADD --keep-git-dir=true https://github.com/safrano9999/CODEANALYST.git /tmp/fedora45-ai-base/safrano9999/CODEANALYST/
-ADD --keep-git-dir=true https://github.com/safrano9999/DIESDAS-.git /tmp/fedora45-ai-base/safrano9999/DIESDAS-/
-ADD --keep-git-dir=true https://github.com/safrano9999/safrano9999-paper.git /tmp/fedora45-ai-base/safrano9999/safrano9999-paper/
+# Git ADD is pinned to the reviewed commit from each repository's default branch.
+ADD --keep-git-dir=true https://github.com/safrano9999/WELCOME.git#6dbf821440deb15b8e3f9a18af19aca3cea96001 /tmp/fedora45-ai-base/safrano9999/WELCOME/
+ADD --keep-git-dir=true https://github.com/safrano9999/CITADEL.git#e12e88dd973b8f1dacf58710f0724d001ef6e2d6 /tmp/fedora45-ai-base/safrano9999/CITADEL/
+ADD --keep-git-dir=true https://github.com/safrano9999/NEXTCLOUD.git#db75a0e29dda31281d707d221b5be9bef00ae328 /tmp/fedora45-ai-base/safrano9999/NEXTCLOUD/
+ADD --keep-git-dir=true https://github.com/safrano9999/CODEANALYST.git#d0629b4aba28c0875f1bff856186670502cbde31 /tmp/fedora45-ai-base/safrano9999/CODEANALYST/
+ADD --keep-git-dir=true https://github.com/safrano9999/DIESDAS-.git#ff5bb308a51d9d7d632a56c22297adfa4fde629f /tmp/fedora45-ai-base/safrano9999/DIESDAS-/
+ADD --keep-git-dir=true https://github.com/safrano9999/safrano9999-paper.git#b87fc2858d0e5d33fb269c48b6998ed596243e40 /tmp/fedora45-ai-base/safrano9999/safrano9999-paper/
 RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
     set -euo pipefail; \
     case "$TARGETARCH" in \
@@ -24,6 +24,12 @@ RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
       --dir /tmp/nextcloud-native; \
     cd /tmp/nextcloud-native; \
     sha256sum --check --strict "$archive.sha256"; \
+    case "$TARGETARCH" in \
+      amd64) expected=e2529564aab8004177a675df9af39cafa23104694cbbd510371c32d4b3f3aae1 ;; \
+      arm64) expected=380f0fd3286af474245e3b48623604ccbd6f42fc06ef23d18790bd3c560875d8 ;; \
+      *) echo "Unsupported Nextcloud architecture: $TARGETARCH" >&2; exit 1 ;; \
+    esac; \
+    printf '%s  %s\n' "$expected" "$archive" | sha256sum --check --strict; \
     mkdir -p /tmp/fedora45-ai-base/.fedora45-runtime; \
     cp "$archive" "$archive.sha256" /tmp/fedora45-ai-base/.fedora45-runtime/; \
     cp "$archive" /tmp/fedora45-ai-base/.fedora45-runtime/nextcloud-native.zip

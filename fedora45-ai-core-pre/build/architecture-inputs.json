@@ -1,22 +1,22 @@
 {
   "checked_at": "2026-11-07T22:37:11.672613+00:00",
-  "openclaw_version": "2026.11.1",
-  "node_version": "26.13.0",
+  "openclaw_version": "2026.11.3",
+  "node_version": "26.13.1",
   "architectures": {
     "amd64": {
       "NODE_ARCH": "x64",
-      "NODE_SHA256": "d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997",
-      "CLOUDFLARED_SHA256": "1f99fb518b83dec2ba8d870a7cc991d82a77e6196295a3d2754ba17ab9f91872",
+      "NODE_SHA256": "5c063e46bab0fbc1c17cc445d7ff129cbdcd0471be6ed83b6ab864f8143bc864",
+      "CLOUDFLARED_SHA256": "51f7c68b57ed7269164075d7e789efce5b59355982f06392deeb037d982a51fd",
       "WEBHOOK_SHA256": "3cdf93f0615f11bfc575c158d0d613666394228f6e830ff6f792178933773f7b",
-      "LND_SHA256": "47db47290df2d183393259a7b313ddcfc7376e9cd941bd691858250246fc763e",
+      "LND_SHA256": "4910a14801e10164ca2ea67f5935e2486874331d56bbd0638a68c6158a8e82c9",
       "GETH_SHA256": "e016aca8cc391c8d5d14dc17c9af589488d99c37ed71d892213c80757935ba64"
     },
     "arm64": {
       "NODE_ARCH": "arm64",
-      "NODE_SHA256": "406fe3fbde1c054adff8b297c16fdb5af6659db327c1ac8acd46b56ef1af9a92",
-      "CLOUDFLARED_SHA256": "3df43aedc9ff291d1735b5cb576cb97e0b157488796db2e32b28aecabb445775",
+      "NODE_SHA256": "89e1853138db51e8b82d3e98ba9c0d3f2956a28e5e55ea1b7e12d25aae92d5dd",
+      "CLOUDFLARED_SHA256": "abe54a006acf9faf2d19ee9d953cb0d0804e92f59c5382a162e57b84d086f56f",
       "WEBHOOK_SHA256": "960187f361ca49403e0d3fce546c0a1999095a4ee6934a57ab8fef3170f2ddc8",
-      "LND_SHA256": "13195cef749fe8055e8c7fe83fa26242802a020e946eafcaed2f2b236f3b5c9a",
+      "LND_SHA256": "ff7dc069a0b04f20163fa8c5201753684403c31fa62426f0999f5bc115153bc1",
       "GETH_SHA256": "79380151f998248e48e22773d7afb032ac07503e055d81e44f4f0125008e78b8"
     }
   },
@@ -38,15 +38,15 @@
       "integrity": "sha512-tEqMvQahfhdDj8vceYpXtoIrvjPXm5XRfetWnPN5YISueU7adNx9JcUA3zZ+2GKuDVgDpGdQe1ZLtCZDjqodvA=="
     },
     "@grinev/opencode-telegram-bot": {
-      "version": "0.27.0",
-      "integrity": "sha512-MRSgfyE2UNWNDEhZu/atN3M3tls2LQuuLQfZIyk24hYwDVS9WMl+EjbNNkEyfemPup15y1S8pKbvQPjeeaWMQg=="
+      "version": "0.27.1",
+      "integrity": "sha512-NfoxDe37eyPHv0Eul6hAK50krNGaRFwoZ7EUBYqI4oTBvOFtZxKOoSMz+To+MWVgOAKwEpVlunD2HZk01ZdC/g=="
     }
   },
   "hermes": {
     "branch": "main",
-    "commit": "63f6852249f6ce79a6e84f7d64fd4486facce5d1",
-    "date": "2026-11-07T20:54:11Z",
-    "base_version": "0.23.0",
-    "distance": 774
+    "commit": "b2c6bc4e1e183263907cf81cf070aa8ebdd5a553",
+    "date": "2026-11-15T02:50:26Z",
+    "base_version": "0.23.1",
+    "distance": 1
   }
 }

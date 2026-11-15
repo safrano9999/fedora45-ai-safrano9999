@@ -65,8 +65,8 @@ their hardlinks. The Citadel runtime orders its WebUI after Tailscale up.
 - Foundation build: [Containerfile](fedora45-ai-core-pre/Containerfile).
 - Core integration: [Containerfile](fedora45-ai-core/Containerfile).
 
-The normal line targets **2026.11.1**. Core-pre installs the official
-OpenClaw **2026.11.1** npm release once, verified against its release manifest.
+The normal line targets **2026.11.3**. Core-pre installs the official
+OpenClaw **2026.11.3** npm release once, verified against its release manifest.
 Core inherits that installation and independently installs matching Brave and
 Codex plugins, MAI Transcribe 0.1.1, Speaches, and the Ephemeral adapters.
 The existing TTS fallback-order integration is retained separately.
@@ -76,28 +76,29 @@ Deterministic and NOTE are no longer inputs to this line; the historical
 Standard OpenClaw accepts private MCP connections to the explicitly configured
 server origin. Ephemeral retains the per-server private-network option for older
 runtimes. Its GitHub integration job verifies generated configuration, real model
-catalog entries, agent filters, and a private MCP tool call with OpenClaw 2026.11.1.
+catalog entries, agent filters, and a private MCP tool call with OpenClaw 2026.11.3.
 
 Hermes continues on its existing `main` branch, captured at
-`63f6852249f6ce79a6e84f7d64fd4486facce5d1` (0.23.0 + 774 commits).
+`b2c6bc4e1e183263907cf81cf070aa8ebdd5a553` (0.23.1 + 1 commit).
 Its upstream PM/uv/pnpm locks define the isolated application environment.
 The profile-store symlink correction is retained. Node stays on the official
-26 LTS archive, currently 26.13.0. All Safrano Git contributions follow their
+26 LTS archive, currently 26.13.1. All Safrano Git contributions follow their
 existing default branches.
 
 | Component | Selected version |
 |---|---|
-| OpenClaw / Brave / Codex plugin | 2026.11.1 |
+| OpenClaw / Brave / Codex plugin | 2026.11.3 |
 | OpenCode | 1.19.5 |
-| OpenCode Telegram bridge | 0.27.0 |
-| Codex CLI | 0.167.0 |
-| Claude Code | 2.1.319 |
+| OpenCode Telegram bridge | 0.27.1 |
+| Codex CLI | 0.169.0 |
+| Claude Code | 2.1.325 |
 | npm | 12.2.2 |
 | Electrum (amd64 and arm64) | 4.8.4 |
 | Agave / Solana | 4.3.2 |
 
-The complete stable-channel audit, hashes and source ownership are recorded in
-[`upgrade-loop/evidence/2026.11.1-refresh`](upgrade-loop/evidence/2026.11.1-refresh).
+The current stable-channel pins, hashes and source ownership are recorded in
+[`fedora45-ai-core-pre/build/architecture-inputs.json`](fedora45-ai-core-pre/build/architecture-inputs.json)
+and [`upgrade-loop/build-dependencies-whitelist.json`](upgrade-loop/build-dependencies-whitelist.json).
 Core-pre refreshes Fedora 45 packages. Upper layers keep satisfied inherited
 Python dependencies and install only missing requirements; the resolver sees
 all version constraints. Every normal layer runs `pip check` and rejects duplicate
