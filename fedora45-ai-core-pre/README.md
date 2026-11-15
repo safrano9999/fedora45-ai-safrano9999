@@ -29,7 +29,7 @@ the start. With no certificate, port 9090 retains its HTTP behavior. This
 is separate from `CA_CERTIFICATES_PATH`, which imports trusted CAs.
 After replacing mounted certificates, restart Cockpit to reload them.
 
-OpenCode is pinned to `1.19.5` and `@grinev/opencode-telegram-bot` to `0.26.6`.
+OpenCode is pinned to `1.19.5` and `@grinev/opencode-telegram-bot` to `0.27.1`.
 The image contains no credentials: `OPENCODE_API_KEY`,
 `OPENCODE_TELEGRAMTOKEN`, and `OPENCODE_TELEGRAM_CHAT_ID` are runtime values.
 When `OPENCODE_API_KEY` is present, the enabled systemd unit starts OpenCode
@@ -41,12 +41,12 @@ the deterministic OpenClaw overlay, `openclaw-ephemeral`, NOTE, Hermes/OpenClaw
 configuration generators, and their project-aware systemd runtime units.
 
 Builds run exclusively through the GitHub Actions cascade in
-`SCRIPTS/githubactions/fedora45-ai-safrano9999`. Persistainer is fetched directly
-from its current Git default branch by the Containerfile; no staged source pin
-or host-side vendor directory is used.
+`SCRIPTS/githubactions/fedora45-ai-safrano9999`. Persistainer is fetched from a
+reviewed commit on its current Git default branch; no host-side vendor directory
+is used.
 
-The `2026.9.17.28` refresh uses the official Fedora 45 Stable index and
-native AMD64/ARM64 runners. Node 26.13.0 and architecture-specific download
+The current refresh uses the official Fedora 45 Stable index and
+native AMD64/ARM64 runners. Node 26.13.1 and architecture-specific download
 checksums are recorded in `build/architecture-inputs.json`. Hermes's current
 main-branch snapshot uses its own PM-managed Python, uv and Node, with the
 application `.venv` and independent `pm-runtime` inside

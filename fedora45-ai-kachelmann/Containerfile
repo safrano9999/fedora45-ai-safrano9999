@@ -4,8 +4,8 @@ FROM ${AI_BASE_IMAGE} AS layer-sources
 USER root
 COPY build/ /tmp/fedora45-ai-kachelmann/build/
 COPY build.conf fedora45-ai-kachelmann.*_example /tmp/fedora45-ai-kachelmann/
-# Native Git ADD follows each repository's current default branch.
-ADD --keep-git-dir=true https://github.com/safrano9999/KACHELMANN.git /tmp/fedora45-ai-kachelmann/safrano9999/KACHELMANN/
+# Git ADD is pinned to the reviewed commit from the repository's default branch.
+ADD --keep-git-dir=true https://github.com/safrano9999/KACHELMANN.git#45236d73711d2dfd463a05629e079bee21bce26e /tmp/fedora45-ai-kachelmann/safrano9999/KACHELMANN/
 RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
     /tmp/fedora45-ai-kachelmann/build/assemble-runtime.sh \
  && find /tmp/fedora45-ai-kachelmann/safrano9999 -name .git -type d -prune -exec rm -rf {} +

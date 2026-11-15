@@ -59,6 +59,7 @@ index 0000000000000..e2996ba3cc7fb
 +    home.mkdir(parents=True)
 +    dataset = tmp_path / 'dataset'
 +    dataset.mkdir()
++    (dataset / 'state.db').touch()  # an operator-owned external store
 +    (home / 'state.db').symlink_to(dataset / 'state.db')  # store lives on another volume
 +    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
 +    session_db = acquire(home / 'state.db')  # opens through the symlink, like the runner's cache

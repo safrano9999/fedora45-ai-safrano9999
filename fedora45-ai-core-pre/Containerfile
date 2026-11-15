@@ -1,13 +1,13 @@
 # syntax=docker/dockerfile:1
 FROM scratch AS persistainer-source
-ADD https://github.com/safrano9999/persistainer.git /persistainer/
+ADD https://github.com/safrano9999/persistainer.git#053b2d361815c6bc1da783d5a7c34951ea500485 /persistainer/
 
 # Official native Linux runtime; mounted into the Fedora build without retaining the archive.
 FROM scratch AS node-release
 ARG NODE_ARCH=x64
 ARG NODE_SHA256=d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997
 ADD --checksum=sha256:${NODE_SHA256} \
-    https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-${NODE_ARCH}.tar.xz /node.tar.xz
+    https://nodejs.org/dist/v26.13.1/node-v26.13.1-linux-${NODE_ARCH}.tar.xz /node.tar.xz
 
 # Official pip wheel, verified before the container's Python trust store is used.
 FROM scratch AS pip-release
@@ -19,15 +19,15 @@ FROM scratch AS hermes-profile-store-fix
 COPY build/hermes-profile-store.patch /profile-store.patch
 COPY build/install-hermes-runtime.py /install-hermes-runtime.py
 
-FROM registry.fedoraproject.org/fedora:45@sha256:5db9683660938d440b057d412247ee245172b9724f42428ae95ae01253bae699 AS ai-core-pre
+FROM registry.fedoraproject.org/fedora:45@sha256:ea6d638d83c7bf2f4dd082e804c4a125feee764ba82e3e7798148673e445a496 AS ai-core-pre
 # Official Fedora 45 Stable index, with native amd64 and arm64 manifests.
 
 ARG TARGETARCH
 ARG WEBHOOK_VERSION
-# Pinned snapshot of upstream main (2026-11-07T20:54:11Z).
-ARG HERMES_VERSION=0.23.0
-ARG HERMES_COMMIT=63f6852249f6ce79a6e84f7d64fd4486facce5d1
-ARG HERMES_DISTANCE=774
+# Pinned snapshot of upstream main (2026-11-15T02:50:26Z).
+ARG HERMES_VERSION=0.23.1
+ARG HERMES_COMMIT=b2c6bc4e1e183263907cf81cf070aa8ebdd5a553
+ARG HERMES_DISTANCE=1
 ARG VDITOR_VERSION
 ARG FEDORA_REPOMD_KEY
 ARG UV_VERSION
@@ -35,7 +35,7 @@ ARG UV_INSTALLER_SHA256
 ARG FUGU_COMMIT
 ARG CLOUDFLARED_VERSION
 ARG CLOUDFLARED_SHA256
-ARG OPENCLAW_VERSION=2026.11.1
+ARG OPENCLAW_VERSION=2026.11.3
 # Optional source override for this stable version. Empty uses its release tag.
 ARG OPENCLAW_UPSTREAM_SHA=
 ARG CODEX_VERSION
@@ -60,12 +60,12 @@ ARG VDITOR_SHA256
 ARG NPM_VERSION
 ARG NPM_SHA256
 ARG OPENCODE_VERSION=1.19.5
-ARG OPENCODE_TELEGRAM_VERSION=0.27.0
+ARG OPENCODE_TELEGRAM_VERSION=0.27.1
 
 LABEL org.opencontainers.image.title="fedora45-ai-core-pre" \
       org.opencontainers.image.description="Heavy generic Fedora 45 AI toolchain foundation without Safrano project content or ephemeral runtime configuration." \
       org.opencontainers.image.source="https://github.com/safrano9999/fedora45-ai-safrano9999" \
-      io.safrano9999.nodejs.version="26.13.0" \
+      io.safrano9999.nodejs.version="26.13.1" \
       io.safrano9999.openclaw.version="${OPENCLAW_VERSION}"
 
 ENV NODE_EXTRA_CA_CERTS=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
@@ -107,7 +107,7 @@ RUN --mount=type=bind,from=node-release,source=/node.tar.xz,target=/tmp/node.tar
  && ln -s /usr/local/bin/node /usr/bin/node \
  && ln -s /usr/local/bin/npm /usr/bin/npm \
  && ln -s /usr/local/bin/npx /usr/bin/npx \
- && test "$(/usr/bin/node --version)" = "v26.13.0"
+ && test "$(/usr/bin/node --version)" = "v26.13.1"
 
 # Fedora's Python requires the python-pip-wheel data package. Replace its seed
 # wheel too, then install pip directly; no RPM pip executable.
@@ -125,7 +125,7 @@ RUN curl -fsSL --retry 3 "https://registry.npmjs.org/npm/-/npm-${NPM_VERSION}.tg
  && echo "${NPM_SHA256}  /tmp/npm.tgz" | sha256sum -c - \
  && npm install -g /tmp/npm.tgz && rm /tmp/npm.tgz \
  && node --version && npm --version \
- && test "$(node --version)" = "v26.13.0" \
+ && test "$(node --version)" = "v26.13.1" \
  && test "$(readlink -f /usr/bin/node)" = /usr/local/bin/node
 
 # OpenCode is a generic core tool. The Telegram bridge is installed here, but
@@ -375,7 +375,7 @@ COPY --chmod=0755 build/install-arm64-toolchains.sh /usr/local/libexec/install-a
 RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
     /usr/local/libexec/install-arm64-toolchains
 
-RUN test "$(node --version)" = "v26.13.0" \
+RUN test "$(node --version)" = "v26.13.1" \
  && test ! -x /root/.hermes/node/bin/node \
  && mkdir -p /README \
  && node -p 'JSON.stringify({node:process.versions.node,sqlite:process.versions.sqlite,nodeSource:"Official Node.js binary"})' > /README/node-runtime.json
