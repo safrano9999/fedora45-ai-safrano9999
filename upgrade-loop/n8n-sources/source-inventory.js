@@ -89,7 +89,7 @@ async function inventory(get, { target = DEFAULT_TARGET, ref = 'main', latest = 
     }
     // Report the direct Containerfile sources; these commits are diagnostic
     // evidence only and are never injected into the image build.
-    for (const match of cf.matchAll(/^ADD(?: --[\w-]+=[^ ]+)* https:\/\/github\.com\/(safrano9999\/[A-Za-z0-9._-]+|f24sales\/litellm-free)\.git(?:\s)/gm)) {
+    for (const match of cf.matchAll(/^ADD(?: --[\w-]+=[^ ]+)* https:\/\/github\.com\/(safrano9999\/[A-Za-z0-9._-]+|f24sales\/litellm-free)\.git(?:#[0-9a-f]{40})?(?:\s)/gm)) {
       add(match[1], 'HEAD', layer, cfPath, 'containerfile-git');
     }
     if (layer === 'fedora45-ai-core') {
