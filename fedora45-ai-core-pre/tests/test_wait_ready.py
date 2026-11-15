@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import contextlib
 import http.server
+import os
 import pathlib
 import socket
 import subprocess
@@ -69,6 +70,17 @@ def running_unix_server(path: pathlib.Path):
 
 
 class WaitReadyTests(unittest.TestCase):
+    def test_exited_main_process_fails_before_readiness(self):
+        child = subprocess.Popen([sys.executable, "-c", "pass"])
+        child.wait()
+        result = subprocess.run(
+            [str(HELPER), "--timeout", "60", "tcp", "127.0.0.1", "1"],
+            env={**os.environ, "MAINPID": str(child.pid)},
+            capture_output=True, text=True, timeout=3,
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("main process exited", result.stderr)
+
     def run_helper(self, *arguments: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             [str(HELPER), *arguments],

@@ -1,11 +1,17 @@
 # syntax=docker/dockerfile:1
 ARG AI_CORE_PRE_IMAGE
 FROM ${AI_CORE_PRE_IMAGE} AS core-sources
+ARG MCP_BRIDGE_RELEASE=2026.11.3
 # Git fragments pin the reviewed commits from the current default branches.
-ADD https://github.com/safrano9999/openclaw-ephemeral.git#e5dc60972b9638ee08d9f544940f20db2038db6d /sources/openclaw-ephemeral/
+ADD https://github.com/safrano9999/openclaw-ephemeral.git#67e023f4b323d7cc2658ed48737c9f9f427f83f6 /sources/openclaw-ephemeral/
 ADD https://github.com/safrano9999/hermes-ephemeral.git#218db76ac20faa39f2d9d71810a7b5e735072597 /sources/hermes-ephemeral/
 ADD https://github.com/safrano9999/opencode-ephemeral.git#e512153df358114f258ba591bfe01c56eb41aed0 /sources/opencode-ephemeral/
 ADD https://github.com/f24sales/litellm-free.git#75090b82c2c6c093efa05f0af62c82793abadbf7 /sources/litellm-free/
+RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
+    gh release download "${MCP_BRIDGE_RELEASE}" --repo safrano9999/openclaw-mcp-server-bridge \
+      --pattern openclaw-mcp-server-bridge-latest.zip \
+      --pattern openclaw-mcp-server-bridge-latest.zip.sha256 --dir /sources/mcp-bridge \
+ && cd /sources/mcp-bridge && sha256sum -c openclaw-mcp-server-bridge-latest.zip.sha256
 FROM ${AI_CORE_PRE_IMAGE} AS ai-core
 
 ARG OPENCLAW_VERSION=2026.11.3
@@ -64,6 +70,22 @@ RUN --mount=type=bind,source=build,target=/tmp/core-build \
     --mount=type=bind,from=core-sources,source=/sources/opencode-ephemeral,target=/tmp/opencode-ephemeral \
     python3 /tmp/core-build/install-opencode-ephemeral.py /tmp/opencode-ephemeral
 
+COPY --from=core-sources /sources/mcp-bridge/openclaw-mcp-server-bridge-latest.zip /tmp/openclaw-mcp-server-bridge.zip
+RUN set -euo pipefail; \
+    openclaw plugins install --force --accept-capabilities /tmp/openclaw-mcp-server-bridge.zip; \
+    bridge=/root/.openclaw/extensions/openclaw-mcp-server-bridge; \
+    test -s "$bridge/extensions/litellm-free/litellm-free.py"; \
+    for helper in refresh_common.py openclaw; do \
+      test -f "/opt/safrano9999/litellm-free/ops/$helper"; \
+      ln -sfn "/opt/safrano9999/litellm-free/ops/$helper" "$bridge/extensions/litellm-free/lib/ops/$helper"; \
+    done; \
+    install -Dm0755 "$bridge/image/init/20-openclaw-mcp-bridge.py" /usr/local/libexec/openclaw-mcp-bridge-init.py; \
+    install -d /etc/systemd/system/openclaw-config.service.d; \
+    printf '[Service]\nExecStartPost=/usr/bin/python3 /usr/local/libexec/openclaw-mcp-bridge-init.py\n' \
+      > /etc/systemd/system/openclaw-config.service.d/30-mcp-bridge.conf; \
+    openclaw plugins inspect openclaw-mcp-server-bridge --json | jq -e '.plugin.id == "openclaw-mcp-server-bridge"' >/dev/null; \
+    rm -f /tmp/openclaw-mcp-server-bridge.zip
+
 RUN openclaw --version | grep -F "$OPENCLAW_VERSION" \
  && find /root/.openclaw -maxdepth 1 -name 'openclaw.json*' -delete
 
@@ -81,7 +103,7 @@ with sqlite3.connect(database_path.as_uri() + "?mode=ro", uri=True) as database:
         ("plugins.installedIndex",),
     ).fetchone()
 records = json.loads(row[0])["index"]["installRecords"]
-assert {"codex", "brave", "mai-transcribe", "speaches"} <= records.keys()
+assert {"codex", "brave", "mai-transcribe", "speaches", "openclaw-mcp-server-bridge"} <= records.keys()
 for record in records.values():
     package = json.loads((Path(record["installPath"]) / "package.json").read_text())
     assert package["version"] == record["version"]

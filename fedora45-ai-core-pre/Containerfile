@@ -227,7 +227,8 @@ RUN chmod 0755 /usr/local/bin/tailscale-state-up.sh \
       bip39.service \
       opencode.service \
       opencode-telegram.service \
- && systemctl mask cockpit.socket \
+ && systemctl mask cockpit.socket systemd-resolved.service \
+      systemd-resolved-monitor.socket systemd-resolved-varlink.socket \
  && sed -i '1i auth       sufficient   pam_permit.so' /etc/pam.d/cockpit
 
 RUN mkdir -p /tmp/runtime-root \

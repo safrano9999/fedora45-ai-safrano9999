@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import http.client
+import os
 import socket
 import sys
 import time
@@ -96,6 +97,23 @@ def main() -> int:
     deadline = time.monotonic() + arguments.timeout
     label = ""
     while True:
+        # systemd supplies MAINPID to ExecStartPost. A dead application cannot
+        # become ready; do not keep its failed start job alive until timeout.
+        main_pid = os.environ.get("MAINPID", "")
+        if main_pid.isdecimal() and int(main_pid) > 0:
+            try:
+                os.kill(int(main_pid), 0)
+                with open(f"/proc/{main_pid}/stat") as process:
+                    dead = process.read().rsplit(")", 1)[1].split()[0] == "Z"
+            except ProcessLookupError:
+                dead = True
+            except FileNotFoundError:
+                dead = True
+            except PermissionError:
+                dead = False
+            if dead:
+                print("fedora45-wait-ready: main process exited before readiness", file=sys.stderr)
+                return 1
         remaining = deadline - time.monotonic()
         attempt_timeout = max(0.05, min(1.0, remaining))
         if arguments.mode == "tcp":
