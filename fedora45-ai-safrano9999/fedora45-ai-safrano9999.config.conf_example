@@ -313,6 +313,9 @@ KACHELMANN_STATUS_PDF=1
 #required: JUGO internal web UI port
 JUGO_PORT=11020
 
+# Optional explicit gateway model alias; empty uses model discovery.
+JUGO_OPENAI_V1_DEFAULT_LLM=
+
 #blank-if: USE_TMUX=false JUGO_TMUX_SESSION_PREFIX
 #required: JUGO tmux integration switch
 USE_TMUX=false
@@ -345,6 +348,9 @@ NAPOLEON_PORT=11050
 #default-preset: luna
 #required: Napoleon default OpenAI-v1 model
 NAPOLEON_OPENAI_V1_DEFAULT_LLM=luna
+
+# Optional gateway alias for every persona, overriding per-persona model choices.
+NAPOLEON_OPENAI_V1_FORCE_MODEL=
 
 #required: NaturalGrounding internal web UI port
 NATURALGROUNDING_PORT=11070
