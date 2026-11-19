@@ -6,7 +6,7 @@ ARG MCP_BRIDGE_RELEASE=2026.11.3
 ADD https://github.com/safrano9999/openclaw-ephemeral.git#808fc67c9fb77e0ef7daaab1dc109481dd25c460 /sources/openclaw-ephemeral/
 ADD https://github.com/safrano9999/hermes-ephemeral.git#218db76ac20faa39f2d9d71810a7b5e735072597 /sources/hermes-ephemeral/
 ADD https://github.com/safrano9999/opencode-ephemeral.git#e512153df358114f258ba591bfe01c56eb41aed0 /sources/opencode-ephemeral/
-ADD https://github.com/f24sales/litellm-free.git#7ed6b4bf4f0dcf673a92b040f10d633048fbcb29 /sources/litellm-free/
+ADD https://github.com/f24sales/litellm-free.git#818bcd2017b2795ab12f92c30d78cdafc51634c7 /sources/litellm-free/
 RUN --mount=type=secret,id=GH_TOKEN,env=GH_TOKEN,required=true \
     gh release download "${MCP_BRIDGE_RELEASE}" --repo safrano9999/openclaw-mcp-server-bridge \
       --pattern openclaw-mcp-server-bridge-latest.zip \
@@ -76,10 +76,12 @@ RUN set -euo pipefail; \
     bridge=/root/.openclaw/extensions/openclaw-mcp-server-bridge; \
     python3 /opt/safrano9999/litellm-free/mcp/stage.py "$bridge/extensions"; \
     test -s "$bridge/extensions/litellm-free/litellm-free.py"; \
+    ops="$bridge/extensions/litellm-free/lib/ops"; \
     for helper in refresh_common.py openclaw; do \
-      test -f "/opt/safrano9999/litellm-free/ops/$helper"; \
-      ln -sfn "/opt/safrano9999/litellm-free/ops/$helper" "$bridge/extensions/litellm-free/lib/ops/$helper"; \
+      test -f "$ops/$helper"; \
+      test ! -L "$ops/$helper"; \
     done; \
+    python3 -B "$ops/refresh_models.py" --help >/dev/null; \
     install -Dm0755 "$bridge/image/init/20-openclaw-mcp-bridge.py" /usr/local/libexec/openclaw-mcp-bridge-init.py; \
     install -d /etc/systemd/system/openclaw-config.service.d; \
     printf '[Service]\nExecStartPost=/usr/bin/python3 /usr/local/libexec/openclaw-mcp-bridge-init.py\n' \
